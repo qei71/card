@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>預付卡管理系統</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<title>預付卡管理系統 v2.0</title>
 <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
 <style>
 :root {
   --primary: #06C755;
   --primary-dark: #05a847;
+  --line-color: #06C755;
   --danger: #e74c3c;
   --warning: #f39c12;
   --info: #3498db;
@@ -23,214 +25,279 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-/* ── 載入畫面 ── */
-#loading { position: fixed; inset: 0; background: var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; }
-#loading .logo { font-size: 48px; margin-bottom: 16px; }
-#loading p { color: #fff; font-size: 16px; }
+/* ── 載入 ── */
+#loading { position: fixed; inset: 0; background: var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; transition: opacity .3s; }
+#loadProgress { position:fixed; top:0; left:0; height:4px; background:linear-gradient(90deg,var(--primary),#5bbf9e); border-radius:0 2px 2px 0; width:0%; transition:width .35s ease; z-index:10000; box-shadow:0 1px 6px rgba(6,199,85,.4); }
+#loading .logo { font-size: 56px; margin-bottom: 16px; animation: pulse 1.5s infinite; }
+#loading p { color: rgba(255,255,255,.9); font-size: 15px; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
 
 /* ── 畫面切換 ── */
 .screen { display: none; min-height: 100vh; }
 .screen.active { display: block; }
 
-/* ── 登入/註冊 ── */
-#authScreen { background: linear-gradient(160deg, #06C755 0%, #05a847 100%); display: flex; align-items: center; justify-content: center; padding: 20px; }
-.auth-card { background: #fff; border-radius: 20px; padding: 32px 24px; width: 100%; max-width: 360px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
-.auth-logo { text-align: center; margin-bottom: 24px; }
-.auth-logo .icon { font-size: 48px; display: block; margin-bottom: 8px; }
-.auth-logo h1 { font-size: 20px; font-weight: 700; color: var(--text); }
-.auth-logo p { font-size: 13px; color: var(--text2); margin-top: 4px; }
-.tab-btns { display: flex; background: var(--bg); border-radius: 8px; padding: 4px; margin-bottom: 20px; }
-.tab-btn { flex: 1; padding: 8px; border: none; background: none; border-radius: 6px; font-size: 14px; cursor: pointer; color: var(--text2); transition: all .2s; }
-.tab-btn.active { background: #fff; color: var(--primary); font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+/* ── 登入 ── */
+#authScreen { background: linear-gradient(160deg,#06C755 0%,#03a344 100%); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px 20px; }
+.auth-card { background:#fff; border-radius:24px; padding:32px 24px; width:100%; max-width:380px; box-shadow:0 16px 48px rgba(0,0,0,.18); }
+.auth-logo { text-align:center; margin-bottom:24px; }
+.auth-logo .icon { font-size:52px; display:block; margin-bottom:10px; }
+.auth-logo h1 { font-size:21px; font-weight:700; }
+.auth-logo p { font-size:13px; color:var(--text2); margin-top:4px; }
+.tab-btns { display:flex; background:var(--bg); border-radius:10px; padding:4px; margin-bottom:20px; }
+.tab-btn { flex:1; padding:9px; border:none; background:none; border-radius:8px; font-size:14px; cursor:pointer; color:var(--text2); transition:all .2s; }
+.tab-btn.active { background:#fff; color:var(--primary); font-weight:700; box-shadow:0 2px 6px rgba(0,0,0,.1); }
 
-/* ── 表單元素 ── */
-.form-group { margin-bottom: 14px; }
-.form-group label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
-.form-control { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 15px; outline: none; transition: border .2s; background: #fff; }
-.form-control:focus { border-color: var(--primary); }
-select.form-control { cursor: pointer; }
-textarea.form-control { resize: vertical; min-height: 80px; }
+/* ── 表單 ── */
+.form-group { margin-bottom:14px; }
+.form-group label { display:block; font-size:13px; color:var(--text2); margin-bottom:6px; font-weight:600; }
+.form-control { width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:15px; outline:none; transition:border .2s,box-shadow .2s; background:#fff; color:var(--text); }
+.form-control:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(6,199,85,.12); }
+select.form-control { cursor:pointer; }
+textarea.form-control { resize:vertical; min-height:80px; }
+.form-control:disabled { background:#f5f5f5; cursor:not-allowed; opacity:.7; }
+
+/* ── 勾選框 ── */
+.check-row { display:flex; align-items:center; gap:9px; font-size:14px; cursor:pointer; color:var(--text); padding:2px 0; }
+.check-row input[type=checkbox] { width:17px; height:17px; accent-color:var(--primary); cursor:pointer; flex-shrink:0; }
 
 /* ── 按鈕 ── */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 20px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all .15s; width: 100%; }
-.btn-primary { background: var(--primary); color: #fff; }
-.btn-primary:active { background: var(--primary-dark); transform: scale(0.98); }
-.btn-danger { background: var(--danger); color: #fff; }
-.btn-outline { background: none; border: 1.5px solid var(--border); color: var(--text); }
-.btn-sm { padding: 8px 14px; font-size: 13px; width: auto; border-radius: 8px; }
-.btn-icon { width: 36px; height: 36px; padding: 0; border-radius: 8px; }
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:12px 20px; border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; transition:all .15s; width:100%; }
+.btn:disabled { opacity:.55; cursor:not-allowed; transform:none !important; }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:active:not(:disabled) { background:var(--primary-dark); transform:scale(.98); }
+.btn-line { background:#06C755; color:#fff; }
+.btn-line:active:not(:disabled) { background:#05a847; transform:scale(.98); }
+.btn-danger { background:var(--danger); color:#fff; }
+.btn-outline { background:none; border:1.5px solid var(--border); color:var(--text); }
+.btn-outline:active { background:var(--bg); }
+.btn-sm { padding:8px 14px; font-size:13px; width:auto; border-radius:8px; }
+.btn-xs { padding:5px 10px; font-size:12px; width:auto; border-radius:6px; }
+.btn-icon { width:38px; height:38px; padding:0; border-radius:10px; font-size:18px; }
 
-/* ── 導航 ── */
-#appScreen { padding-bottom: 70px; }
-.top-bar { background: #fff; padding: 14px 16px 10px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
-.top-bar h2 { font-size: 17px; font-weight: 700; }
-.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid var(--border); display: flex; z-index: 100; }
-.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 8px 0 6px; cursor: pointer; color: var(--text2); font-size: 10px; gap: 3px; transition: color .2s; border: none; background: none; }
-.nav-item.active { color: var(--primary); }
-.nav-item .ni { font-size: 22px; line-height: 1; }
+/* ── 頂部欄 ── */
+#appScreen { padding-bottom:72px; }
+.top-bar { background:#fff; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; border-bottom:1px solid var(--border); }
+.top-bar-left .greeting { font-size:11px; color:var(--text2); }
+.top-bar-left h2 { font-size:16px; font-weight:700; margin-top:1px; }
+.top-bar-right { display:flex; gap:8px; }
 
-/* ── 頁籤內容 ── */
-.page { display: none; padding: 12px 14px; }
-.page.active { display: block; }
+/* ── 底部導航 - 只有5個大按鈕 ── */
+.bottom-nav { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--border); display:flex; z-index:100; padding-bottom:env(safe-area-inset-bottom); }
+.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; padding:10px 0 8px; cursor:pointer; color:var(--text2); font-size:11px; font-weight:500; gap:4px; transition:color .2s; border:none; background:none; min-width:0; }
+.nav-item.active { color:var(--primary); }
+.nav-item .ni { font-size:24px; line-height:1; }
+.nav-item span:not(.ni) { white-space:nowrap; }
+
+/* ── 頁面 ── */
+.page { display:none; padding:12px 14px 8px; }
+.page.active { display:block; }
 
 /* ── 卡片 ── */
-.card { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
-.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.card-title { font-size: 15px; font-weight: 700; }
+.card { background:var(--card); border-radius:var(--radius); padding:16px; margin-bottom:12px; box-shadow:var(--shadow); }
+.card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.card-title { font-size:15px; font-weight:700; }
 
-/* ── 儀表板統計 ── */
-.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-.stat-card { background: #fff; border-radius: 12px; padding: 14px 12px; box-shadow: var(--shadow); text-align: center; }
-.stat-num { font-size: 28px; font-weight: 700; line-height: 1; }
-.stat-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
-.stat-card.green .stat-num { color: var(--primary); }
-.stat-card.red .stat-num { color: var(--danger); }
-.stat-card.orange .stat-num { color: var(--warning); }
-.stat-card.blue .stat-num { color: var(--info); }
+/* ── 統計 ── */
+.stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+.stat-card { background:#fff; border-radius:14px; padding:16px 12px; box-shadow:var(--shadow); text-align:center; }
+.stat-num { font-size:30px; font-weight:700; line-height:1; }
+.stat-label { font-size:12px; color:var(--text2); margin-top:5px; }
+.stat-card.green .stat-num { color:var(--primary); }
+.stat-card.red .stat-num { color:var(--danger); }
+.stat-card.orange .stat-num { color:var(--warning); }
+.stat-card.blue .stat-num { color:var(--info); }
 
 /* ── 門號卡片 ── */
-.sim-card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); border-left: 4px solid var(--primary); }
-.sim-card.warning { border-left-color: var(--warning); }
-.sim-card.expired { border-left-color: var(--danger); opacity: .8; }
-.sim-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.sim-badge { padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-.badge-ok { background: #e8f8ef; color: #1a7a44; }
-.badge-warning { background: #fff3cd; color: #856404; }
-.badge-expired { background: #fde8e8; color: #9b1c1c; }
-.sim-info { font-size: 14px; color: var(--text2); }
-.sim-info span { display: block; margin-bottom: 4px; }
-.sim-actions { display: flex; gap: 8px; margin-top: 10px; }
+.sim-card { background:#fff; border-radius:14px; padding:14px; margin-bottom:10px; box-shadow:var(--shadow); border-left:4px solid var(--primary); }
+.sim-card.warning { border-left-color:var(--warning); }
+.sim-card.expired { border-left-color:var(--danger); }
+.sim-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.sim-card-title { font-size:15px; font-weight:700; }
+.sim-badge { padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; }
+.badge-ok { background:#e8f8ef; color:#1a7a44; }
+.badge-warning { background:#fff3cd; color:#856404; }
+.badge-expired { background:#fde8e8; color:#9b1c1c; }
+.sim-info { font-size:13px; color:var(--text2); margin-bottom:10px; }
+.sim-info span { display:flex; align-items:center; gap:4px; margin-bottom:3px; }
+.sim-actions { display:flex; gap:7px; flex-wrap:wrap; }
 
-/* ── APP 平台 ── */
-.app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.app-item { background: #fff; border-radius: 10px; padding: 10px 8px; text-align: center; box-shadow: var(--shadow); cursor: pointer; transition: all .15s; border: 2px solid transparent; }
-.app-item.checked { border-color: var(--primary); background: #f0fbf4; }
-.app-item .app-icon { font-size: 22px; display: block; margin-bottom: 4px; }
-.app-item .app-name { font-size: 11px; font-weight: 600; color: var(--text); }
-.app-item .app-days { font-size: 10px; color: var(--text2); margin-top: 2px; }
-.app-item .app-countdown { font-size: 10px; color: var(--danger); font-weight: 600; }
+/* ── APP ── */
+.app-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.app-item { background:#fff; border-radius:12px; padding:10px 6px 10px; text-align:center; box-shadow:var(--shadow); transition:all .15s; border:2px solid transparent; position:relative; }
+.app-quick-check { position:absolute; top:6px; left:6px; display:flex; align-items:center; z-index:2; cursor:pointer; }
+.app-item.checked { border-color:var(--primary); background:#f0fbf4; }
+.app-item.expiring { border-color:var(--warning); background:#fffbf0; }
+.app-item .app-icon { font-size:22px; display:block; margin-bottom:4px; }
+.app-item .app-name { font-size:11px; font-weight:700; color:var(--text); line-height:1.3; }
+.app-item .app-sub { font-size:10px; color:var(--text2); margin-top:3px; }
+.app-item .app-danger { font-size:10px; color:var(--danger); font-weight:700; margin-top:2px; }
 
-/* ── 日誌 ── */
-.log-item { padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 10px; }
-.log-icon { font-size: 18px; flex-shrink: 0; }
-.log-action { font-size: 13px; font-weight: 600; }
-.log-detail { font-size: 12px; color: var(--text2); }
-.log-time { font-size: 11px; color: #999; margin-left: auto; flex-shrink: 0; }
-
-/* ── 通知 ── */
-.notify-item { padding: 12px; background: #f8f9ff; border-radius: 10px; margin-bottom: 8px; }
-.notify-msg { font-size: 13px; white-space: pre-line; }
-.notify-time { font-size: 11px; color: #999; margin-top: 6px; }
-.notify-status { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; }
-.notify-sent { background: #e8f8ef; color: #1a7a44; }
-.notify-failed { background: #fde8e8; color: #9b1c1c; }
-
-/* ── Modal ── */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: flex-end; }
-.modal-overlay.open { display: flex; }
-.modal { background: #fff; border-radius: 20px 20px 0 0; padding: 20px 16px; width: 100%; max-height: 92vh; overflow-y: auto; }
-.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-.modal-title { font-size: 17px; font-weight: 700; }
-.modal-close { font-size: 22px; cursor: pointer; color: var(--text2); line-height: 1; border: none; background: none; }
-
-/* ── Toast ── */
-#toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; padding: 10px 20px; border-radius: 24px; font-size: 14px; z-index: 999; display: none; white-space: nowrap; }
-#toast.show { display: block; }
-#toast.success { background: var(--primary); }
-#toast.error { background: var(--danger); }
-
-/* ── 管理員 ── */
-.admin-section { margin-bottom: 16px; }
-.admin-section-title { font-size: 13px; font-weight: 700; color: var(--text2); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
-.member-row { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #f9f9f9; border-radius: 10px; margin-bottom: 6px; }
-.member-info .name { font-size: 14px; font-weight: 600; }
-.member-info .meta { font-size: 12px; color: var(--text2); }
-
-/* ── 批量新增 ── */
-.sim-form-block { background: #f8f9fa; border-radius: 10px; padding: 14px; margin-bottom: 10px; position: relative; }
-.sim-form-block .block-num { position: absolute; top: 10px; right: 12px; font-size: 12px; color: var(--text2); font-weight: 600; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* ── 通知/日誌 ── */
+.log-item { padding:10px 0; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:10px; }
+.log-icon { font-size:18px; flex-shrink:0; margin-top:1px; }
+.log-body { flex:1; min-width:0; }
+.log-action { font-size:13px; font-weight:600; }
+.log-detail { font-size:12px; color:var(--text2); margin-top:2px; }
+.log-time { font-size:11px; color:#aaa; flex-shrink:0; }
+.notify-item { padding:12px; background:#f8f9ff; border-radius:10px; margin-bottom:8px; border-left:3px solid var(--info); }
+.notify-msg { font-size:13px; white-space:pre-line; line-height:1.5; }
+.notify-foot { display:flex; align-items:center; gap:8px; margin-top:8px; }
+.notify-status { padding:2px 7px; border-radius:4px; font-size:11px; font-weight:700; }
+.notify-sent { background:#e8f8ef; color:#1a7a44; }
+.notify-failed { background:#fde8e8; color:#9b1c1c; }
 
 /* ── 公告 ── */
-.announce-item { padding: 12px; background: linear-gradient(135deg, #f0fbf4, #e8f8ef); border-radius: 10px; border-left: 3px solid var(--primary); margin-bottom: 8px; }
-.announce-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
-.announce-content { font-size: 13px; color: var(--text2); }
-.announce-time { font-size: 11px; color: #999; margin-top: 6px; }
+.announce-item { padding:12px; background:linear-gradient(135deg,#f0fbf4,#e8f8ef); border-radius:10px; border-left:3px solid var(--primary); margin-bottom:8px; }
+.announce-title { font-size:14px; font-weight:700; margin-bottom:4px; }
+.announce-content { font-size:13px; color:var(--text2); }
+.announce-time { font-size:11px; color:#999; margin-top:6px; }
 
 /* ── 行事曆 ── */
-.calendar-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
-.calendar-date { text-align: center; background: var(--primary); color: #fff; border-radius: 8px; padding: 6px 10px; min-width: 48px; }
-.calendar-date .day { font-size: 18px; font-weight: 700; line-height: 1; }
-.calendar-date .month { font-size: 10px; opacity: .85; }
-.calendar-info .carrier { font-size: 14px; font-weight: 600; }
-.calendar-info .phone { font-size: 12px; color: var(--text2); }
-.calendar-days { margin-left: auto; font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 12px; }
+.calendar-item { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--border); }
+.cal-date { text-align:center; background:var(--primary); color:#fff; border-radius:10px; padding:7px 10px; min-width:50px; flex-shrink:0; }
+.cal-date.urgent { background:var(--danger); }
+.cal-date.warn { background:var(--warning); }
+.cal-date .day { font-size:20px; font-weight:700; line-height:1; }
+.cal-date .mo { font-size:10px; opacity:.85; margin-top:1px; }
+.cal-info .car { font-size:14px; font-weight:600; }
+.cal-info .ph { font-size:12px; color:var(--text2); }
+.cal-badge { margin-left:auto; font-size:11px; font-weight:700; padding:4px 9px; border-radius:12px; flex-shrink:0; }
 
 /* ── 搜尋 ── */
-.search-bar { display: flex; gap: 8px; margin-bottom: 12px; }
-.search-bar .form-control { flex: 1; padding: 10px 14px; }
+.search-bar { display:flex; gap:8px; margin-bottom:12px; }
+.search-bar .form-control { flex:1; padding:10px 14px; }
 
 /* ── 空狀態 ── */
-.empty-state { text-align: center; padding: 40px 20px; color: var(--text2); }
-.empty-state .icon { font-size: 48px; margin-bottom: 12px; display: block; }
-.empty-state p { font-size: 14px; }
+.empty-state { text-align:center; padding:40px 20px; color:var(--text2); }
+.empty-state .icon { font-size:52px; margin-bottom:14px; display:block; }
+.empty-state p { font-size:14px; line-height:1.6; }
 
-/* ── 響應式 ── */
-@media (max-width: 360px) {
-  .app-grid { grid-template-columns: repeat(3, 1fr); }
-  .stats-grid { grid-template-columns: 1fr 1fr; }
-}
+/* ── Modal (底部彈出) ── */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.52); z-index:200; display:none; align-items:flex-end; animation:fadeIn .2s; }
+.modal-overlay.open { display:flex; }
+.modal { background:#fff; border-radius:24px 24px 0 0; padding:20px 16px 24px; width:100%; max-height:92vh; overflow-y:auto; animation:slideUp .25s ease-out; }
+.modal-handle { width:36px; height:4px; background:#ddd; border-radius:2px; margin:0 auto 16px; }
+.modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border); }
+.modal-title { font-size:17px; font-weight:700; }
+.modal-close { width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:var(--bg); border:none; font-size:16px; cursor:pointer; color:var(--text2); }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+
+/* ── 確認對話框 Modal ── */
+.confirm-modal { background:#fff; border-radius:22px; padding:36px 30px 28px; width:calc(100% - 24px); max-width:400px; margin:auto; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.25); animation:popIn .2s ease-out; }
+@keyframes popIn { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:scale(1)} }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.confirm-icon { font-size:48px; display:block; margin-bottom:16px; }
+.confirm-title { font-size:19px; font-weight:700; margin-bottom:10px; }
+.confirm-msg { font-size:14px; color:var(--text2); line-height:1.7; margin-bottom:28px; }
+.confirm-btns { display:flex; gap:12px; }
+.confirm-btns .btn { flex:1; padding:14px 10px; font-size:14px; font-weight:600; border-radius:12px; white-space:nowrap; }
+
+/* ── 輸入框 Modal ── */
+.input-modal { background:#fff; border-radius:20px; padding:24px 20px; width:calc(100% - 48px); max-width:340px; margin:auto; box-shadow:0 20px 60px rgba(0,0,0,.25); animation:popIn .2s ease-out; }
+.input-modal-title { font-size:17px; font-weight:700; margin-bottom:4px; }
+.input-modal-sub { font-size:13px; color:var(--text2); margin-bottom:16px; }
+.input-modal-btns { display:flex; gap:10px; margin-top:14px; }
+
+/* ── 管理員 ── */
+.member-row { display:flex; align-items:center; gap:10px; padding:11px 12px; background:#f9f9f9; border-radius:12px; margin-bottom:7px; }
+.member-avatar { width:38px; height:38px; border-radius:50%; object-fit:cover; flex-shrink:0; background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:18px; }
+.member-info { flex:1; min-width:0; }
+.member-info .mname { font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.member-info .mmeta { font-size:11px; color:var(--text2); margin-top:2px; }
+.member-actions { display:flex; gap:5px; flex-shrink:0; }
+
+/* ── 批量新增 ── */
+.sim-form-block { background:#f8f9fa; border-radius:12px; padding:14px; margin-bottom:10px; position:relative; border:1.5px solid var(--border); }
+.sim-form-block .block-label { font-size:12px; font-weight:700; color:var(--primary); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+/* ── LINE 登入按鈕 ── */
+.btn-line-login { background:#06C755; color:#fff; display:flex; align-items:center; justify-content:center; gap:10px; padding:13px; border-radius:10px; font-size:15px; font-weight:700; border:none; cursor:pointer; width:100%; transition:all .15s; }
+.btn-line-login:active { background:#05a847; transform:scale(.98); }
+.line-icon { width:22px; height:22px; background:#fff; border-radius:4px; display:flex; align-items:center; justify-content:center; }
+.line-icon svg { width:16px; height:16px; }
+.divider { display:flex; align-items:center; gap:10px; margin:14px 0; color:var(--text2); font-size:13px; }
+.divider::before,.divider::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ── LINE 用戶資訊卡片 ── */
+.line-profile-card { display:flex; align-items:center; gap:12px; padding:12px; background:linear-gradient(135deg,#f0fbf4,#e8f8ef); border-radius:12px; margin-bottom:14px; border:1.5px solid #9fe1cb; }
+.line-avatar { width:44px; height:44px; border-radius:50%; object-fit:cover; }
+.line-info .lname { font-size:14px; font-weight:700; }
+.line-info .lsub { font-size:12px; color:var(--text2); margin-top:2px; }
+
+/* ── Toast ── */
+#toast { position:fixed; top:env(safe-area-inset-top,20px); left:50%; transform:translateX(-50%); background:#1a1a1a; color:#fff; padding:11px 22px; border-radius:24px; font-size:14px; z-index:9999; pointer-events:none; opacity:0; transition:opacity .25s; white-space:nowrap; max-width:90vw; overflow:hidden; text-overflow:ellipsis; }
+#toast.show { opacity:1; top:calc(env(safe-area-inset-top,0px) + 20px); }
+#toast.success { background:var(--primary); }
+#toast.error { background:var(--danger); }
+#toast.warn { background:var(--warning); }
+
+/* ── 確認/輸入 overlay ── */
+#dialogOverlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:500; display:none; align-items:center; justify-content:center; padding:24px; animation:fadeIn .15s; }
+#dialogOverlay.open { display:flex; }
 </style>
 </head>
 <body>
 
-<!-- 載入畫面 -->
+<!-- 載入 -->
+<div id="loadProgress"></div>
 <div id="loading">
   <div class="logo">📱</div>
-  <p>預付卡管理系統載入中...</p>
+  <p id="loadingMsg">預付卡管理系統</p>
+  <div style="width:200px;height:4px;background:rgba(255,255,255,.25);border-radius:4px;margin-top:20px;overflow:hidden">
+    <div id="loadingBar" style="height:100%;background:#fff;border-radius:4px;width:0%;transition:width .35s ease"></div>
+  </div>
 </div>
 
-<!-- 登入/註冊 -->
+<!-- ===== 登入/註冊 ===== -->
 <div id="authScreen" class="screen">
   <div class="auth-card">
     <div class="auth-logo">
       <span class="icon">📱</span>
-      <h1>預付卡管理系統</h1>
+      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v2.0</div>
       <p>管理您的所有預付卡門號</p>
     </div>
+
+    <!-- LINE 登入 -->
+    <div id="lineProfileArea" style="display:none"></div>
+    <button class="btn-line-login" id="lineLoginBtn" onclick="doLineLogin()">
+      <div class="line-icon">
+        <svg viewBox="0 0 24 24" fill="#06C755"><path d="M12 2C6.48 2 2 6.03 2 11c0 3.57 2.13 6.62 5.26 8.34-.22.78-.8 2.83-.92 3.26-.14.52.19.51.4.37.16-.1 2.56-1.74 3.59-2.44.54.07 1.1.11 1.67.11 5.52 0 10-4.03 10-9 0-4.97-4.48-9-10-9z"/></svg>
+      </div>
+      使用 LINE 帳號登入
+    </button>
+
+    <div class="divider">或使用帳號密碼</div>
+
     <div class="tab-btns">
       <button class="tab-btn active" onclick="switchAuthTab('login')">登入</button>
       <button class="tab-btn" onclick="switchAuthTab('register')">註冊</button>
     </div>
+
+    <!-- 登入表單 -->
     <div id="loginForm">
       <div class="form-group">
         <label>帳號</label>
-        <input type="text" id="loginAccount" class="form-control" placeholder="請輸入帳號">
+        <input type="text" id="loginAccount" class="form-control" placeholder="請輸入帳號" autocomplete="username">
       </div>
       <div class="form-group">
         <label>密碼</label>
-        <input type="password" id="loginPassword" class="form-control" placeholder="請輸入密碼">
+        <input type="password" id="loginPassword" class="form-control" placeholder="請輸入密碼" autocomplete="current-password">
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
-        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;color:var(--text)">
-          <input type="checkbox" id="chkSaveAccount" style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer">
-          記住帳號
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;color:var(--text)">
-          <input type="checkbox" id="chkSavePassword" style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer">
-          記住密碼
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;color:var(--primary);font-weight:600">
-          <input type="checkbox" id="chkAutoLogin" style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer">
-          自動登入（下次開啟自動進入）
-        </label>
+      <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:18px">
+        <label class="check-row"><input type="checkbox" id="chkSaveAccount"> 記住帳號</label>
+        <label class="check-row"><input type="checkbox" id="chkSavePassword"> 記住密碼</label>
+        <label class="check-row" style="color:var(--primary);font-weight:600"><input type="checkbox" id="chkAutoLogin"> 自動登入（下次開啟直接進入）</label>
       </div>
-      <button class="btn btn-primary" onclick="doLogin()">🔐 登入</button>
+      <button class="btn btn-primary" id="loginBtn" onclick="doLogin()">🔐 登入</button>
     </div>
+
+    <!-- 註冊表單 -->
     <div id="registerForm" style="display:none">
       <div class="form-group">
         <label>帳號（4字元以上）</label>
-        <input type="text" id="regAccount" class="form-control" placeholder="請輸入帳號">
+        <input type="text" id="regAccount" class="form-control" placeholder="請輸入帳號" autocomplete="username">
       </div>
       <div class="form-group">
         <label>暱稱</label>
@@ -238,33 +305,46 @@ textarea.form-control { resize: vertical; min-height: 80px; }
       </div>
       <div class="form-group">
         <label>密碼（6字元以上）</label>
-        <input type="password" id="regPassword" class="form-control" placeholder="請輸入密碼">
+        <input type="password" id="regPassword" class="form-control" placeholder="請輸入密碼" autocomplete="new-password">
       </div>
       <button class="btn btn-primary" onclick="doRegister()">✅ 立即註冊</button>
     </div>
   </div>
 </div>
 
-<!-- 主應用 -->
+<!-- ===== 主應用 ===== -->
 <div id="appScreen" class="screen">
   <div class="top-bar">
-    <div>
-      <div style="font-size:12px;color:var(--text2)">歡迎回來</div>
-      <h2 id="topBarTitle">📱 預付卡管理</h2>
+    <div class="top-bar-left">
+      <div class="greeting">歡迎回來 👋</div>
+      <h2 id="topBarTitle">預付卡管理</h2>
     </div>
-    <div style="display:flex;gap:8px">
+    <div class="top-bar-right">
+      <button class="btn btn-sm btn-outline btn-icon" id="refreshBtn" onclick="doRefresh()" title="刷新" style="font-size:16px">🔄</button>
       <button class="btn btn-sm btn-outline btn-icon" id="adminBtn" style="display:none" onclick="showAdminPanel()">⚙️</button>
-      <button class="btn btn-sm btn-outline btn-icon" onclick="doLogout()">🚪</button>
+      <button class="btn btn-sm btn-outline btn-icon" onclick="doLogout()" title="登出">🚪</button>
     </div>
   </div>
 
-  <!-- 儀表板 -->
+  <!-- 首頁 -->
   <div id="pageDashboard" class="page active">
     <div id="announceArea"></div>
-    <div class="stats-grid" id="statsGrid">
-      <div class="stat-card green"><div class="stat-num" id="stat-total">-</div><div class="stat-label">門號總數</div></div>
-      <div class="stat-card orange"><div class="stat-num" id="stat-expiring">-</div><div class="stat-label">7天內到期</div></div>
-      <div class="stat-card red"><div class="stat-num" id="stat-expired">-</div><div class="stat-label">已到期</div></div>
+    <div class="stats-grid">
+      <div class="stat-card green" onclick="openSimListModal('all')" style="cursor:pointer">
+        <div class="stat-num" id="stat-total">-</div>
+        <div class="stat-label">門號總數</div>
+        <div style="font-size:10px;color:var(--primary);margin-top:3px">點擊查看 ›</div>
+      </div>
+      <div class="stat-card orange" onclick="openSimListModal('expiring')" style="cursor:pointer">
+        <div class="stat-num" id="stat-expiring">-</div>
+        <div class="stat-label">7天內到期</div>
+        <div style="font-size:10px;color:var(--warning);margin-top:3px">點擊查看 ›</div>
+      </div>
+      <div class="stat-card red" onclick="openSimListModal('expired')" style="cursor:pointer">
+        <div class="stat-num" id="stat-expired">-</div>
+        <div class="stat-label">已到期</div>
+        <div style="font-size:10px;color:var(--danger);margin-top:3px">點擊查看 ›</div>
+      </div>
       <div class="stat-card blue"><div class="stat-num" id="stat-notify">-</div><div class="stat-label">通知次數</div></div>
     </div>
     <div class="card">
@@ -273,17 +353,29 @@ textarea.form-control { resize: vertical; min-height: 80px; }
     </div>
   </div>
 
-  <!-- 預付卡管理 -->
+  <!-- 門號管理 -->
   <div id="pageSimCards" class="page">
     <div class="search-bar">
-      <input type="text" id="simSearch" class="form-control" placeholder="🔍 搜尋門號..." oninput="filterSims()">
-      <select id="simCarrierFilter" class="form-control" style="max-width:110px" onchange="filterSims()">
+      <input type="text" id="simSearch" class="form-control" placeholder="🔍 搜尋門號或編號..." oninput="filterSims()">
+      <select id="simCarrierFilter" class="form-control" style="max-width:96px" onchange="filterSims()">
         <option value="">全部業者</option>
         <option>中華電信</option><option>台灣大哥大</option><option>遠傳電信</option>
         <option>台灣之星</option><option>亞太電信</option><option>其他</option>
       </select>
+      <select id="simSortBy" class="form-control" style="max-width:90px" onchange="filterSims()">
+        <option value="default">預設排序</option>
+        <option value="phone_asc">門號 ↑</option>
+        <option value="phone_desc">門號 ↓</option>
+        <option value="expire_asc">到期 ↑</option>
+        <option value="expire_desc">到期 ↓</option>
+        <option value="carrier">業者排序</option>
+      </select>
     </div>
-    <button class="btn btn-primary" style="margin-bottom:12px" onclick="openAddSimModal()">➕ 新增門號</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <button class="btn btn-primary" onclick="openAddSimModal()">➕ 新增門號</button>
+      <button class="btn btn-outline" onclick="checkDuplicates()">🔍 查重複</button>
+    </div>
+    <div id="duplicateAlert" style="display:none"></div>
     <div id="simCardsList"></div>
   </div>
 
@@ -292,106 +384,187 @@ textarea.form-control { resize: vertical; min-height: 80px; }
     <div class="card" style="margin-bottom:12px">
       <div class="form-group" style="margin-bottom:0">
         <label>選擇門號</label>
-        <select id="appSimSelect" class="form-control" onchange="loadAppRegistrations()">
+        <select id="appSimSelect" class="form-control" onchange="handleAppSimChange()">
           <option value="">-- 請先選擇門號 --</option>
+          <option value="ALL_SIMS">📋 全選：顯示所有門號 APP 概覽</option>
         </select>
       </div>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <span style="font-size:14px;font-weight:700">已登記的 APP 平台</span>
-      <button class="btn btn-sm btn-outline" onclick="openAddPlatformModal()">＋ 新增APP</button>
+    <!-- 全選模式：所有門號 APP 概覽 -->
+    <div id="allSimsAppView" style="display:none"></div>
+    <div id="singleSimAppSection">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:14px;font-weight:700">APP 平台</span>
+        <div style="display:flex;gap:5px">
+          <button class="btn btn-sm btn-outline" onclick="openBatchAppModal()" style="font-size:11px;padding:6px 8px">⚡ 批量</button>
+          <button class="btn btn-sm btn-outline" onclick="openCrossSimAppModal()" style="font-size:11px;padding:6px 8px">🌐 跨門號</button>
+          <button class="btn btn-sm btn-outline" onclick="openAddPlatformModal()" style="font-size:11px;padding:6px 8px">＋ 新增</button>
+        </div>
+      </div>
+      <div id="appGrid" class="app-grid"></div>
     </div>
-    <div id="appGrid" class="app-grid"></div>
   </div>
 
   <!-- 行事曆 -->
   <div id="pageCalendar" class="page">
+    <!-- 月曆視圖 -->
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <button class="btn btn-xs btn-outline" onclick="calendarPrevMonth()" style="width:32px;height:32px;padding:0">◀</button>
+        <span id="calMonthTitle" style="font-size:15px;font-weight:700"></span>
+        <button class="btn btn-xs btn-outline" onclick="calendarNextMonth()" style="width:32px;height:32px;padding:0">▶</button>
+      </div>
+      <div id="miniCalendar" style="font-size:12px"></div>
+    </div>
     <div class="card">
-      <div class="card-header"><span class="card-title">📅 門號到期行事曆</span></div>
+      <div class="card-header">
+        <span class="card-title">📋 到期門號清單</span>
+        <button class="btn btn-sm btn-outline" onclick="openNotifySettingModal()" style="font-size:12px;padding:6px 10px">🔔 通知設定</button>
+      </div>
       <div id="calendarList"></div>
     </div>
   </div>
 
-  <!-- 通知/日誌 -->
-  <div id="pageLog" class="page">
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <button class="btn btn-sm btn-outline" id="logTabNotify" onclick="switchLogTab('notify')" style="flex:1;border-color:var(--primary);color:var(--primary)">🔔 通知記錄</button>
-      <button class="btn btn-sm btn-outline" id="logTabAudit" onclick="switchLogTab('audit')" style="flex:1">📋 操作日誌</button>
-    </div>
-    <div id="notifyList"></div>
-    <div id="auditList" style="display:none"></div>
-  </div>
-
-  <!-- 個人資料 -->
+  <!-- 我的（個人資料 + 日誌） -->
   <div id="pageProfile" class="page">
+    <!-- LINE 帳號資訊卡 -->
+    <div id="lineProfileCard" style="display:none" class="card">
+      <div class="card-header"><span class="card-title">💚 LINE 帳號</span></div>
+      <div id="lineProfileInner"></div>
+    </div>
+
     <div class="card">
       <div class="card-header"><span class="card-title">👤 個人資料</span></div>
-      <div class="form-group"><label>帳號</label><input type="text" id="profileAccount" class="form-control" readonly style="background:#f5f5f5"></div>
+      <div class="form-group"><label>帳號</label><input type="text" id="profileAccount" class="form-control" disabled></div>
       <div class="form-group"><label>暱稱</label><input type="text" id="profileNickname" class="form-control"></div>
-      <div class="form-group"><label>LINE 綁定狀態</label><input type="text" id="profileLineId" class="form-control" readonly style="background:#f5f5f5"></div>
-      <div class="form-group"><label>最後登入</label><input type="text" id="profileLastLogin" class="form-control" readonly style="background:#f5f5f5"></div>
+      <div class="form-group"><label>LINE 狀態</label><input type="text" id="profileLineId" class="form-control" disabled></div>
+      <div class="form-group"><label>最後登入</label><input type="text" id="profileLastLogin" class="form-control" disabled></div>
+      <div class="form-group"><label>帳號建立時間</label><input type="text" id="profileCreatedAt" class="form-control" disabled></div>
       <button class="btn btn-primary" onclick="saveProfile()">💾 儲存資料</button>
     </div>
-    <div class="card" style="margin-top:12px">
+
+    <div class="card">
       <div class="card-header"><span class="card-title">🔒 修改密碼</span></div>
       <div class="form-group"><label>舊密碼</label><input type="password" id="oldPwd" class="form-control" placeholder="請輸入舊密碼"></div>
       <div class="form-group"><label>新密碼</label><input type="password" id="newPwd" class="form-control" placeholder="新密碼（6字元以上）"></div>
       <button class="btn btn-outline" onclick="doChangePassword()">🔑 修改密碼</button>
     </div>
-    <div class="card" style="margin-top:12px">
+
+    <div class="card">
       <div class="card-header"><span class="card-title">📤 資料匯出</span></div>
-      <button class="btn btn-outline" onclick="exportMyData()">📥 匯出我的門號資料</button>
+      <button class="btn btn-outline" onclick="exportMyData()">📥 匯出我的門號 CSV</button>
+    </div>
+
+    <!-- 通知/日誌 -->
+    <div class="card" style="margin-top:4px">
+      <div class="card-header">
+        <span class="card-title">📋 記錄</span>
+        <div style="display:flex;gap:7px">
+          <button class="btn btn-xs btn-outline" id="logTabNotify" onclick="switchLogTab('notify')" style="border-color:var(--primary);color:var(--primary)">🔔 通知</button>
+          <button class="btn btn-xs btn-outline" id="logTabAudit" onclick="switchLogTab('audit')">📝 日誌</button>
+        </div>
+      </div>
+      <div id="notifyList"></div>
+      <div id="auditList" style="display:none"></div>
     </div>
   </div>
 </div>
 
-<!-- 底部導航 -->
+<!-- 底部導航（5個按鈕，移除日誌） -->
 <nav class="bottom-nav" id="bottomNav">
-  <button class="nav-item active" onclick="switchPage('Dashboard')"><span class="ni">🏠</span>首頁</button>
-  <button class="nav-item" onclick="switchPage('SimCards')"><span class="ni">📱</span>門號</button>
-  <button class="nav-item" onclick="switchPage('Apps')"><span class="ni">📲</span>APP</button>
-  <button class="nav-item" onclick="switchPage('Calendar')"><span class="ni">📅</span>行事曆</button>
-  <button class="nav-item" onclick="switchPage('Log')"><span class="ni">📋</span>日誌</button>
-  <button class="nav-item" onclick="switchPage('Profile')"><span class="ni">👤</span>我的</button>
+  <button class="nav-item active" onclick="switchPage('Dashboard')"><span class="ni">🏠</span><span>首頁</span></button>
+  <button class="nav-item" onclick="switchPage('SimCards')"><span class="ni">📱</span><span>門號</span></button>
+  <button class="nav-item" onclick="switchPage('Apps')"><span class="ni">📲</span><span>APP</span></button>
+  <button class="nav-item" onclick="switchPage('Calendar')"><span class="ni">📅</span><span>行事曆</span></button>
+  <button class="nav-item" onclick="switchPage('Profile')"><span class="ni">👤</span><span>我的</span></button>
 </nav>
 
-<!-- === MODALS === -->
+<!-- ===== MODALS ===== -->
 
-<!-- 新增門號 Modal -->
+<!-- 新增門號 -->
 <div class="modal-overlay" id="addSimModal">
   <div class="modal">
+    <div class="modal-handle"></div>
     <div class="modal-header">
-      <span class="modal-title">新增預付卡門號</span>
+      <span class="modal-title">➕ 新增預付卡門號</span>
       <button class="modal-close" onclick="closeModal('addSimModal')">✕</button>
     </div>
-    <div class="form-group">
-      <label>要新增幾個門號？</label>
-      <select id="simCount" class="form-control" onchange="renderSimForms()">
-        <option value="1">1 個</option>
-        <option value="2">2 個</option>
-        <option value="3">3 個</option>
-        <option value="5">5 個</option>
-        <option value="10">10 個</option>
-      </select>
+    <!-- 新增方式切換 -->
+    <div style="display:flex;gap:6px;margin-bottom:14px">
+      <button class="btn btn-sm" id="addModeManual" onclick="switchAddMode('manual')"
+        style="flex:1;background:var(--primary);color:#fff;font-size:13px">✍️ 手動輸入</button>
+      <button class="btn btn-sm btn-outline" id="addModeCsv" onclick="switchAddMode('csv')"
+        style="flex:1;font-size:13px">📂 CSV 匯入</button>
+      <button class="btn btn-sm btn-outline" id="addModeSheet" onclick="switchAddMode('sheet')"
+        style="flex:1;font-size:13px">📊 試算表匯入</button>
     </div>
-    <div id="simFormsContainer"></div>
-    <button class="btn btn-primary" style="margin-top:8px" onclick="submitSimCards()">✅ 確認新增</button>
+    <!-- 手動新增模式 -->
+    <div id="addModeManualContent">
+      <div class="form-group">
+        <label>要新增幾個門號？</label>
+        <select id="simCount" class="form-control" onchange="renderSimForms()">
+          <option value="1">1 個</option><option value="2">2 個</option>
+          <option value="3">3 個</option><option value="5">5 個</option><option value="10">10 個</option>
+        </select>
+      </div>
+      <div id="simFormsContainer"></div>
+      <button class="btn btn-primary" style="margin-top:8px" onclick="submitSimCards()">✅ 確認新增</button>
+    </div>
+    <!-- CSV 匯入模式 -->
+    <div id="addModeCsvContent" style="display:none">
+      <div style="background:#f8f9fa;border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--text2)">
+        <strong style="color:var(--text)">📋 CSV 格式說明（第一列為標題，可省略）</strong><br>
+        欄位順序：<code>電信業者, 門號號碼, 門號編號, 序號, 初辦日(YYYY-MM-DD), 到期日, 辦理人, 辦理人證號, 備註</code><br>
+        <span style="color:var(--primary)">僅門號號碼為必填，其他欄位可留空</span>
+      </div>
+      <div class="form-group">
+        <label>選擇 CSV 檔案</label>
+        <input type="file" id="csvFileInput" accept=".csv,.txt" class="form-control" onchange="parseCsvFile(this)">
+      </div>
+      <div id="csvPreview" style="max-height:200px;overflow-y:auto;margin-bottom:12px"></div>
+      <button class="btn btn-primary" onclick="submitCsvImport()" id="csvImportBtn" disabled>📥 匯入 CSV 資料</button>
+    </div>
+    <!-- 雲端試算表匯入模式 -->
+    <div id="addModeSheetContent" style="display:none">
+      <div style="background:#f8f9fa;border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--text2)">
+        <strong style="color:var(--text)">📊 雲端試算表說明</strong><br>
+        1. 開啟您的 Google 試算表<br>
+        2. 確認第一列為標題列（電信業者、門號號碼...）<br>
+        3. 將試算表設為「任何知道連結的人可查看」<br>
+        4. 貼上試算表的網址或試算表 ID
+      </div>
+      <div class="form-group">
+        <label>試算表網址或 ID</label>
+        <input type="text" id="sheetUrlInput" class="form-control" placeholder="貼上 Google 試算表網址或 ID">
+      </div>
+      <div class="form-group">
+        <label>工作表名稱（選填，預設抓第一個工作表）</label>
+        <input type="text" id="sheetNameInput" class="form-control" placeholder="例如：工作表1">
+      </div>
+      <button class="btn btn-outline" onclick="fetchSheetData()" style="margin-bottom:10px">🔄 預覽資料</button>
+      <div id="sheetPreview" style="max-height:200px;overflow-y:auto;margin-bottom:12px"></div>
+      <button class="btn btn-primary" onclick="submitSheetImport()" id="sheetImportBtn" disabled>📥 匯入試算表資料</button>
+    </div>
   </div>
 </div>
 
-<!-- 編輯門號 Modal -->
+<!-- 編輯門號 -->
 <div class="modal-overlay" id="editSimModal">
   <div class="modal">
+    <div class="modal-handle"></div>
     <div class="modal-header">
-      <span class="modal-title">編輯門號</span>
+      <span class="modal-title">✏️ 編輯門號</span>
       <button class="modal-close" onclick="closeModal('editSimModal')">✕</button>
     </div>
     <input type="hidden" id="editSimId">
     <div class="form-row">
       <div class="form-group"><label>電信業者</label>
-        <select id="editCarrier" class="form-control"><option>中華電信</option><option>台灣大哥大</option><option>遠傳電信</option><option>台灣之星</option><option>亞太電信</option><option>其他</option></select>
+        <select id="editCarrier" class="form-control">
+          <option>中華電信</option><option>台灣大哥大</option><option>遠傳電信</option>
+          <option>台灣之星</option><option>亞太電信</option><option>其他</option>
+        </select>
       </div>
-      <div class="form-group"><label>門號號碼</label><input type="text" id="editPhone" class="form-control"></div>
+      <div class="form-group"><label>門號號碼</label><input type="tel" id="editPhone" class="form-control" placeholder="0900000000"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>門號編號</label><input type="text" id="editSimNum" class="form-control"></div>
@@ -405,44 +578,51 @@ textarea.form-control { resize: vertical; min-height: 80px; }
       <div class="form-group"><label>辦理人</label><input type="text" id="editApplicant" class="form-control"></div>
       <div class="form-group"><label>辦理人證號</label><input type="text" id="editApplicantId" class="form-control"></div>
     </div>
-    <div class="form-group"><label>備註</label><textarea id="editNotes" class="form-control"></textarea></div>
+    <div class="form-group"><label>備註</label><textarea id="editNotes" class="form-control" rows="2"></textarea></div>
     <button class="btn btn-primary" onclick="submitEditSim()">💾 儲存</button>
   </div>
 </div>
 
-<!-- APP 詳細 Modal -->
+<!-- APP 詳細 -->
 <div class="modal-overlay" id="appDetailModal">
   <div class="modal">
+    <div class="modal-handle"></div>
     <div class="modal-header">
       <span class="modal-title" id="appDetailTitle">APP 詳情</span>
       <button class="modal-close" onclick="closeModal('appDetailModal')">✕</button>
     </div>
     <input type="hidden" id="appDetailPlatId">
     <input type="hidden" id="appDetailSimId">
-    <div class="form-group">
-      <label>是否已註冊</label>
+    <div class="form-group"><label>是否已註冊</label>
       <select id="appIsRegistered" class="form-control">
         <option value="true">✅ 已註冊</option>
         <option value="false">❌ 未註冊</option>
       </select>
     </div>
     <div class="form-group"><label>最後註冊日期</label><input type="date" id="appLastRegDate" class="form-control"></div>
-    <div class="form-group"><label>可重複使用嗎？</label><input type="text" id="appCanRepeat" class="form-control" readonly style="background:#f5f5f5"></div>
-    <div class="form-group"><label>需間隔天數（下次註冊週期）</label><input type="number" id="appRegDays" class="form-control" value="30" min="1"></div>
-    <div class="form-group"><label>下次可用日（自動計算）</label><input type="text" id="appNextDate" class="form-control" readonly style="background:#f5f5f5"></div>
+    <div class="form-group">
+      <label>可重複使用</label>
+      <label style="display:flex;align-items:center;gap:8px;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer">
+        <input type="checkbox" id="appCanRepeat" style="width:17px;height:17px;accent-color:var(--primary)">
+        <span id="appCanRepeatLabel" style="font-size:14px;color:var(--text2)">可重複使用此門號註冊</span>
+      </label>
+    </div>
+    <div class="form-group"><label>重新註冊間隔天數</label><input type="number" id="appRegDays" class="form-control" value="30" min="1"></div>
+    <div class="form-group"><label>下次可用日（自動計算）</label><input type="text" id="appNextDate" class="form-control" disabled></div>
     <button class="btn btn-primary" onclick="saveAppRegistration()">💾 儲存設定</button>
   </div>
 </div>
 
-<!-- 新增 APP 平台 Modal -->
+<!-- 新增 APP 平台 -->
 <div class="modal-overlay" id="addPlatformModal">
   <div class="modal">
+    <div class="modal-handle"></div>
     <div class="modal-header">
-      <span class="modal-title">新增 APP 平台</span>
+      <span class="modal-title">➕ 新增 APP 平台</span>
       <button class="modal-close" onclick="closeModal('addPlatformModal')">✕</button>
     </div>
     <div class="form-group"><label>平台名稱</label><input type="text" id="newPlatName" class="form-control" placeholder="例如：美食APP"></div>
-    <div class="form-group"><label>圖標（Emoji）</label><input type="text" id="newPlatIcon" class="form-control" placeholder="例如：🍔" value="📱"></div>
+    <div class="form-group"><label>圖標 Emoji</label><input type="text" id="newPlatIcon" class="form-control" value="📱"></div>
     <div class="form-group"><label>是否可重複註冊</label>
       <select id="newPlatRepeat" class="form-control">
         <option value="true">✅ 可重複</option>
@@ -453,9 +633,34 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   </div>
 </div>
 
-<!-- 管理員面板 Modal -->
+<!-- 批量 APP 設定 Modal -->
+<div class="modal-overlay" id="batchAppModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">⚡ APP 批量設定</span>
+      <button class="modal-close" onclick="closeModal('batchAppModal')">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">選擇要套用的 APP，並設定是否已註冊</p>
+    <div class="form-group">
+      <label>設定為</label>
+      <select id="batchAppStatus" class="form-control">
+        <option value="true">✅ 全部標記為已註冊</option>
+        <option value="false">❌ 全部標記為未註冊</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>選擇 APP <span style="font-size:11px;color:var(--text2)">(不選等於全選)</span></label>
+      <div id="batchAppList" style="max-height:200px;overflow-y:auto;border:1.5px solid var(--border);border-radius:10px;padding:8px"></div>
+    </div>
+    <button class="btn btn-primary" onclick="applyBatchApp()">✅ 套用設定</button>
+  </div>
+</div>
+
+<!-- 管理員面板 -->
 <div class="modal-overlay" id="adminModal">
   <div class="modal">
+    <div class="modal-handle"></div>
     <div class="modal-header">
       <span class="modal-title">⚙️ 管理員控制台</span>
       <button class="modal-close" onclick="closeModal('adminModal')">✕</button>
@@ -464,49 +669,147 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   </div>
 </div>
 
+<!-- 通知設定 Modal -->
+<div class="modal-overlay" id="notifySettingModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">🔔 到期通知設定</span>
+      <button class="modal-close" onclick="closeModal('notifySettingModal')">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:12px">
+      <div class="form-group" style="flex:1;margin-bottom:0">
+        <label>選擇門號</label>
+        <select id="notifySimSelect" class="form-control" onchange="loadNotifySettings()">
+          <option value="">-- 請選擇門號 --</option>
+          <option value="ALL">⚡ 所有門號（批量）</option>
+          <option value="VALID">✅ 所有有效門號（排除已逾期）</option>
+        </select>
+      </div>
+    </div>
+    <div id="notifySettingsArea">
+      <p style="font-size:13px;color:var(--text2);padding:8px 0">請先選擇門號</p>
+    </div>
+    <div id="notifyTestArea" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+      <p style="font-size:13px;font-weight:600;margin-bottom:8px">📨 測試發送</p>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:10px">立即發送一則測試通知到您的 LINE</p>
+      <button class="btn btn-outline" onclick="sendTestNotify()" style="border-color:var(--info);color:var(--info)">📤 發送測試通知</button>
+    </div>
+  </div>
+</div>
+
+<!-- 廣播/公告輸入 Modal -->
+<div class="modal-overlay" id="broadcastModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title" id="broadcastModalTitle">📢 廣播訊息</span>
+      <button class="modal-close" onclick="closeModal('broadcastModal')">✕</button>
+    </div>
+    <div id="broadcastModalBody"></div>
+  </div>
+</div>
+
+<!-- 確認/輸入 Dialog -->
+<div id="dialogOverlay">
+  <div id="dialogContent"></div>
+</div>
+
 <div id="toast"></div>
 
 <script>
 // ============================================================
-//  全域狀態
+//  設定
 // ============================================================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyHnm1c5pxJtCoK2CzgeqlMxT-g6P2cTCnB-HViPGsY0NU9Bxr2qlkotNfXHG3D9N8qcw/exec'; // ← 部署後將 %%GAS_URL%% 換成你的 Web App URL
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyHnm1c5pxJtCoK2CzgeqlMxT-g6P2cTCnB-HViPGsY0NU9Bxr2qlkotNfXHG3D9N8qcw/exec';
 const LIFF_ID = '2009472960-ppLd7yCA';
 
+// ============================================================
+//  全域狀態
+// ============================================================
 let STATE = {
   token: localStorage.getItem('token') || '',
   session: JSON.parse(localStorage.getItem('session') || 'null'),
-  lineUserId: '',
+  lineProfile: JSON.parse(localStorage.getItem('line_profile') || 'null'),
   simCards: [],
   appPlatforms: [],
 };
-// 登入偏好設定
 const LOGIN_PREF = JSON.parse(localStorage.getItem('login_pref') || '{"saveAccount":false,"savedAccount":"","savePassword":false,"savedPassword":"","autoLogin":false}');
 
 // ============================================================
 //  LIFF 初始化
 // ============================================================
 async function initLiff() {
+  // 啟動進度條動畫
+  setProgress(5);
   try {
-    if (LIFF_ID) {
-      await liff.init({ liffId: LIFF_ID });
-      if (liff.isLoggedIn()) {
-        const profile = await liff.getProfile();
-        STATE.lineUserId = profile.userId;
-      } else {
-        liff.login();
-        return;
+    await liff.init({ liffId: LIFF_ID });
+    setProgress(30);
+    if (liff.isLoggedIn()) {
+      const profile = await liff.getProfile();
+      STATE.lineProfile = {
+        userId:        profile.userId,
+        displayName:   profile.displayName,
+        pictureUrl:    profile.pictureUrl,
+        statusMessage: profile.statusMessage || '',
+      };
+      localStorage.setItem('line_profile', JSON.stringify(STATE.lineProfile));
+
+      // 已有 token 直接進入，否則嘗試用 LINE ID 自動登入
+      if (!STATE.token || !STATE.session) {
+        const r = await api('lineLogin', { line_user_id: profile.userId });
+        if (r.success) {
+          STATE.token   = r.token;
+          STATE.session = r.session;
+          localStorage.setItem('token',   r.token);
+          localStorage.setItem('session', JSON.stringify(r.session));
+        }
       }
     }
   } catch (e) {
-    console.log('LIFF init error (ok in browser):', e);
+    console.log('LIFF init:', e.message);
   }
+  setProgress(70);
   initApp();
 }
 
-function initApp() {
-  document.getElementById('loading').style.display = 'none';
-  // 帶入已儲存的帳號密碼
+// ============================================================
+//  初始化 App
+// ============================================================
+async function initApp() {
+  // 有有效 token → 在 loading 中預先載入所有資料，完成後再切換畫面
+  if (STATE.token && STATE.session) {
+    // 確保 session.id 是字串
+    if (STATE.session.id !== undefined) {
+      STATE.session.id = String(STATE.session.id);
+      localStorage.setItem('session', JSON.stringify(STATE.session));
+    }
+    // 設定 topBar（先設定好，切換畫面才不閃爍）
+    const name = STATE.session?.nickname || STATE.session?.account || '用戶';
+    document.getElementById('topBarTitle').textContent = name;
+    if (STATE.session?.is_admin) document.getElementById('adminBtn').style.display = '';
+
+    // 在 loading 畫面還顯示時就先抓資料
+    setSplashMsg('載入門號資料...', 40);
+    await loadSimCards();          // 最重要：門號資料
+
+    setSplashMsg('載入首頁數據...', 75);
+    await Promise.all([
+      loadDashboard(),
+      loadProfile(),
+    ]);
+
+    setSplashMsg('完成！', 100);
+    await sleep(200);             // 讓 100% 閃一下
+
+    // 資料都好了再切換畫面
+    showAppReady();
+    hideSplash();
+    setTimeout(loadNotifySimSelect, 300);
+    return;
+  }
+
+  // 無 token → 顯示登入頁
   if (LOGIN_PREF.saveAccount && LOGIN_PREF.savedAccount) {
     document.getElementById('loginAccount').value = LOGIN_PREF.savedAccount;
     document.getElementById('chkSaveAccount').checked = true;
@@ -518,41 +821,111 @@ function initApp() {
   if (LOGIN_PREF.autoLogin) {
     document.getElementById('chkAutoLogin').checked = true;
   }
-  // 自動登入：有 token + 有開啟自動登入
-  if (LOGIN_PREF.autoLogin && STATE.token && STATE.session) {
-    showApp();
-    return;
-  }
-  // 一般已登入（token 存在）
-  if (STATE.token && STATE.session) {
-    showApp();
-    return;
-  }
+  if (STATE.lineProfile) renderLineProfileOnAuth();
+  hideSplash();
   showScreen('authScreen');
 }
 
-// ============================================================
-//  API 請求
-// ============================================================
-async function api(action, data = {}) {
-  try {
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action, token: STATE.token, ...data }),
-    });
-    return await res.json();
-  } catch (e) {
-    showToast('網路錯誤，請稍後再試', 'error');
-    return { success: false, error: e.message };
-  }
+// 僅切換畫面，不重新載入資料
+function showAppReady() {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = 'none';
+  });
+  const app = document.getElementById('appScreen');
+  app.style.display = 'block';
+  app.classList.add('active');
+}
+
+function setSplashMsg(msg, pct) {
+  const msgEl = document.getElementById('loadingMsg');
+  const barEl = document.getElementById('loadingBar');
+  if (msgEl) msgEl.textContent = msg;
+  if (barEl) barEl.style.width = pct + '%';
+  // 同步更新頂部進度條
+  setProgress(pct);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function hideSplash() {
+  const el = document.getElementById('loading');
+  if (!el) return;
+  el.style.opacity = '0';
+  setTimeout(() => { el.style.display = 'none'; }, 350);
+}
+
+function renderLineProfileOnAuth() {
+  const p = STATE.lineProfile;
+  const el = document.getElementById('lineProfileArea');
+  el.style.display = '';
+  el.innerHTML = `
+    <div class="line-profile-card">
+      <img class="line-avatar" src="${p.pictureUrl || ''}" onerror="this.src=''" alt="LINE">
+      <div class="line-info">
+        <div class="lname">💚 ${p.displayName}</div>
+        <div class="lsub">已連結 LINE 帳號</div>
+      </div>
+    </div>`;
 }
 
 // ============================================================
-//  認證
+//  LINE 登入
+// ============================================================
+async function doLineLogin() {
+  try {
+    if (!liff.isLoggedIn()) {
+      // 未登入 LINE → 觸發 LINE OAuth
+      liff.login({ redirectUri: window.location.href });
+      return;
+    }
+    // 已登入 LINE，取得 profile
+    const profile = await liff.getProfile();
+    STATE.lineProfile = {
+      userId:        profile.userId,
+      displayName:   profile.displayName,
+      pictureUrl:    profile.pictureUrl,
+      statusMessage: profile.statusMessage || '',
+    };
+    localStorage.setItem('line_profile', JSON.stringify(STATE.lineProfile));
+
+    const lineBtn = document.getElementById('lineLoginBtn');
+    if (lineBtn) { lineBtn.disabled = true; lineBtn.innerHTML = '⏳ 登入中...'; }
+
+    // 用 LINE userId 直接向後端登入（不需帳號密碼）
+    const r = await api('lineLogin', { line_user_id: profile.userId });
+
+    if (r.success) {
+      STATE.token   = r.token;
+      STATE.session = r.session;
+      localStorage.setItem('token',   r.token);
+      localStorage.setItem('session', JSON.stringify(r.session));
+      document.getElementById('authScreen').style.opacity = '0';
+      document.getElementById('authScreen').style.transition = 'opacity .3s';
+      setTimeout(() => { showApp(); document.getElementById('authScreen').style.opacity = ''; }, 300);
+    } else {
+      // 找不到帳號 → 顯示提示，請先用帳號密碼登入一次綁定
+      if (lineBtn) { lineBtn.disabled = false; lineBtn.innerHTML = lineLoginBtnHTML; }
+      showToast(r.error || '找不到綁定帳號，請先用帳號密碼登入', 'warn');
+      renderLineProfileOnAuth();
+      document.getElementById('loginAccount').focus();
+    }
+  } catch(e) {
+    console.error('LINE login error:', e);
+    showToast('LINE 登入失敗，請使用帳號密碼', 'error');
+  }
+}
+
+// LINE 登入按鈕的 HTML（用於重置）
+const lineLoginBtnHTML = `<div class="line-icon"><svg viewBox="0 0 24 24" fill="#06C755"><path d="M12 2C6.48 2 2 6.03 2 11c0 3.57 2.13 6.62 5.26 8.34-.22.78-.8 2.83-.92 3.26-.14.52.19.51.4.37.16-.1 2.56-1.74 3.59-2.44.54.07 1.1.11 1.67.11 5.52 0 10-4.03 10-9 0-4.97-4.48-9-10-9z"/></svg></div> 使用 LINE 帳號登入`;
+
+// ============================================================
+//  帳號密碼 登入/註冊
 // ============================================================
 function switchAuthTab(tab) {
-  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === (tab === 'login' ? 0 : 1)));
-  document.getElementById('loginForm').style.display    = tab === 'login' ? '' : 'none';
+  document.querySelectorAll('.tab-btn').forEach((b, i) =>
+    b.classList.toggle('active', i === (tab === 'login' ? 0 : 1)));
+  document.getElementById('loginForm').style.display    = tab === 'login'    ? '' : 'none';
   document.getElementById('registerForm').style.display = tab === 'register' ? '' : 'none';
 }
 
@@ -560,28 +933,30 @@ async function doLogin() {
   const account  = document.getElementById('loginAccount').value.trim();
   const password = document.getElementById('loginPassword').value;
   if (!account || !password) return showToast('請填入帳號密碼', 'error');
-  // 儲存登入偏好
-  const saveAcc   = document.getElementById('chkSaveAccount').checked;
-  const savePwd   = document.getElementById('chkSavePassword').checked;
-  const autoLogin = document.getElementById('chkAutoLogin').checked;
-  localStorage.setItem('login_pref', JSON.stringify({
-    saveAccount:   saveAcc,
-    savedAccount:  saveAcc ? account : '',
-    savePassword:  savePwd,
-    savedPassword: savePwd ? password : '',
-    autoLogin:     autoLogin,
-  }));
-  showToast('登入中...');
-  const r = await api('login', { account, password, line_user_id: STATE.lineUserId });
-  if (r.success) {
-    STATE.token = r.token;
-    STATE.session = r.session;
-    localStorage.setItem('token', r.token);
-    localStorage.setItem('session', JSON.stringify(r.session));
-    showApp();
-  } else {
-    showToast(r.error || '登入失敗', 'error');
-  }
+  const btn = document.getElementById('loginBtn');
+  await withLoading('login', btn, '⏳ 登入中...', async () => {
+    const saveAcc   = document.getElementById('chkSaveAccount').checked;
+    const savePwd   = document.getElementById('chkSavePassword').checked;
+    const autoLogin = document.getElementById('chkAutoLogin').checked;
+    localStorage.setItem('login_pref', JSON.stringify({
+      saveAccount: saveAcc, savedAccount: saveAcc ? account : '',
+      savePassword: savePwd, savedPassword: savePwd ? password : '',
+      autoLogin,
+    }));
+    const r = await api('login', { account, password, line_user_id: STATE.lineProfile?.userId || '' });
+    if (r.success) {
+      STATE.token = r.token;
+      STATE.session = r.session;
+      localStorage.setItem('token', r.token);
+      localStorage.setItem('session', JSON.stringify(r.session));
+      // 登入成功動畫跳轉
+      document.getElementById('authScreen').style.opacity = '0';
+      document.getElementById('authScreen').style.transition = 'opacity .3s';
+      setTimeout(() => { showApp(); document.getElementById('authScreen').style.opacity = ''; }, 300);
+    } else {
+      showToast(r.error || '登入失敗，請檢查帳號密碼', 'error');
+    }
+  });
 }
 
 async function doRegister() {
@@ -589,170 +964,497 @@ async function doRegister() {
   const nickname = document.getElementById('regNickname').value.trim();
   const password = document.getElementById('regPassword').value;
   if (!account || !password) return showToast('請填入帳號密碼', 'error');
-  const r = await api('register', { account, nickname, password });
+  if (account.length < 4)    return showToast('帳號至少 4 字元', 'error');
+  if (password.length < 6)   return showToast('密碼至少 6 字元', 'error');
+  const r = await api('register', { account, nickname: nickname || account, password });
   if (r.success) {
-    showToast('註冊成功！請登入', 'success');
+    showToast('🎉 註冊成功！請登入', 'success');
     switchAuthTab('login');
     document.getElementById('loginAccount').value = account;
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginPassword').focus();
   } else {
     showToast(r.error || '註冊失敗', 'error');
   }
 }
 
 function doLogout() {
-  STATE.token = '';
-  STATE.session = null;
-  localStorage.removeItem('token');
-  localStorage.removeItem('session');
-  // 登出時關閉自動登入，但保留已儲存的帳號密碼
-  const pref = JSON.parse(localStorage.getItem('login_pref') || '{}');
-  pref.autoLogin = false;
-  localStorage.setItem('login_pref', JSON.stringify(pref));
-  showScreen('authScreen');
+  showConfirm('確定要登出嗎？', '登出後需重新輸入帳號密碼', '確定登出', 'btn-danger', () => {
+    STATE.token = ''; STATE.session = null;
+    localStorage.removeItem('token');
+    localStorage.removeItem('session');
+    const pref = JSON.parse(localStorage.getItem('login_pref') || '{}');
+    pref.autoLogin = false;
+    localStorage.setItem('login_pref', JSON.stringify(pref));
+    showScreen('authScreen');
+    // 重設 UI
+    switchPage('Dashboard');
+  });
 }
 
 // ============================================================
 //  主畫面
 // ============================================================
-function showApp() {
-  showScreen('appScreen');
-  document.getElementById('topBarTitle').textContent = '👋 ' + (STATE.session.nickname || STATE.session.account);
-  if (STATE.session.is_admin) {
-    document.getElementById('adminBtn').style.display = '';
+async function showApp() {
+  // 帳密登入後呼叫：顯示 loading → 預載資料 → 切換畫面
+  const loadEl = document.getElementById('loading');
+  if (loadEl) {
+    loadEl.style.display = 'flex';
+    loadEl.style.opacity = '1';
   }
-  loadDashboard();
-  loadSimCards();
-  loadProfile();
+
+  const name = STATE.session?.nickname || STATE.session?.account || '用戶';
+  document.getElementById('topBarTitle').textContent = name;
+  if (STATE.session?.is_admin) document.getElementById('adminBtn').style.display = '';
+
+  setSplashMsg('載入門號資料...', 30);
+  await loadSimCards();
+
+  setSplashMsg('載入首頁數據...', 75);
+  await Promise.all([loadDashboard(), loadProfile()]);
+
+  setSplashMsg('完成！', 100);
+  await sleep(200);
+
+  showAppReady();
+  hideSplash();
+  setTimeout(loadNotifySimSelect, 300);
+}
+
+function setProgress(pct) {
+  const el = document.getElementById('loadProgress');
+  if (!el) return;
+  if (pct <= 0) {
+    el.style.transition = 'width .35s ease';
+    el.style.width = '100%';
+    setTimeout(() => {
+      el.style.transition = 'none';
+      el.style.width = '0%';
+    }, 400);
+  } else {
+    el.style.transition = 'width .35s ease';
+    el.style.width = pct + '%';
+  }
 }
 
 function switchPage(name) {
+  const pages = ['Dashboard','SimCards','Apps','Calendar','Profile'];
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page' + name).classList.add('active');
-  const navIdx = ['Dashboard','SimCards','Apps','Calendar','Log','Profile'].indexOf(name);
-  document.querySelectorAll('.nav-item')[navIdx]?.classList.add('active');
+  const el = document.getElementById('page' + name);
+  if (el) el.classList.add('active');
+  const idx = pages.indexOf(name);
+  const navItems = document.querySelectorAll('.nav-item');
+  if (idx >= 0 && navItems[idx]) navItems[idx].classList.add('active');
+  if (name === 'Calendar') { loadCalendar(); loadNotifySimSelect(); }
+  if (name === 'Profile')  { loadProfile(); loadNotifications(); loadAuditLogs(); }
+  if (name === 'Apps')     loadAppSimSelect();
+}
 
-  if (name === 'Calendar') loadCalendar();
-  if (name === 'Log') { loadNotifications(); loadAuditLogs(); }
-  if (name === 'Apps') loadAppSimSelect();
+// ============================================================
+//  API
+// ============================================================
+async function api(action, data = {}) {
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action, token: STATE.token || '', ...data }),
+    });
+    const text = await res.text();
+    return JSON.parse(text);
+  } catch (e) {
+    showToast('網路錯誤，請稍後再試', 'error');
+    return { success: false, error: e.message };
+  }
 }
 
 // ============================================================
 //  儀表板
 // ============================================================
 async function loadDashboard() {
-  const [dash, announce] = await Promise.all([
-    api('getDashboard'),
-    api('getAnnouncements'),
-  ]);
-  if (dash.success) {
-    document.getElementById('stat-total').textContent    = dash.data.total;
-    document.getElementById('stat-expiring').textContent = dash.data.expiring;
-    document.getElementById('stat-expired').textContent  = dash.data.expired;
-    document.getElementById('stat-notify').textContent   = dash.data.notifyCount;
+  // session.id 確保字串
+  if (STATE.session?.id !== undefined) STATE.session.id = String(STATE.session.id);
+  const [dash, announce] = await Promise.all([api('getDashboard'), api('getAnnouncements')]);
+
+  // 若 API 回傳數字正常就用，否則從本地 simCards 計算
+  if (dash.success && dash.data) {
+    const d = dash.data;
+    const today = new Date();
+    // 若 total=0 但本地有資料，從本地計算
+    const useLocal = (!d.total && STATE.simCards.length > 0);
+    if (useLocal) {
+      const total    = STATE.simCards.length;
+      const expired  = STATE.simCards.filter(c => c.days_left != null && c.days_left < 0).length;
+      const expiring = STATE.simCards.filter(c => c.days_left != null && c.days_left >= 0 && c.days_left <= 7).length;
+      document.getElementById('stat-total').textContent    = total;
+      document.getElementById('stat-expiring').textContent = expiring;
+      document.getElementById('stat-expired').textContent  = expired;
+      document.getElementById('stat-notify').textContent   = d.notifyCount ?? 0;
+    } else {
+      document.getElementById('stat-total').textContent    = d.total    ?? 0;
+      document.getElementById('stat-expiring').textContent = d.expiring ?? 0;
+      document.getElementById('stat-expired').textContent  = d.expired  ?? 0;
+      document.getElementById('stat-notify').textContent   = d.notifyCount ?? 0;
+    }
   }
-  if (announce.success && announce.data.length > 0) {
-    document.getElementById('announceArea').innerHTML = announce.data.map(a =>
-      `<div class="announce-item"><div class="announce-title">📢 ${a.title}</div><div class="announce-content">${a.content}</div><div class="announce-time">${a.created_at}</div></div>`
-    ).join('');
+  if (announce.success && announce.data?.length) {
+    document.getElementById('announceArea').innerHTML = announce.data.map(a => {
+      const title   = a['標題']    || a.title      || '';
+      const content = a['內容']    || a.content    || '';
+      const time    = a['發布時間']|| a.created_at || '';
+      if (!title && !content) return '';
+      return `<div class="announce-item"><div class="announce-title">📢 ${esc(title)}</div><div class="announce-content">${esc(content)}</div><div class="announce-time">${time}</div></div>`;
+    }).filter(Boolean).join('');
   }
   loadUpcoming();
 }
 
 async function loadUpcoming() {
   const r = await api('getSimCards', {});
-  if (!r.success) return;
-  const upcoming = r.data.filter(c => c.days_left !== undefined && c.days_left >= 0 && c.days_left <= 14)
-    .sort((a, b) => a.days_left - b.days_left).slice(0, 5);
+  if (!r.success || !r.data) return;
+  const upcoming = r.data
+    .filter(c => typeof c.days_left === 'number' && c.days_left >= 0 && c.days_left <= 14)
+    .sort((a, b) => a.days_left - b.days_left).slice(0, 8);
   const el = document.getElementById('upcomingList');
-  if (upcoming.length === 0) {
-    el.innerHTML = '<div class="empty-state"><span class="icon">✅</span><p>近期無即將到期的門號</p></div>';
-    return;
+  if (!upcoming.length) {
+    el.innerHTML = '<div class="empty-state"><span class="icon">✅</span><p>近期無即將到期的門號</p></div>'; return;
   }
-  el.innerHTML = upcoming.map(c => `
-    <div class="calendar-item">
-      <div class="calendar-date ${c.days_left <= 3 ? 'style=background:var(--danger)' : ''}">
-        <div class="day">${c.days_left}</div>
-        <div class="month">天後</div>
+  el.innerHTML = upcoming.map(c => {
+    const cls     = c.days_left <= 3 ? 'urgent' : c.days_left <= 7 ? 'warn' : '';
+    const badge   = c.days_left <= 3 ? 'badge-expired' : 'badge-warning';
+    const carrier = c['電信業者'] || c.carrier      || '';
+    const phone   = c['門號號碼'] || c.phone_number || '';
+    const expire  = c['到期日']   || c.expire_date  || '未設定';
+    const id      = c['編號']     || c.id           || '';
+    return `<div class="calendar-item" style="gap:10px">
+      <div class="cal-date ${cls}" style="min-width:44px">
+        <div class="day" style="font-size:17px">${c.days_left}</div>
+        <div class="mo">天後</div>
       </div>
-      <div class="calendar-info">
-        <div class="carrier">${c.carrier} ${c.phone_number}</div>
-        <div class="phone">到期：${c.expire_date}</div>
+      <div class="cal-info" style="flex:1;min-width:0">
+        <div class="car" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(carrier)}</div>
+        <div class="ph" style="font-weight:600;font-size:13px;color:var(--text)">${esc(phone)}</div>
+        <div class="ph">到期：${expire}</div>
       </div>
-      <span class="calendar-days ${c.days_left <= 3 ? 'badge-expired' : 'badge-warning'}">${c.days_left <= 3 ? '🚨 緊急' : '⚠️ 注意'}</span>
-    </div>
-  `).join('');
+      <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;align-items:flex-end">
+        <span class="cal-badge ${badge}" style="white-space:nowrap">${c.days_left<=3?'🚨緊急':'⚠️注意'}</span>
+        <button class="btn btn-xs btn-outline" onclick="copySimInfo('${esc(carrier)}','${esc(phone)}')" style="font-size:11px;padding:3px 7px">📋</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ============================================================
 //  預付卡管理
 // ============================================================
 async function loadSimCards() {
+  // 確保 session.id 是字串型別
+  if (STATE.session?.id !== undefined) {
+    STATE.session.id = String(STATE.session.id);
+    localStorage.setItem('session', JSON.stringify(STATE.session));
+  }
   const r = await api('getSimCards', {});
-  if (!r.success) return;
-  STATE.simCards = r.data;
-  renderSimCards(r.data);
-  updateAppSimSelect(r.data);
+  if (!r.success) {
+    console.error('getSimCards failed:', r?.error);
+    showToast('讀取門號失敗：' + (r?.error || ''), 'error');
+    return;
+  }
+  // 排序：依門號編號數字由小到大，無編號排最後
+  STATE.simCards = [...(r.data||[])].sort((a, b) => {
+    const na = parseInt((a['門號編號']||a.sim_number||'').replace(/[^0-9]/g,'')) || 99999;
+    const nb = parseInt((b['門號編號']||b.sim_number||'').replace(/[^0-9]/g,'')) || 99999;
+    return na - nb;
+  });
+  renderSimCards(STATE.simCards);
+  updateAppSimSelect(STATE.simCards);
+  return STATE.simCards; // 回傳供外部使用
+}
+
+function fmtDate(s) {
+  // 統一顯示為 YYYY/MM/DD
+  if (!s) return '';
+  const str = String(s).trim();
+  const m = str.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (!m) return str;
+  return m[1] + '/' + m[2].padStart(2,'0') + '/' + m[3].padStart(2,'0');
 }
 
 function renderSimCards(cards) {
   const el = document.getElementById('simCardsList');
-  if (cards.length === 0) {
-    el.innerHTML = '<div class="empty-state"><span class="icon">📭</span><p>還沒有門號，點上方按鈕新增</p></div>';
-    return;
+  if (!el) return;
+  if (!cards || !cards.length) {
+    el.innerHTML = '<div class="empty-state"><span class="icon">📭</span><p>還沒有門號<br>點上方按鈕新增</p></div>'; return;
   }
-  el.innerHTML = cards.map(c => `
-    <div class="sim-card ${c.status || ''}">
-      <div class="sim-card-header">
-        <strong>${c.carrier} ${c.phone_number}</strong>
-        <span class="sim-badge badge-${c.status || 'ok'}">${c.status === 'expired' ? '❌ 已到期' : c.status === 'warning' ? `⚠️ ${c.days_left}天` : `✅ ${c.days_left ?? '-'}天`}</span>
+  el.innerHTML = cards.map(c => {
+    const carrier   = c['電信業者'] || c.carrier      || '';
+    const phone     = c['門號號碼'] || c.phone_number  || '';
+    const simNum    = c['門號編號'] || c.sim_number    || '';
+    const expire    = fmtDate(c['到期日']  || c.expire_date  || '');
+    const applicant = c['辦理人']   || c.applicant     || '';
+    const notes     = c['備註']     || c.notes         || '';
+    const id        = c['編號']     || c.id            || '';
+    const daysLeft  = c.days_left;
+    const status    = c.status || 'ok';
+
+    // 到期狀態徽章
+    let badgeHtml;
+    if (status === 'expired')
+      badgeHtml = '<span class="sim-badge badge-expired">❌ 已到期</span>';
+    else if (status === 'warning')
+      badgeHtml = `<span class="sim-badge badge-warning">⚠️ ${daysLeft}天</span>`;
+    else
+      badgeHtml = `<span class="sim-badge badge-ok">✅ ${daysLeft != null ? daysLeft+'天' : '正常'}</span>`;
+
+    // 門號編號橘色方框
+    const simNumBadge = simNum
+      ? `<div style="background:#f39c12;color:#fff;font-size:15px;font-weight:800;padding:10px 13px;border-radius:10px;text-align:center;min-width:54px;flex-shrink:0;align-self:center;letter-spacing:0.5px;box-shadow:0 2px 6px rgba(243,156,18,.35)">${esc(simNum)}</div>`
+      : `<div style="background:#e8e8e8;color:#aaa;font-size:12px;padding:10px 10px;border-radius:10px;text-align:center;min-width:54px;flex-shrink:0;align-self:center">無編號</div>`;
+
+    return `<div class="sim-card ${status}" style="padding:12px 14px">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        ${simNumBadge}
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div>
+              <div style="font-size:13px;color:var(--text2)">${esc(carrier)}</div>
+              <div style="font-size:16px;font-weight:700;letter-spacing:1px">${esc(phone)}</div>
+            </div>
+            ${badgeHtml}
+          </div>
+          <div style="font-size:12px;color:var(--text2);display:flex;flex-wrap:wrap;gap:8px">
+            <span>📅 ${expire || '到期日未設定'}</span>
+            ${applicant ? `<span>👤 ${esc(applicant)}</span>` : ''}
+            ${notes ? `<span>📝 ${esc(notes)}</span>` : ''}
+          </div>
+          <div class="sim-actions" style="margin-top:8px">
+            <button class="btn btn-sm btn-outline" onclick="openEditSim('${esc(id)}')">✏️ 編輯</button>
+            <button class="btn btn-sm btn-outline" onclick="deleteSim('${esc(id)}')">🗑️ 刪除</button>
+            <button class="btn btn-sm btn-outline" onclick="copySimInfo('${esc(carrier)}','${esc(phone)}')">📋 複製</button>
+          </div>
+        </div>
       </div>
-      <div class="sim-info">
-        ${c.sim_number ? `<span>📌 門號編號：${c.sim_number}</span>` : ''}
-        <span>📅 到期日：${c.expire_date || '未設定'}</span>
-        ${c.applicant ? `<span>👤 辦理人：${c.applicant}</span>` : ''}
-        ${c.notes ? `<span>📝 備註：${c.notes}</span>` : ''}
-      </div>
-      <div class="sim-actions">
-        <button class="btn btn-sm btn-outline" onclick="openEditSim('${c.id}')">✏️ 編輯</button>
-        <button class="btn btn-sm btn-outline" onclick="deleteSim('${c.id}')">🗑️ 刪除</button>
-        <button class="btn btn-sm btn-outline" onclick="copySimInfo('${c.carrier}','${c.phone_number}')">📋 複製</button>
-      </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function filterSims() {
   const search  = document.getElementById('simSearch').value.toLowerCase();
   const carrier = document.getElementById('simCarrierFilter').value;
-  let cards = STATE.simCards;
-  if (search)  cards = cards.filter(c => (c.phone_number || '').includes(search) || (c.sim_number || '').includes(search));
-  if (carrier) cards = cards.filter(c => c.carrier === carrier);
+  const sortBy  = document.getElementById('simSortBy')?.value || 'default';
+  let cards = [...STATE.simCards];
+
+  // 篩選
+  if (search)  cards = cards.filter(c => {
+    const phone = (c['門號號碼']||c.phone_number||'').toLowerCase();
+    const sn    = (c['門號編號']||c.sim_number||'').toLowerCase();
+    const notes = (c['備註']||c.notes||'').toLowerCase();
+    return phone.includes(search) || sn.includes(search) || notes.includes(search);
+  });
+  if (carrier) cards = cards.filter(c => (c['電信業者']||c.carrier||'') === carrier);
+
+  // 排序
+  if (sortBy === 'phone_asc') {
+    cards.sort((a, b) => {
+      const pa = (a['門號號碼']||a.phone_number||'').replace(/\D/g,'');
+      const pb = (b['門號號碼']||b.phone_number||'').replace(/\D/g,'');
+      return pa.localeCompare(pb, undefined, { numeric: true });
+    });
+  } else if (sortBy === 'phone_desc') {
+    cards.sort((a, b) => {
+      const pa = (a['門號號碼']||a.phone_number||'').replace(/\D/g,'');
+      const pb = (b['門號號碼']||b.phone_number||'').replace(/\D/g,'');
+      return pb.localeCompare(pa, undefined, { numeric: true });
+    });
+  } else if (sortBy === 'expire_asc') {
+    cards.sort((a, b) => {
+      const da = new Date(a['到期日']||a.expire_date||'9999');
+      const db = new Date(b['到期日']||b.expire_date||'9999');
+      return da - db;
+    });
+  } else if (sortBy === 'expire_desc') {
+    cards.sort((a, b) => {
+      const da = new Date(a['到期日']||a.expire_date||'0001');
+      const db = new Date(b['到期日']||b.expire_date||'0001');
+      return db - da;
+    });
+  } else if (sortBy === 'carrier') {
+    cards.sort((a, b) => {
+      const ca = (a['電信業者']||a.carrier||'');
+      const cb = (b['電信業者']||b.carrier||'');
+      return ca.localeCompare(cb, 'zh-TW');
+    });
+  }
+  if (sortBy === 'default') {
+    // 預設：門號編號數字由小到大排
+    cards.sort((a, b) => {
+      const na = parseInt((a['門號編號']||a.sim_number||'').replace(/\D/g,'')) || 99999;
+      const nb = parseInt((b['門號編號']||b.sim_number||'').replace(/\D/g,'')) || 99999;
+      return na - nb;
+    });
+  }
+
   renderSimCards(cards);
 }
 
 function openAddSimModal() {
+  switchAddMode('manual');
   document.getElementById('simCount').value = '1';
   renderSimForms();
   openModal('addSimModal');
 }
 
+function switchAddMode(mode) {
+  ['manual','csv','sheet'].forEach(m => {
+    const btn     = document.getElementById('addMode'+m.charAt(0).toUpperCase()+m.slice(1));
+    const content = document.getElementById('addMode'+m.charAt(0).toUpperCase()+m.slice(1)+'Content');
+    const active  = m === mode;
+    if (btn)     { btn.style.background = active ? 'var(--primary)' : ''; btn.style.color = active ? '#fff' : ''; btn.className = active ? 'btn btn-sm' : 'btn btn-sm btn-outline'; }
+    if (content) content.style.display = active ? '' : 'none';
+  });
+}
+
+// ── CSV 匯入 ─────────────────────────────────────────────────
+let _csvImportData = [];
+
+function parseCsvFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    // 支援 UTF-8 BOM
+    const clean = text.replace(/^﻿/, '');
+    const lines  = clean.split(/\r?\n/).filter(l => l.trim());
+    if (!lines.length) { showToast('CSV 檔案是空的', 'error'); return; }
+
+    // 自動偵測是否有標題列（第一欄是否是非數字文字）
+    const firstCell = lines[0].split(',')[0].replace(/"/g,'').trim();
+    const hasHeader = isNaN(Number(firstCell.replace(/[^0-9]/g,''))) && firstCell.length > 0 && !/^0[0-9]{8,}$/.test(firstCell);
+    const dataLines = hasHeader ? lines.slice(1) : lines;
+    const carriers  = ['中華電信','台灣大哥大','遠傳電信','台灣之星','亞太電信','其他'];
+
+    _csvImportData = dataLines.map((line, idx) => {
+      // 解析 CSV（處理引號內的逗號）
+      const cols = line.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || line.split(',');
+      const clean = cols.map(v => v.replace(/^"|"$/g,'').trim());
+      const carrier = clean[0] || '其他';
+      return {
+        carrier:       carriers.includes(carrier) ? carrier : '其他',
+        phone_number:  clean[1] || '',
+        sim_number:    clean[2] || '',
+        serial_number: clean[3] || '',
+        start_date:    clean[4] || '',
+        expire_date:   clean[5] || '',
+        applicant:     clean[6] || '',
+        applicant_id:  clean[7] || '',
+        notes:         clean[8] || '',
+      };
+    }).filter(c => c.phone_number);
+
+    // 預覽
+    const prevEl = document.getElementById('csvPreview');
+    if (!_csvImportData.length) {
+      prevEl.innerHTML = '<p style="color:var(--danger);font-size:13px">找不到有效的門號資料（門號號碼欄位為空）</p>';
+      document.getElementById('csvImportBtn').disabled = true;
+      return;
+    }
+    prevEl.innerHTML = `
+      <p style="font-size:12px;color:var(--text2);margin-bottom:8px">✅ 找到 ${_csvImportData.length} 筆資料（${hasHeader?'已跳過標題列':'無標題列'}）</p>
+      <div style="overflow-x:auto">
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <tr style="background:#f0f2f5">${['業者','門號','編號','到期日','辦理人'].map(h=>`<th style="padding:4px 6px;text-align:left;border:1px solid var(--border)">${h}</th>`).join('')}</tr>
+          ${_csvImportData.slice(0,10).map(r=>`<tr>${[r.carrier,r.phone_number,r.sim_number,r.expire_date,r.applicant].map(v=>`<td style="padding:4px 6px;border:1px solid var(--border)">${esc(v)}</td>`).join('')}</tr>`).join('')}
+          ${_csvImportData.length>10?`<tr><td colspan="5" style="padding:4px 6px;color:var(--text2);font-style:italic">...還有 ${_csvImportData.length-10} 筆</td></tr>`:''}
+        </table>
+      </div>`;
+    document.getElementById('csvImportBtn').disabled = false;
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function submitCsvImport() {
+  if (!_csvImportData.length) return showToast('沒有可匯入的資料', 'error');
+  const btn = document.getElementById('csvImportBtn');
+  await withLoading('csvImport', btn, '⏳ 匯入中...', async () => {
+    const r = await api('addSimCards', { cards: _csvImportData });
+    if (r.success) {
+      showToast(`✅ 成功匯入 ${_csvImportData.length} 個門號`, 'success');
+      _csvImportData = [];
+      closeModal('addSimModal');
+      loadSimCards(); loadDashboard();
+    } else { showToast(r.error || '匯入失敗', 'error'); }
+  });
+}
+
+// ── 雲端試算表匯入 ───────────────────────────────────────────
+let _sheetImportData = [];
+
+async function fetchSheetData() {
+  const urlOrId = document.getElementById('sheetUrlInput')?.value.trim();
+  const sheetName = document.getElementById('sheetNameInput')?.value.trim() || '';
+  if (!urlOrId) return showToast('請填入試算表網址或 ID', 'error');
+
+  // 從 URL 提取試算表 ID
+  let ssId = urlOrId;
+  const m = urlOrId.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if (m) ssId = m[1];
+
+  const prevEl = document.getElementById('sheetPreview');
+  prevEl.innerHTML = '<p style="color:var(--text2);font-size:13px">🔄 讀取中...</p>';
+  document.getElementById('sheetImportBtn').disabled = true;
+
+  // 用 GAS 後端 proxy 讀取（因為 CORS 限制）
+  const r = await api('fetchSheetData', { spreadsheet_id: ssId, sheet_name: sheetName });
+  if (!r.success || !r.data) {
+    prevEl.innerHTML = `<p style="color:var(--danger);font-size:13px">❌ 讀取失敗：${esc(r.error||'請確認試算表已公開分享')}</p>`;
+    return;
+  }
+  _sheetImportData = r.data;
+  if (!_sheetImportData.length) {
+    prevEl.innerHTML = '<p style="color:var(--danger);font-size:13px">找不到有效的門號資料</p>';
+    return;
+  }
+  prevEl.innerHTML = `
+    <p style="font-size:12px;color:var(--text2);margin-bottom:8px">✅ 找到 ${_sheetImportData.length} 筆資料</p>
+    <div style="overflow-x:auto">
+      <table style="width:100%;font-size:11px;border-collapse:collapse">
+        <tr style="background:#f0f2f5">${['業者','門號','編號','到期日','辦理人'].map(h=>`<th style="padding:4px 6px;text-align:left;border:1px solid var(--border)">${h}</th>`).join('')}</tr>
+        ${_sheetImportData.slice(0,10).map(r=>`<tr>${[r.carrier||r['電信業者']||'',r.phone_number||r['門號號碼']||'',r.sim_number||r['門號編號']||'',r.expire_date||r['到期日']||'',r.applicant||r['辦理人']||''].map(v=>`<td style="padding:4px 6px;border:1px solid var(--border)">${esc(v)}</td>`).join('')}</tr>`).join('')}
+        ${_sheetImportData.length>10?`<tr><td colspan="5" style="padding:4px 6px;color:var(--text2);font-style:italic">...還有 ${_sheetImportData.length-10} 筆</td></tr>`:''}
+      </table>
+    </div>`;
+  document.getElementById('sheetImportBtn').disabled = false;
+}
+
+async function submitSheetImport() {
+  if (!_sheetImportData.length) return showToast('沒有可匯入的資料', 'error');
+  const btn = document.getElementById('sheetImportBtn');
+  await withLoading('sheetImport', btn, '⏳ 匯入中...', async () => {
+    const r = await api('addSimCards', { cards: _sheetImportData });
+    if (r.success) {
+      showToast(`✅ 成功匯入 ${_sheetImportData.length} 個門號`, 'success');
+      _sheetImportData = [];
+      closeModal('addSimModal');
+      loadSimCards(); loadDashboard();
+    } else { showToast(r.error || '匯入失敗', 'error'); }
+  });
+}
+
 function renderSimForms() {
   const count = parseInt(document.getElementById('simCount').value);
   const carriers = ['中華電信','台灣大哥大','遠傳電信','台灣之星','亞太電信','其他'];
-  const carrierOpts = carriers.map(c => `<option>${c}</option>`).join('');
+  const opts = carriers.map(c => `<option>${c}</option>`).join('');
   let html = '';
   for (let i = 0; i < count; i++) {
-    html += `
-    <div class="sim-form-block">
-      <span class="block-num">#${i+1}</span>
+    html += `<div class="sim-form-block">
+      <div class="block-label">📱 門號 #${i+1}</div>
       <div class="form-row">
-        <div class="form-group"><label>電信業者</label><select class="form-control sf-carrier">${carrierOpts}</select></div>
-        <div class="form-group"><label>門號號碼</label><input type="text" class="form-control sf-phone" placeholder="0900000000"></div>
+        <div class="form-group"><label>電信業者</label><select class="form-control sf-carrier">${opts}</select></div>
+        <div class="form-group"><label>門號號碼 *</label><input type="tel" class="form-control sf-phone" placeholder="0900000000"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>門號編號</label><input type="text" class="form-control sf-simnum" placeholder="SIM編號"></div>
-        <div class="form-group"><label>序號</label><input type="text" class="form-control sf-serial" placeholder="序號"></div>
+        <div class="form-group"><label>門號編號</label><input type="text" class="form-control sf-simnum"></div>
+        <div class="form-group"><label>序號</label><input type="text" class="form-control sf-serial"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>初辦日</label><input type="date" class="form-control sf-start"></div>
@@ -769,90 +1471,98 @@ function renderSimForms() {
 }
 
 async function submitSimCards() {
+  const sbtn = document.querySelector('#addSimModal .btn-primary');
+  if (!sbtn || sbtn.disabled) return;
   const blocks = document.querySelectorAll('.sim-form-block');
   const cards = Array.from(blocks).map(b => ({
-    carrier:        b.querySelector('.sf-carrier').value,
-    phone_number:   b.querySelector('.sf-phone').value.trim(),
-    sim_number:     b.querySelector('.sf-simnum').value.trim(),
-    serial_number:  b.querySelector('.sf-serial').value.trim(),
-    start_date:     b.querySelector('.sf-start').value,
-    expire_date:    b.querySelector('.sf-expire').value,
-    applicant:      b.querySelector('.sf-applicant').value.trim(),
-    applicant_id:   b.querySelector('.sf-appid').value.trim(),
-    notes:          b.querySelector('.sf-notes').value.trim(),
+    carrier:       b.querySelector('.sf-carrier').value,
+    phone_number:  b.querySelector('.sf-phone').value.trim(),
+    sim_number:    b.querySelector('.sf-simnum').value.trim(),
+    serial_number: b.querySelector('.sf-serial').value.trim(),
+    start_date:    b.querySelector('.sf-start').value,
+    expire_date:   b.querySelector('.sf-expire').value,
+    applicant:     b.querySelector('.sf-applicant').value.trim(),
+    applicant_id:  b.querySelector('.sf-appid').value.trim(),
+    notes:         b.querySelector('.sf-notes').value.trim(),
   }));
-  if (cards.some(c => !c.phone_number)) return showToast('請填入門號號碼', 'error');
-  const r = await api('addSimCards', { cards });
-  if (r.success) {
-    showToast(`成功新增 ${cards.length} 個門號`, 'success');
-    closeModal('addSimModal');
-    loadSimCards();
-    loadDashboard();
-  } else {
-    showToast(r.error || '新增失敗', 'error');
-  }
+  if (cards.some(c => !c.phone_number)) return showToast('請填入所有門號號碼', 'error');
+  await withLoading('addSim', sbtn, '⏳ 新增中...', async () => {
+    const r = await api('addSimCards', { cards });
+    if (r.success) {
+      showToast(`✅ 成功新增 ${cards.length} 個門號`, 'success');
+      closeModal('addSimModal');
+      loadSimCards();
+      loadDashboard();
+    } else { showToast(r.error || '新增失敗', 'error'); }
+  });
+}
+
+// 把各種日期格式轉為 input[type=date] 需要的 YYYY-MM-DD
+function toDateInput(s) {
+  if (!s) return '';
+  const str = String(s).trim();
+  // 已是 YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  // YYYY/MM/DD → YYYY-MM-DD
+  const m = str.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if (m) return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+  return '';
 }
 
 function openEditSim(id) {
-  const c = STATE.simCards.find(s => s.id === id);
-  if (!c) return;
-  document.getElementById('editSimId').value        = id;
-  document.getElementById('editCarrier').value      = c.carrier || '中華電信';
-  document.getElementById('editPhone').value        = c.phone_number || '';
-  document.getElementById('editSimNum').value       = c.sim_number || '';
-  document.getElementById('editSerial').value       = c.serial_number || '';
-  document.getElementById('editStartDate').value    = c.start_date || '';
-  document.getElementById('editExpireDate').value   = c.expire_date || '';
-  document.getElementById('editApplicant').value    = c.applicant || '';
-  document.getElementById('editApplicantId').value  = c.applicant_id || '';
-  document.getElementById('editNotes').value        = c.notes || '';
+  const c = STATE.simCards.find(s => (s['編號']||s.id) === id);
+  if (!c) { showToast('找不到門號資料，請重新整理後再試', 'error'); return; }
+  document.getElementById('editSimId').value       = id;
+  document.getElementById('editCarrier').value     = c['電信業者']  || c.carrier       || '中華電信';
+  document.getElementById('editPhone').value       = c['門號號碼']  || c.phone_number   || '';
+  document.getElementById('editSimNum').value      = c['門號編號']  || c.sim_number     || '';
+  document.getElementById('editSerial').value      = c['序號']      || c.serial_number  || '';
+  document.getElementById('editStartDate').value   = toDateInput(c['初辦日']   || c.start_date    || '');
+  document.getElementById('editExpireDate').value  = toDateInput(c['到期日']   || c.expire_date   || '');
+  document.getElementById('editApplicant').value   = c['辦理人']    || c.applicant      || '';
+  document.getElementById('editApplicantId').value = c['辦理人證號']|| c.applicant_id   || '';
+  document.getElementById('editNotes').value       = c['備註']      || c.notes          || '';
   openModal('editSimModal');
 }
 
 async function submitEditSim() {
   const id = document.getElementById('editSimId').value;
-  const data = {
-    id,
-    carrier:        document.getElementById('editCarrier').value,
-    phone_number:   document.getElementById('editPhone').value.trim(),
-    sim_number:     document.getElementById('editSimNum').value.trim(),
-    serial_number:  document.getElementById('editSerial').value.trim(),
-    start_date:     document.getElementById('editStartDate').value,
-    expire_date:    document.getElementById('editExpireDate').value,
-    applicant:      document.getElementById('editApplicant').value.trim(),
-    applicant_id:   document.getElementById('editApplicantId').value.trim(),
-    notes:          document.getElementById('editNotes').value.trim(),
-  };
-  const r = await api('updateSimCard', data);
-  if (r.success) {
-    showToast('門號更新成功', 'success');
-    closeModal('editSimModal');
-    loadSimCards();
-    loadDashboard();
-  } else {
-    showToast(r.error || '更新失敗', 'error');
-  }
+  if (!id) return showToast('找不到門號 ID', 'error');
+  const ebtn = document.querySelector('#editSimModal .btn-primary');
+  await withLoading('editSim', ebtn, '⏳ 儲存中...', async () => {
+    const r = await api('updateSimCard', {
+      id,
+      carrier:       document.getElementById('editCarrier').value,
+      phone_number:  document.getElementById('editPhone').value.trim(),
+      sim_number:    document.getElementById('editSimNum').value.trim(),
+      serial_number: document.getElementById('editSerial').value.trim(),
+      start_date:    document.getElementById('editStartDate').value,
+      expire_date:   document.getElementById('editExpireDate').value,
+      applicant:     document.getElementById('editApplicant').value.trim(),
+      applicant_id:  document.getElementById('editApplicantId').value.trim(),
+      notes:         document.getElementById('editNotes').value.trim(),
+    });
+    if (r.success) {
+      showToast('✅ 門號更新成功', 'success');
+      closeModal('editSimModal');
+      loadSimCards(); loadDashboard();
+    } else { showToast(r.error || '更新失敗', 'error'); }
+  });
 }
 
 async function deleteSim(id) {
-  if (!confirm('確定要刪除此門號？')) return;
-  const r = await api('deleteSimCard', { id });
-  if (r.success) {
-    showToast('已刪除', 'success');
-    loadSimCards();
-    loadDashboard();
-  } else {
-    showToast(r.error || '刪除失敗', 'error');
-  }
+  showConfirm('確定要刪除此門號？', '刪除後無法復原', '確定刪除', 'btn-danger', async () => {
+    const r = await api('deleteSimCard', { id });
+    if (r.success) { showToast('已刪除', 'success'); loadSimCards(); loadDashboard(); }
+    else showToast(r.error || '刪除失敗', 'error');
+  });
 }
 
 function copySimInfo(carrier, phone) {
   const text = `${carrier} ${phone}`;
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(() => showToast('已複製：' + text, 'success'));
-  } else {
-    showToast('複製：' + text, 'success');
-  }
+    navigator.clipboard.writeText(text).then(() => showToast('📋 已複製：' + text, 'success'));
+  } else { showToast('複製：' + text); }
 }
 
 // ============================================================
@@ -860,132 +1570,333 @@ function copySimInfo(carrier, phone) {
 // ============================================================
 function updateAppSimSelect(cards) {
   const sel = document.getElementById('appSimSelect');
-  const current = sel.value;
+  const cur = sel.value;
   sel.innerHTML = '<option value="">-- 請選擇門號 --</option>' +
-    cards.map(c => `<option value="${c.id}">${c.carrier} ${c.phone_number}</option>`).join('');
-  if (current) sel.value = current;
+    cards.map(c => {
+      const id      = c['編號']    || c.id || '';
+      const carrier = c['電信業者']|| c.carrier || '';
+      const phone   = c['門號號碼']|| c.phone_number || '';
+      return `<option value="${esc(id)}">${esc(carrier)} ${esc(phone)}</option>`;
+    }).join('');
+  if (cur) sel.value = cur;
 }
 
-function loadAppSimSelect() {
-  updateAppSimSelect(STATE.simCards);
+function loadAppSimSelect() { updateAppSimSelect(STATE.simCards); }
+
+// updateAppSimSelect 加入全選選項（不改原有功能）
+const _origUpdateAppSimSelect = updateAppSimSelect;
+function updateAppSimSelect(cards) {
+  const sel = document.getElementById('appSimSelect');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">-- 請選擇門號 --</option>' +
+    '<option value="ALL_SIMS">📋 全選：顯示所有門號 APP 概覽</option>' +
+    cards.map(c => {
+      const id      = c['編號']    || c.id || '';
+      const carrier = c['電信業者']|| c.carrier || '';
+      const phone   = c['門號號碼']|| c.phone_number || '';
+      const simNum  = c['門號編號']|| c.sim_number || '';
+      const label   = (simNum ? '['+simNum+'] ' : '') + esc(carrier) + ' ' + esc(phone);
+      return `<option value="${esc(id)}">${label}</option>`;
+    }).join('');
+  if (cur) sel.value = cur;
+}
+
+function handleAppSimChange() {
+  const simId = document.getElementById('appSimSelect').value;
+  const single = document.getElementById('singleSimAppSection');
+  const allView = document.getElementById('allSimsAppView');
+  if (simId === 'ALL_SIMS') {
+    if (single)  single.style.display = 'none';
+    if (allView) allView.style.display = '';
+    loadAllSimsAppOverview();
+  } else {
+    if (single)  single.style.display = '';
+    if (allView) allView.style.display = 'none';
+    loadAppRegistrations();
+  }
 }
 
 async function loadAppRegistrations() {
   const simId = document.getElementById('appSimSelect').value;
-  if (!simId) {
-    document.getElementById('appGrid').innerHTML = '<p style="color:var(--text2);font-size:14px;text-align:center;padding:20px">請先選擇門號</p>';
+  const el = document.getElementById('appGrid');
+  if (!simId || simId === 'ALL_SIMS') {
+    if (el) el.innerHTML = '<p style="color:var(--text2);font-size:14px;text-align:center;padding:20px">請先選擇門號</p>';
     return;
   }
   const r = await api('getAppRegistrations', { sim_card_id: simId });
-  if (!r.success) return;
+  if (!r.success || !r.data) return;
   STATE.appPlatforms = r.data;
   renderAppGrid(r.data, simId);
 }
 
-function renderAppGrid(platforms, simId) {
-  const el = document.getElementById('appGrid');
-  if (platforms.length === 0) {
-    el.innerHTML = '<div class="empty-state"><span class="icon">📲</span><p>尚無 APP 平台</p></div>';
+// ── 所有門號 APP 概覽 ───────────────────────────────────────
+async function loadAllSimsAppOverview() {
+  const el = document.getElementById('allSimsAppView');
+  if (!el) return;
+
+  // 依門號編號數字排序
+  const sortedSims = [...STATE.simCards].sort((a, b) => {
+    const na = parseInt((a['門號編號']||a.sim_number||'0').replace(/\D/g,'')) || 9999;
+    const nb = parseInt((b['門號編號']||b.sim_number||'0').replace(/\D/g,'')) || 9999;
+    return na - nb;
+  });
+
+  if (!sortedSims.length) {
+    el.innerHTML = '<div class="empty-state"><span class="icon">📭</span><p>尚無門號</p></div>';
     return;
   }
+
+  el.innerHTML = '<p style="font-size:13px;color:var(--text2);padding:4px 0 10px">點擊門號右側 ▼ 展開 APP 詳情（顯示前6個）</p>';
+
+  for (const sim of sortedSims) {
+    const simId   = sim['編號']     || sim.id           || '';
+    const carrier = sim['電信業者'] || sim.carrier       || '';
+    const phone   = sim['門號號碼'] || sim.phone_number  || '';
+    const simNum  = sim['門號編號'] || sim.sim_number    || '';
+    const expire  = fmtDate(sim['到期日'] || sim.expire_date || '');
+    const status  = sim.status || 'ok';
+    const blockId = `appOverview_${simId}`;
+
+    const statusDot = status === 'expired'
+      ? '<span style="width:8px;height:8px;border-radius:50%;background:var(--danger);display:inline-block"></span>'
+      : status === 'warning'
+      ? '<span style="width:8px;height:8px;border-radius:50%;background:var(--warning);display:inline-block"></span>'
+      : '<span style="width:8px;height:8px;border-radius:50%;background:var(--primary);display:inline-block"></span>';
+
+    const simNumBadge = simNum
+      ? `<span style="background:#f39c12;color:#fff;font-size:12px;font-weight:700;padding:3px 8px;border-radius:6px;margin-right:6px">${esc(simNum)}</span>`
+      : '';
+
+    const block = document.createElement('div');
+    block.className = 'card';
+    block.style.marginBottom = '10px';
+    block.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer"
+           onclick="toggleAppOverviewBlock('${esc(simId)}')">
+        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+          ${simNumBadge}
+          ${statusDot}
+          <div style="min-width:0">
+            <div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(carrier)} ${esc(phone)}</div>
+            <div style="font-size:11px;color:var(--text2)">到期：${expire||'未設定'}</div>
+          </div>
+        </div>
+        <button id="togBtn_${esc(simId)}" class="btn btn-xs btn-outline" style="flex-shrink:0;margin-left:8px;width:32px;height:32px;padding:0;font-size:14px">▼</button>
+      </div>
+      <div id="${blockId}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <p style="font-size:12px;color:var(--text2);margin-bottom:8px">載入中...</p>
+      </div>`;
+    el.appendChild(block);
+  }
+}
+
+async function toggleAppOverviewBlock(simId) {
+  const blockEl = document.getElementById('appOverview_' + simId);
+  const btnEl   = document.getElementById('togBtn_' + simId);
+  if (!blockEl) return;
+
+  if (blockEl.style.display === 'none' || !blockEl.style.display) {
+    // 展開
+    blockEl.style.display = '';
+    if (btnEl) btnEl.textContent = '▲';
+    // 如果還沒載入過
+    if (blockEl.innerHTML.includes('載入中')) {
+      const r = await api('getAppRegistrations', { sim_card_id: simId });
+      if (!r.success || !r.data) {
+        blockEl.innerHTML = '<p style="font-size:12px;color:var(--danger)">載入失敗</p>';
+        return;
+      }
+      const platforms = r.data.slice(0, 6); // 只顯示前6個
+      const hasMore   = r.data.length > 6;
+      blockEl.innerHTML = `
+        <div class="app-grid" style="grid-template-columns:repeat(3,1fr)">
+          ${platforms.map(p => {
+            const id   = p['編號']||p.id||'';
+            const name = p['名稱']||p.name||'';
+            const icon = p['圖標']||p.icon||'📱';
+            const isReg = p.is_registered;
+            const canRepeat = (p.can_repeat === true || p.can_repeat === 'true' || p.can_repeat === 'TRUE');
+            let sub = isReg ? (canRepeat ? (p.countdown != null ? p.countdown+'天' : '已登記') : '不可重複') : '未登記';
+            return `<div class="app-item ${isReg?'checked':''}" style="padding:8px 6px"
+                onclick="document.getElementById('appSimSelect').value='${esc(simId)}';handleAppSimChange();openAppDetail('${esc(id)}','${esc(simId)}')">
+              <span class="app-icon" style="font-size:18px">${icon}</span>
+              <div class="app-name">${esc(name)}</div>
+              <div class="app-sub">${sub}</div>
+            </div>`;
+          }).join('')}
+        </div>
+        ${hasMore ? `<button class="btn btn-xs btn-outline" style="margin-top:8px;width:100%"
+          onclick="document.getElementById('appSimSelect').value='${esc(simId)}';handleAppSimChange()">
+          查看全部 ${r.data.length} 個 APP ▶</button>` : ''}`;
+    }
+  } else {
+    // 收起
+    blockEl.style.display = 'none';
+    if (btnEl) btnEl.textContent = '▼';
+  }
+}
+
+function renderAppGrid(platforms, simId) {
+  const el = document.getElementById('appGrid');
+  if (!platforms.length) { el.innerHTML = '<div class="empty-state"><span class="icon">📲</span><p>尚無 APP 平台</p></div>'; return; }
   el.innerHTML = platforms.map(p => {
-    const countdown = p.countdown !== null ? (p.countdown <= 0 ? '今天到期！' : p.countdown + '天後重新') : '';
-    return `
-    <div class="app-item ${p.is_registered ? 'checked' : ''}" onclick="openAppDetail('${p.id}','${simId}')">
-      <span class="app-icon">${p.icon || '📱'}</span>
-      <div class="app-name">${p.name}</div>
-      <div class="app-days">${p.register_days || 30}天週期</div>
-      ${p.is_registered ? `<div class="app-countdown">${countdown}</div>` : '<div class="app-days">未登記</div>'}
+    const id = p['編號'] || p.id || '';
+    const name = p['名稱'] || p.name || '';
+    const icon = p['圖標'] || p.icon || '📱';
+    const isReg = p.is_registered;
+    const days = p.register_days || 30;
+    const countdown = p.countdown;
+    const canRepeat = (p.can_repeat === true || p.can_repeat === 'true' || p.can_repeat === 'TRUE');
+    let sub = '未登記';
+    let danger = '';
+    let extra = '';
+    if (isReg) {
+      if (!canRepeat) {
+        // 不可重複：只顯示不可重複，不顯示倒計時
+        sub = '不可重複';
+      } else if (countdown !== null && countdown !== undefined) {
+        if (countdown <= 0) { danger = '今天到期！'; extra = 'expiring'; sub = `${days}天週期`; }
+        else if (countdown <= 3) { danger = `${countdown}天後重新`; extra = 'expiring'; sub = `${days}天週期`; }
+        else { sub = `${countdown}天後重新`; }
+      } else {
+        sub = `${days}天週期`;
+      }
+    }
+    // 快速核選 checkbox
+    const chkId = `appchk_${esc(id)}`;
+    return `<div class="app-item ${isReg?'checked':''} ${extra}">
+      <label class="app-quick-check" onclick="event.stopPropagation()">
+        <input type="checkbox" id="${chkId}" ${isReg?'checked':''} class="app-chk"
+          onchange="quickToggleAppUI('${esc(id)}','${esc(simId)}',this.checked,${days})"
+          style="width:14px;height:14px;accent-color:var(--primary);cursor:pointer;flex-shrink:0">
+      </label>
+      <span class="app-icon" onclick="openAppDetail('${esc(id)}','${esc(simId)}')">${icon}</span>
+      <div class="app-name" onclick="openAppDetail('${esc(id)}','${esc(simId)}')">${esc(name)}</div>
+      <div class="app-sub">${sub}</div>
+      ${danger ? `<div class="app-danger">${danger}</div>` : ''}
     </div>`;
   }).join('');
 }
 
+async function quickToggleAppUI(platformId, simId, checked, days) {
+  const r = await api('quickToggleApp', {
+    sim_card_id: simId, platform_id: platformId,
+    is_registered: checked, register_days: days,
+  });
+  if (r.success) {
+    showToast(checked ? '✅ 已標記為已註冊' : '已取消', 'success');
+    loadAppRegistrations();
+  } else {
+    showToast(r.error || '操作失敗', 'error');
+    loadAppRegistrations(); // 還原
+  }
+}
+
 function openAppDetail(platformId, simId) {
-  const p = STATE.appPlatforms.find(x => x.id === platformId);
+  const p = STATE.appPlatforms.find(x => (x['編號']||x.id) === platformId);
   if (!p) return;
-  document.getElementById('appDetailTitle').textContent  = (p.icon || '📱') + ' ' + p.name;
+  const name = p['名稱']||p.name||'';
+  const icon = p['圖標']||p.icon||'📱';
+  const canRepeat = p['可重複使用'] ?? p.can_repeat;
+  document.getElementById('appDetailTitle').textContent  = icon + ' ' + name;
   document.getElementById('appDetailPlatId').value       = platformId;
   document.getElementById('appDetailSimId').value        = simId;
   document.getElementById('appIsRegistered').value       = p.is_registered ? 'true' : 'false';
   document.getElementById('appLastRegDate').value        = p.last_register_date || '';
-  document.getElementById('appCanRepeat').value          = p.can_repeat ? '✅ 可重複使用' : '❌ 不可重複使用';
+  // can_repeat：只有明確是 true 才勾選，其餘預設 false
+  const canRepeatBool = (canRepeat === true || canRepeat === 'true' || canRepeat === 'TRUE');
+  document.getElementById('appCanRepeat').checked = canRepeatBool;
+  document.getElementById('appCanRepeatLabel').textContent = canRepeatBool
+    ? '✅ 此 APP 可重複使用同門號'
+    : '❌ 不可重複（預設）';
   document.getElementById('appRegDays').value            = p.register_days || 30;
   document.getElementById('appNextDate').value           = p.next_register_date || '（設定後自動計算）';
-  document.getElementById('appRegDays').oninput = () => {
+  const recalc = () => {
     const d = document.getElementById('appLastRegDate').value;
     const days = parseInt(document.getElementById('appRegDays').value);
     if (d && days) {
-      const next = new Date(d);
-      next.setDate(next.getDate() + days);
+      const next = new Date(d); next.setDate(next.getDate() + days);
       document.getElementById('appNextDate').value = next.toISOString().split('T')[0];
     }
   };
-  document.getElementById('appLastRegDate').oninput = document.getElementById('appRegDays').oninput;
+  document.getElementById('appRegDays').oninput = recalc;
+  document.getElementById('appLastRegDate').oninput = recalc;
   openModal('appDetailModal');
 }
 
 async function saveAppRegistration() {
-  const data = {
-    sim_card_id:        document.getElementById('appDetailSimId').value,
-    platform_id:        document.getElementById('appDetailPlatId').value,
-    is_registered:      document.getElementById('appIsRegistered').value === 'true',
-    last_register_date: document.getElementById('appLastRegDate').value,
-    register_days:      parseInt(document.getElementById('appRegDays').value) || 30,
-  };
-  const r = await api('updateAppRegistration', data);
-  if (r.success) {
-    showToast('已更新', 'success');
-    closeModal('appDetailModal');
-    loadAppRegistrations();
-  } else {
-    showToast(r.error || '更新失敗', 'error');
-  }
+  const abtn = document.querySelector('#appDetailModal .btn-primary');
+  await withLoading('saveApp', abtn, '⏳ 儲存中...', async () => {
+    const r = await api('updateAppRegistration', {
+      sim_card_id:        document.getElementById('appDetailSimId').value,
+      platform_id:        document.getElementById('appDetailPlatId').value,
+      is_registered:      document.getElementById('appIsRegistered').value === 'true',
+      last_register_date: document.getElementById('appLastRegDate').value,
+      register_days:      parseInt(document.getElementById('appRegDays').value) || 30,
+    });
+    if (r.success) { showToast('✅ 已更新', 'success'); closeModal('appDetailModal'); loadAppRegistrations(); }
+    else showToast(r.error || '更新失敗', 'error');
+  });
 }
 
 async function submitAddPlatform() {
-  const name   = document.getElementById('newPlatName').value.trim();
-  const icon   = document.getElementById('newPlatIcon').value.trim();
+  const name = document.getElementById('newPlatName').value.trim();
+  const icon = document.getElementById('newPlatIcon').value.trim();
   const repeat = document.getElementById('newPlatRepeat').value === 'true';
   if (!name) return showToast('請填入平台名稱', 'error');
   const r = await api('addCustomPlatform', { name, icon, can_repeat: repeat });
-  if (r.success) {
-    showToast('已新增 ' + name, 'success');
-    closeModal('addPlatformModal');
-    loadAppRegistrations();
-  } else {
-    showToast(r.error || '新增失敗', 'error');
-  }
+  if (r.success) { showToast('✅ 已新增 ' + name, 'success'); closeModal('addPlatformModal'); loadAppRegistrations(); }
+  else showToast(r.error || '新增失敗', 'error');
 }
 
 // ============================================================
 //  行事曆
 // ============================================================
 async function loadCalendar() {
+  // 初始化月份為當月
+  calViewYear  = new Date().getFullYear();
+  calViewMonth = new Date().getMonth();
   const r = await api('getCalendar');
-  if (!r.success) return;
-  const cards = r.data.sort((a, b) => new Date(a.expire_date) - new Date(b.expire_date));
-  const el = document.getElementById('calendarList');
-  if (cards.length === 0) {
-    el.innerHTML = '<div class="empty-state"><span class="icon">📅</span><p>尚無門號</p></div>';
-    return;
+  if (!r.success || !r.data) return;
+  // 確保 simCards 有資料供月曆使用
+  if (!STATE.simCards.length && r.data.length) {
+    r.data.forEach(c => {
+      if (!STATE.simCards.find(s => (s['編號']||s.id) === c.id)) {
+        STATE.simCards.push(c);
+      }
+    });
   }
+  // 先渲染 mini 月曆
+  renderMiniCalendar();
+
+  const cards = r.data.sort((a, b) => {
+    const da = new Date(String(a.expire_date||'').replace(/\//g,'-'));
+    const db = new Date(String(b.expire_date||'').replace(/\//g,'-'));
+    return da - db;
+  });
+  const el = document.getElementById('calendarList');
   const today = new Date();
+  if (!cards.length) { el.innerHTML = '<div class="empty-state"><span class="icon">📅</span><p>尚無門號</p></div>'; return; }
   el.innerHTML = cards.map(c => {
-    const d = new Date(c.expire_date);
-    const daysLeft = Math.ceil((d - today) / 86400000);
-    const cls = daysLeft <= 0 ? 'badge-expired' : daysLeft <= 7 ? 'badge-warning' : 'badge-ok';
-    const label = daysLeft <= 0 ? '已到期' : daysLeft + '天';
-    return `
-    <div class="calendar-item">
-      <div class="calendar-date" style="${daysLeft <= 3 ? 'background:var(--danger)' : daysLeft <= 7 ? 'background:var(--warning)' : ''}">
-        <div class="day">${d.getDate()}</div>
-        <div class="month">${d.getMonth()+1}月</div>
+    const expRaw = c['到期日'] || c.expire_date || '';
+    const d      = new Date(String(expRaw).replace(/\//g,'-'));
+    const dl     = isNaN(d) ? null : Math.ceil((d - today) / 86400000);
+    const cls    = dl == null ? '' : dl <= 0 ? 'urgent' : dl <= 7 ? 'warn' : '';
+    const badge  = dl == null ? 'badge-ok' : dl <= 0 ? 'badge-expired' : dl <= 7 ? 'badge-warning' : 'badge-ok';
+    const label  = dl == null ? '未知' : dl <= 0 ? '已到期' : dl + '天';
+    const carrier= c['電信業者']||c.carrier||'';
+    const phone  = c['門號號碼']||c.phone_number||'';
+    const simNum = String(c['門號編號']||c.sim_number||'').trim();
+    const expFmt = fmtDate(expRaw);
+    return `<div class="calendar-item">
+      <div class="cal-date ${cls}"><div class="day">${isNaN(d)?'?':d.getDate()}</div><div class="mo">${isNaN(d)?'':d.getMonth()+1+'月'}</div></div>
+      <div class="cal-info" style="flex:1">
+        <div class="car">${esc(carrier)}</div>
+        <div class="ph" style="font-weight:600">${esc(phone)}</div>
+        ${simNum?`<div style="font-size:10px;color:var(--text2)">編號：${esc(simNum)} · 到期：${expFmt}</div>`:`<div style="font-size:10px;color:var(--text2)">到期：${expFmt}</div>`}
       </div>
-      <div class="calendar-info">
-        <div class="carrier">${c.carrier}</div>
-        <div class="phone">${c.phone_number}</div>
-      </div>
-      <span class="sim-badge ${cls}">${label}</span>
+      <span class="cal-badge ${badge}">${label}</span>
     </div>`;
   }).join('');
 }
@@ -993,57 +1904,50 @@ async function loadCalendar() {
 // ============================================================
 //  通知 & 日誌
 // ============================================================
-const logActions = {
-  login:'🔑', register:'✅', add_sim:'📱', update_sim:'✏️', delete_sim:'🗑️',
-  update_profile:'👤', change_password:'🔒', update_app_reg:'📲', add_platform:'➕'
-};
+const logActionMap = { login:'🔑', register:'✅', add_sim:'📱', update_sim:'✏️', delete_sim:'🗑️', update_profile:'👤', change_password:'🔒', update_app_reg:'📲', add_platform:'➕' };
 
 async function loadNotifications() {
   const r = await api('getNotifications');
-  if (!r.success) return;
+  if (!r.success || !r.data) return;
   const el = document.getElementById('notifyList');
-  if (r.data.length === 0) {
-    el.innerHTML = '<div class="empty-state"><span class="icon">🔔</span><p>還沒有通知記錄</p></div>';
-    return;
-  }
+  if (!r.data.length) { el.innerHTML = '<div class="empty-state" style="padding:20px"><span class="icon" style="font-size:32px">🔔</span><p>還沒有通知記錄</p></div>'; return; }
   el.innerHTML = r.data.slice(0,30).map(n =>
     `<div class="notify-item">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <span class="notify-status ${n.status === 'sent' ? 'notify-sent' : 'notify-failed'}">${n.status === 'sent' ? '✅ 已發送' : '❌ 失敗'}</span>
-        <span style="font-size:11px;color:#999">${n.sent_at}</span>
+      <div class="notify-msg">${esc(n['通知內容']||n.message||'')}</div>
+      <div class="notify-foot">
+        <span class="notify-status ${(n['狀態']||n.status)==='sent'?'notify-sent':'notify-failed'}">${(n['狀態']||n.status)==='sent'?'✅ 已發送':'❌ 失敗'}</span>
+        <span style="font-size:11px;color:#aaa">${n['發送時間']||n.sent_at||''}</span>
       </div>
-      <div class="notify-msg">${n.message}</div>
     </div>`
   ).join('');
 }
 
 async function loadAuditLogs() {
   const r = await api('getAuditLogs');
-  if (!r.success) return;
+  if (!r.success || !r.data) return;
   const el = document.getElementById('auditList');
-  if (r.data.length === 0) {
-    el.innerHTML = '<div class="empty-state"><span class="icon">📋</span><p>尚無操作記錄</p></div>';
-    return;
-  }
+  if (!r.data.length) { el.innerHTML = '<div class="empty-state" style="padding:20px"><span class="icon" style="font-size:32px">📋</span><p>尚無操作記錄</p></div>'; return; }
   el.innerHTML = r.data.map(l =>
     `<div class="log-item">
-      <span class="log-icon">${logActions[l.action] || '📌'}</span>
-      <div>
-        <div class="log-action">${l.action}</div>
-        <div class="log-detail">${l.detail}</div>
+      <span class="log-icon">${logActionMap[l['操作類型']||l.action]||'📌'}</span>
+      <div class="log-body">
+        <div class="log-action">${l['操作類型']||l.action||''}</div>
+        <div class="log-detail">${esc(l['操作內容']||l.detail||'')}</div>
       </div>
-      <span class="log-time">${(l.created_at || '').substring(5,16)}</span>
+      <span class="log-time">${(l['操作時間']||l.created_at||'').substring(5,16)}</span>
     </div>`
   ).join('');
 }
 
 function switchLogTab(tab) {
-  document.getElementById('notifyList').style.display = tab === 'notify' ? '' : 'none';
-  document.getElementById('auditList').style.display  = tab === 'audit' ? '' : 'none';
-  document.getElementById('logTabNotify').style.borderColor = tab === 'notify' ? 'var(--primary)' : 'var(--border)';
-  document.getElementById('logTabNotify').style.color       = tab === 'notify' ? 'var(--primary)' : 'var(--text2)';
-  document.getElementById('logTabAudit').style.borderColor  = tab === 'audit' ? 'var(--primary)' : 'var(--border)';
-  document.getElementById('logTabAudit').style.color        = tab === 'audit' ? 'var(--primary)' : 'var(--text2)';
+  document.getElementById('notifyList').style.display = tab==='notify'?'':'none';
+  document.getElementById('auditList').style.display  = tab==='audit' ?'':'none';
+  const nBtn = document.getElementById('logTabNotify');
+  const aBtn = document.getElementById('logTabAudit');
+  nBtn.style.borderColor = tab==='notify'?'var(--primary)':'var(--border)';
+  nBtn.style.color       = tab==='notify'?'var(--primary)':'var(--text2)';
+  aBtn.style.borderColor = tab==='audit' ?'var(--primary)':'var(--border)';
+  aBtn.style.color       = tab==='audit' ?'var(--primary)':'var(--text2)';
 }
 
 // ============================================================
@@ -1052,16 +1956,34 @@ function switchLogTab(tab) {
 async function loadProfile() {
   const r = await api('getProfile');
   if (!r.success) return;
-  document.getElementById('profileAccount').value   = r.account || r.data?.account || STATE.session.account;
-  document.getElementById('profileNickname').value  = r.nickname || r.data?.nickname || '';
-  document.getElementById('profileLineId').value    = r.line_user_id || r.data?.line_user_id ? '✅ 已綁定' : '❌ 未綁定';
-  document.getElementById('profileLastLogin').value = r.last_login || r.data?.last_login || '';
+  const d = r.data || r;
+  document.getElementById('profileAccount').value   = d.account   || STATE.session?.account || '';
+  document.getElementById('profileNickname').value  = d.nickname  || '';
+  document.getElementById('profileLineId').value    = d.line_user_id ? '✅ 已綁定 LINE' : '❌ 未綁定';
+  document.getElementById('profileLastLogin').value = d.last_login  || '';
+  const createdEl = document.getElementById('profileCreatedAt');
+  if (createdEl) createdEl.value = d.created_at || '';
+
+  // LINE 個人資料卡片
+  if (STATE.lineProfile) {
+    const p = STATE.lineProfile;
+    document.getElementById('lineProfileCard').style.display = '';
+    document.getElementById('lineProfileInner').innerHTML = `
+      <div class="line-profile-card" style="margin-bottom:0">
+        <img class="line-avatar" src="${p.pictureUrl||''}" alt="LINE" onerror="this.style.display='none'">
+        <div class="line-info">
+          <div class="lname">${esc(p.displayName||'')}</div>
+          <div class="lsub">User ID: ${p.userId||''}</div>
+          ${p.statusMessage ? `<div class="lsub">${esc(p.statusMessage)}</div>` : ''}
+        </div>
+      </div>`;
+  }
 }
 
 async function saveProfile() {
   const nickname = document.getElementById('profileNickname').value.trim();
-  const r = await api('updateProfile', { nickname, line_user_id: STATE.lineUserId || undefined });
-  showToast(r.success ? '已更新' : (r.error || '更新失敗'), r.success ? 'success' : 'error');
+  const r = await api('updateProfile', { nickname, line_user_id: STATE.lineProfile?.userId || '' });
+  showToast(r.success ? '✅ 資料已更新' : (r.error||'更新失敗'), r.success?'success':'error');
 }
 
 async function doChangePassword() {
@@ -1069,132 +1991,1127 @@ async function doChangePassword() {
   const new_password = document.getElementById('newPwd').value;
   const r = await api('changePassword', { old_password, new_password });
   if (r.success) {
-    showToast('密碼修改成功', 'success');
+    showToast('✅ 密碼修改成功', 'success');
     document.getElementById('oldPwd').value = '';
     document.getElementById('newPwd').value = '';
-  } else {
-    showToast(r.error || '修改失敗', 'error');
-  }
+  } else { showToast(r.error||'修改失敗','error'); }
 }
 
 async function exportMyData() {
   const r = await api('exportSimCards');
-  if (!r.success) return showToast('匯出失敗', 'error');
+  if (!r.success) return showToast('匯出失敗','error');
   const headers = ['電信業者','門號號碼','門號編號','初辦日','到期日','辦理人','辦理人證號','序號','備註'];
-  const rows = r.data.map(c => [c.carrier,c.phone_number,c.sim_number,c.start_date,c.expire_date,c.applicant,c.applicant_id,c.serial_number,c.notes]);
-  const csv = [headers, ...rows].map(r => r.map(v => `"${v||''}"`).join(',')).join('\n');
-  const blob = new Blob(['\ufeff'+csv], { type: 'text/csv;charset=utf-8;' });
-  const url  = URL.createObjectURL(blob);
+  const rows = r.data.map(c => [
+    c['電信業者']||c.carrier, c['門號號碼']||c.phone_number, c['門號編號']||c.sim_number,
+    c['初辦日']||c.start_date, c['到期日']||c.expire_date, c['辦理人']||c.applicant,
+    c['辦理人證號']||c.applicant_id, c['序號']||c.serial_number, c['備註']||c.notes
+  ]);
+  const csv = [headers,...rows].map(r=>r.map(v=>`"${v||''}"`).join(',')).join('\n');
   const a = document.createElement('a');
-  a.href = url; a.download = '門號資料.csv'; a.click();
-  showToast('匯出成功', 'success');
+  a.href = URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download='門號資料.csv'; a.click();
+  showToast('✅ 匯出成功','success');
 }
 
+// ── 到期通知設定 ────────────────────────────────────────────
+function loadNotifySimSelect() {
+  const sel = document.getElementById('notifySimSelect');
+  if (!sel) return;
+  const today = new Date();
+  // 門號依編號數字排序
+  const sorted = [...STATE.simCards].sort((a, b) => {
+    const na = parseInt((a['門號編號']||a.sim_number||'0').replace(/\D/g,'')) || 0;
+    const nb = parseInt((b['門號編號']||b.sim_number||'0').replace(/\D/g,'')) || 0;
+    return na - nb;
+  });
+  const simOpts = sorted.map(c => {
+    const id      = c['編號']     || c.id           || '';
+    const carrier = c['電信業者'] || c.carrier       || '';
+    const phone   = c['門號號碼'] || c.phone_number  || '';
+    const simNum  = c['門號編號'] || c.sim_number    || '';
+    const isExp   = c.days_left != null && c.days_left < 0;
+    const label   = `${simNum ? '['+simNum+'] ' : ''}${esc(carrier)} ${esc(phone)}${isExp?' ❌已逾期':''}`;
+    return `<option value="${esc(id)}" ${isExp?'style="color:#aaa"':''}>${label}</option>`;
+  }).join('');
+  sel.innerHTML =
+    '<option value="">-- 請選擇門號 --</option>' +
+    '<option value="ALL">⚡ 所有門號（批量）</option>' +
+    '<option value="VALID">✅ 所有有效門號（排除已逾期）</option>' +
+    simOpts;
+}
+
+function openNotifySettingModal() {
+  loadNotifySimSelect();
+  openModal('notifySettingModal');
+}
+
+// ── 測試通知發送 ────────────────────────────────────────────
+async function sendTestNotify() {
+  const simId = document.getElementById('notifySimSelect')?.value;
+  if (!simId) return showToast('請先選擇門號', 'error');
+  const card = STATE.simCards.find(c => (c['編號']||c.id) === simId);
+  if (!card) return showToast('找不到門號資料', 'error');
+
+  const carrier    = card['電信業者'] || card.carrier      || '';
+  const phone      = card['門號號碼'] || card.phone_number  || '';
+  const expireDate = card['到期日']   || card.expire_date   || '未設定';
+  const daysLeft   = card.days_left != null ? card.days_left : '?';
+  const testMsg    = `📱 測試通知
+
+您的預付卡門號
+${carrier} ${phone}
+到期日：${expireDate}
+剩餘天數：${daysLeft} 天
+
+此為測試訊息，系統運作正常 ✅`;
+
+  const btn = document.querySelector('#notifySettingModal .btn-outline[onclick="sendTestNotify()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 發送中...'; }
+  try {
+    const r = await api('sendTestNotify', { sim_card_id: simId, message: testMsg });
+    showToast(r.success ? '✅ 測試通知已發送到您的 LINE' : (r.error || '發送失敗'), r.success ? 'success' : 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📤 發送測試通知'; }
+  }
+}
+
+// ── 重複門號檢查 ────────────────────────────────────────────
+function checkDuplicates() {
+  const el = document.getElementById('duplicateAlert');
+  if (!el) return;
+  if (!STATE.simCards.length) {
+    el.style.display = '';
+    el.innerHTML = '<div style="padding:10px 12px;background:#f9f9f9;border-radius:10px;font-size:13px;color:var(--text2);margin-bottom:10px">尚無門號資料</div>';
+    return;
+  }
+  // 找出相同門號號碼
+  const phoneMap = {};
+  STATE.simCards.forEach(c => {
+    const phone = (c['門號號碼'] || c.phone_number || '').trim();
+    if (!phone) return;
+    if (!phoneMap[phone]) phoneMap[phone] = [];
+    phoneMap[phone].push(c);
+  });
+  const dupes = Object.entries(phoneMap).filter(([, arr]) => arr.length > 1);
+  if (!dupes.length) {
+    el.style.display = '';
+    el.innerHTML = '<div style="padding:10px 12px;background:#f0fbf4;border-radius:10px;font-size:13px;color:#1a7a44;margin-bottom:10px;display:flex;align-items:center;gap:8px">✅ 沒有重複的門號</div>';
+    setTimeout(() => { el.style.display = 'none'; }, 3000);
+    return;
+  }
+  el.style.display = '';
+  el.innerHTML = '<div style="padding:10px 12px;background:#fde8e8;border-radius:10px;margin-bottom:10px">' +
+    '<div style="font-size:13px;font-weight:700;color:#9b1c1c;margin-bottom:8px">⚠️ 發現 ' + dupes.length + ' 組重複門號</div>' +
+    dupes.map(([phone, cards]) =>
+      '<div style="font-size:12px;color:#9b1c1c;padding:4px 0;border-top:1px solid rgba(155,28,28,.15)">' +
+      `📞 ${phone} (${cards.length} 筆)：` +
+      cards.map(c => (c['電信業者']||c.carrier||'')).join('、') +
+      '</div>'
+    ).join('') +
+    '</div>';
+}
+
+async function loadNotifySettings() {
+  const selEl = document.getElementById('notifySimSelect');
+  const el    = document.getElementById('notifySettingsArea');
+  if (!selEl || !el) return;
+  const simId = selEl.value;
+  if (!simId) { el.innerHTML = '<p style="font-size:13px;color:var(--text2);padding:8px 0">請選擇門號</p>'; return; }
+
+  // 批量模式（ALL = 所有門號，VALID = 有效門號）
+  if (simId === 'ALL' || simId === 'VALID') {
+    const label = simId === 'VALID' ? '所有有效門號' : '所有門號';
+    el.innerHTML = `
+      <p style="font-size:13px;color:var(--text2);margin-bottom:10px">批量套用到 <strong>${label}</strong>：</p>
+      ${[0,1,3,7,14,30].map(d => {
+        const txt = d === 0 ? '當日到期通知' : `到期前 <strong>${d}</strong> 天通知`;
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f9f9f9;border-radius:10px;margin-bottom:7px">
+          <span style="font-size:14px">${txt}</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-xs btn-outline" style="border-color:var(--primary);color:var(--primary)"
+              onclick="runBatchNotify(this,'${simId}',${d},true)">啟用</button>
+            <button class="btn btn-xs btn-outline" style="border-color:var(--danger);color:var(--danger)"
+              onclick="runBatchNotify(this,'${simId}',${d},false)">關閉</button>
+          </div>
+        </div>`;
+      }).join('')}`;
+    const testArea = document.getElementById('notifyTestArea');
+    if (testArea) testArea.style.display = 'none';
+    return;
+  }
+
+  el.innerHTML = '<p style="font-size:13px;color:var(--text2);padding:8px 0">載入中...</p>';
+
+  let settings = [];
+  try {
+    const r = await api('getNotifySettings', { sim_card_id: simId });
+    settings = (r && r.success && Array.isArray(r.data)) ? r.data : [];
+  } catch(e) {
+    console.error('loadNotifySettings error:', e);
+    el.innerHTML = '<p style="font-size:13px;color:var(--danger);padding:8px 0">載入失敗，請重試</p>';
+    return;
+  }
+
+  const daysOptions = [0, 1, 3, 7, 14, 30];
+  // 安全讀取啟用天數
+  const enabledDays = settings
+    .filter(s => s != null)
+    .filter(s => {
+      const raw = s['是否啟用'];
+      // 支援 boolean、'TRUE'字串、'true'字串
+      return raw === true || raw === 'TRUE' || raw === 'true' || s.enabled === true;
+    })
+    .map(s => {
+      const d = s['提前天數'] ?? s.days_before;
+      return d != null ? Number(d) : null;
+    })
+    .filter(d => d !== null && !isNaN(d));
+
+  // 用本地暫存狀態來即時顯示（不立即儲存）
+  const pendingState = {};
+  daysOptions.forEach(d => { pendingState[d] = enabledDays.includes(d); });
+
+  function renderNotifyRows() {
+    return daysOptions.map(d => {
+      const active = pendingState[d];
+      const txt    = d === 0 ? '當日到期通知' : `到期前 <strong>${d}</strong> 天通知`;
+      return `<label style="display:flex;align-items:center;gap:10px;padding:11px 12px;
+        background:${active?'#f0fbf4':'#f9f9f9'};border-radius:10px;margin-bottom:7px;
+        cursor:pointer;border:1.5px solid ${active?'var(--primary)':'var(--border)'}">
+        <input type="checkbox" data-days="${d}" class="notify-chk" ${active?'checked':''}
+          style="width:17px;height:17px;accent-color:var(--primary)">
+        <span style="font-size:14px;font-weight:${active?'700':'400'}">${txt}</span>
+        ${active?'<span style="margin-left:auto;font-size:11px;color:var(--primary);font-weight:700">✅</span>':''}
+      </label>`;
+    }).join('');
+  }
+
+  el.innerHTML = `
+    <div style="margin-top:4px">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:10px">勾選要收到 LINE 通知的時間點：</p>
+      <div id="notifyRowsContainer">${renderNotifyRows()}</div>
+      <button class="btn btn-primary" style="margin-top:8px" id="saveNotifyBtn" onclick="saveAllNotifySettings('${simId}')">
+        💾 保存通知設定
+      </button>
+    </div>`;
+
+  // 使用事件委派，不會因重新渲染失效
+  const container = document.getElementById('notifyRowsContainer');
+  if (container) {
+    container.addEventListener('change', (evt) => {
+      const chk = evt.target;
+      if (!chk.classList.contains('notify-chk')) return;
+      const d = Number(chk.dataset.days);
+      pendingState[d] = chk.checked;
+      // 直接更新這一行的樣式（不重新渲染整個列表，避免事件丟失）
+      const label = chk.closest('label');
+      if (label) {
+        label.style.background   = chk.checked ? '#f0fbf4' : '#f9f9f9';
+        label.style.borderColor  = chk.checked ? 'var(--primary)' : 'var(--border)';
+        const span = label.querySelector('span:last-child');
+        if (chk.checked) {
+          if (!span || !span.textContent.includes('✅')) {
+            const s = document.createElement('span');
+            s.style.cssText = 'margin-left:auto;font-size:11px;color:var(--primary);font-weight:700';
+            s.textContent = '✅';
+            label.appendChild(s);
+          }
+        } else {
+          if (span && span.textContent.includes('✅')) span.remove();
+        }
+        const txt = label.querySelector('span:not(:last-child)');
+        if (txt) txt.style.fontWeight = chk.checked ? '700' : '400';
+      }
+    });
+  }
+
+  // 顯示測試發送區
+  const testArea = document.getElementById('notifyTestArea');
+  if (testArea) testArea.style.display = '';
+
+  // 掛載全域 pendingState 供 saveAllNotifySettings 使用
+  window._notifyPendingState = pendingState;
+}
+
+async function saveAllNotifySettings(simId) {
+  const pendingState = window._notifyPendingState;
+  if (!pendingState || !simId) return showToast('請先選擇門號', 'error');
+  const btn = document.querySelector('#notifySettingsArea .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 保存中...'; }
+  let ok = 0, fail = 0;
+  for (const [days, enabled] of Object.entries(pendingState)) {
+    try {
+      // enabled 確保傳 boolean（不是字串）
+      const r = await api('saveNotifySetting', {
+        sim_card_id: simId,
+        days_before: Number(days),
+        enabled: enabled === true,
+      });
+      if (r && r.success) ok++;
+      else { fail++; console.warn('saveNotifySetting failed:', r?.error, 'days=', days, 'enabled=', enabled); }
+    } catch(e) { fail++; console.error(e); }
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '💾 保存通知設定'; }
+  if (fail === 0) {
+    showToast(`✅ 通知設定已保存（${ok} 項）`, 'success');
+  } else {
+    showToast(`⚠️ 保存完成（成功 ${ok}，失敗 ${fail}）`, 'warn');
+  }
+}
+
+async function toggleNotifySetting(simId, days, enabled) {
+  if (!simId) return;
+  try {
+    const r = await api('saveNotifySetting', { sim_card_id: simId, days_before: days, enabled });
+    if (r && r.success) {
+      showToast(enabled ? `✅ 已設定提前 ${days} 天通知` : `已關閉 ${days} 天通知`, 'success');
+      loadNotifySettings();
+    } else {
+      showToast((r && r.error) || '設定失敗', 'error');
+    }
+  } catch(e) {
+    console.error('toggleNotifySetting error:', e);
+    showToast('設定失敗，請稍後再試', 'error');
+  }
+}
+
+async function batchNotifyAll(days, enabled) {
+  return batchNotifyTarget('ALL', days, enabled);
+}
+
+// wrapper：帶 loading 防連點
+async function runBatchNotify(btn, target, days, enabled) {
+  if (btn && btn.disabled) return;
+  const orig = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+  try {
+    await batchNotifyTarget(target, days, enabled);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = orig; }
+  }
+}
+
+async function batchNotifyTarget(target, days, enabled) {
+  let simIds;
+  if (target === 'VALID') {
+    simIds = STATE.simCards
+      .filter(c => c.days_left == null || c.days_left >= 0)
+      .map(c => c['編號']||c.id||'').filter(Boolean);
+  } else {
+    simIds = STATE.simCards.map(c => c['編號']||c.id||'').filter(Boolean);
+  }
+  if (!simIds.length) return showToast('沒有門號可設定', 'error');
+  const r = await api('batchSaveNotify', { sim_card_ids: simIds, days_list: [days], enabled });
+  if (r && r.success) {
+    const label = enabled ? `✅ 已啟用 ${days===0?'當日':days+'天前'} 通知` : `已關閉 ${days===0?'當日':days+'天前'} 通知`;
+    showToast(label + `（${simIds.length} 張）`, 'success');
+  } else {
+    showToast((r && r.error) || '設定失敗', 'error');
+  }
+}
+
+// ── btn-danger-xs 樣式補充 ──────────────────────────────────
+// 在 CSS 中加入（這裡透過 JS 動態加入確保存在）
+(function() {
+  const s = document.createElement('style');
+  s.textContent = '.btn-danger-xs { border-color:var(--danger)!important; color:var(--danger)!important; }';
+  document.head.appendChild(s);
+})();
+
 // ============================================================
-//  管理員面板
+//  管理員
 // ============================================================
 async function showAdminPanel() {
-  const [stats, members] = await Promise.all([
-    api('adminGetStats'),
-    api('adminGetAllMembers'),
-  ]);
+  document.getElementById('adminContent').innerHTML = '<div class="empty-state"><span class="icon" style="font-size:36px">⏳</span><p>載入中...</p></div>';
+  openModal('adminModal');
+  const [stats, members] = await Promise.all([api('adminGetStats'), api('adminGetAllMembers')]);
   let html = '';
-  if (stats.success) {
+  if (stats.success && stats.data) {
     const d = stats.data;
     html += `<div class="stats-grid" style="margin-bottom:16px">
-      <div class="stat-card blue"><div class="stat-num">${d.totalMembers}</div><div class="stat-label">總會員數</div></div>
-      <div class="stat-card green"><div class="stat-num">${d.totalSim}</div><div class="stat-label">總門號數</div></div>
-      <div class="stat-card orange"><div class="stat-num">${d.expiringSoon}</div><div class="stat-label">7天到期</div></div>
-      <div class="stat-card red"><div class="stat-num">${d.expired}</div><div class="stat-label">已到期</div></div>
+      <div class="stat-card blue"><div class="stat-num">${d.totalMembers??0}</div><div class="stat-label">總會員數</div></div>
+      <div class="stat-card green"><div class="stat-num">${d.totalSim??0}</div><div class="stat-label">總門號數</div></div>
+      <div class="stat-card orange"><div class="stat-num">${d.expiringSoon??0}</div><div class="stat-label">7天到期</div></div>
+      <div class="stat-card red"><div class="stat-num">${d.expired??0}</div><div class="stat-label">已到期</div></div>
     </div>`;
   }
-  html += `<div class="admin-section">
-    <div class="admin-section-title">會員管理</div>`;
-  if (members.success) {
-    html += members.data.map(m => `
-      <div class="member-row">
+  html += `<div class="admin-section"><div class="admin-section-title" style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">會員管理</div>`;
+  if (members.success && members.data?.length) {
+    html += members.data.map(m => {
+      const id      = m['編號']||m.id||'';
+      const account = m['帳號']||m.account||'';
+      const nick    = m['暱稱']||m.nickname||account;
+      const status  = m['狀態']||m.status||'active';
+      const isAdmin = m['是否管理員']||m.is_admin;
+      const lineId  = m['LINE用戶ID']||m.line_user_id||'';
+      const pic     = STATE.lineProfile?.userId === lineId && STATE.lineProfile?.pictureUrl ? STATE.lineProfile.pictureUrl : '';
+      return `<div class="member-row">
+        <div class="member-avatar">${pic ? `<img src="${pic}" style="width:38px;height:38px;border-radius:50%;object-fit:cover">` : (isAdmin?'👑':'👤')}</div>
         <div class="member-info">
-          <div class="name">${m.nickname || m.account} ${m.is_admin ? '👑' : ''}</div>
-          <div class="meta">${m.account} · ${m.status === 'active' ? '✅ 正常' : '⛔ 停用'} · LINE:${m.line_user_id ? '✅' : '❌'}</div>
+          <div class="mname">${esc(nick)} ${isAdmin?'<span style="color:var(--warning)">管理員</span>':''}</div>
+          <div class="mmeta">${esc(account)} · ${status==='active'?'✅正常':'⛔停用'} · LINE:${lineId?'✅':'❌'}</div>
         </div>
-        <div style="display:flex;gap:6px">
-          ${!m.is_admin ? `<button class="btn btn-sm btn-outline" onclick="toggleMember('${m.id}','${m.status === 'active' ? 'inactive' : 'active'}')">${m.status === 'active' ? '停用' : '啟用'}</button>` : ''}
-          ${m.line_user_id ? `<button class="btn btn-sm btn-outline" onclick="sendManualNotify('${m.id}','${m.nickname||m.account}')">📨</button>` : ''}
+        <div class="member-actions">
+          ${!isAdmin?`<button class="btn btn-xs btn-outline" onclick="toggleMember('${id}','${status==='active'?'inactive':'active'}')">${status==='active'?'停用':'啟用'}</button>`:''}
+          ${lineId?`<button class="btn btn-xs btn-outline" onclick="openSendNotify('${id}','${esc(nick)}')">📨</button>`:''}
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
+  } else {
+    html += '<p style="color:var(--text2);font-size:14px;padding:10px 0">暫無會員資料</p>';
   }
   html += `</div>
-  <div class="admin-section">
-    <div class="admin-section-title">系統操作</div>
+  <div class="admin-section" style="margin-top:8px">
+    <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">系統操作</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px">
-      <button class="btn btn-sm btn-outline" onclick="adminBroadcastAll()">📢 全員廣播</button>
-      <button class="btn btn-sm btn-outline" onclick="addAnnouncement()">📌 發布公告</button>
+      <button class="btn btn-sm btn-outline" onclick="openBroadcastModal()">📢 全員廣播</button>
+      <button class="btn btn-sm btn-outline" onclick="openAnnouncementPanel()">📌 公告管理</button>
+      <button class="btn btn-sm btn-outline" onclick="adminViewAllSims()">📱 查看全部門號</button>
       <button class="btn btn-sm btn-outline" onclick="adminExport()">📥 匯出全部資料</button>
+      <button class="btn btn-sm btn-outline" onclick="openAdminStats()">📊 統計分析</button>
+      <button class="btn btn-sm btn-outline" onclick="openSheetToggle()">🗂️ 試算表管理</button>
     </div>
   </div>`;
-
   document.getElementById('adminContent').innerHTML = html;
-  openModal('adminModal');
 }
 
 async function toggleMember(id, status) {
   const r = await api('adminToggleMember', { member_id: id, status });
-  if (r.success) { showToast('已更新', 'success'); showAdminPanel(); }
+  if (r.success) { showToast('✅ 已更新', 'success'); showAdminPanel(); }
+  else showToast(r.error||'更新失敗','error');
 }
 
-async function sendManualNotify(id, name) {
-  const msg = prompt(`發送訊息給 ${name}：`);
-  if (!msg) return;
-  const r = await api('adminSendManualNotify', { member_id: id, message: msg });
-  showToast(r.success ? '發送成功' : '發送失敗', r.success ? 'success' : 'error');
+function openSendNotify(id, name) {
+  openInputModal('發送通知', `傳送訊息給 ${name}`, '輸入通知內容...', async (msg) => {
+    if (!msg) return;
+    const r = await api('adminSendManualNotify', { member_id: id, message: msg });
+    showToast(r.success?'✅ 發送成功':'❌ 發送失敗', r.success?'success':'error');
+  });
 }
 
-async function adminBroadcastAll() {
-  const msg = prompt('輸入要廣播給所有會員的訊息：');
-  if (!msg) return;
-  const r = await api('adminBroadcast', { message: msg });
-  showToast(r.success ? `已發送給 ${r.sent} 位會員` : '發送失敗', r.success ? 'success' : 'error');
+function openBroadcastModal() {
+  openInputModal('全員廣播', '訊息將發送給所有已綁定 LINE 的會員', '輸入廣播內容...', async (msg) => {
+    if (!msg) return;
+    const r = await api('adminBroadcast', { message: msg });
+    showToast(r.success ? `✅ 已發送給 ${r.sent} 位會員` : '發送失敗', r.success?'success':'error');
+  }, true);
 }
 
-async function addAnnouncement() {
-  const title = prompt('公告標題：');
-  const content = title ? prompt('公告內容：') : null;
-  if (!title || !content) return;
+function openAnnouncementModal() {
+  // 直接呼叫完整公告管理面板
+  openAnnouncementPanel();
+}
+
+async function openAnnouncementPanel() {
+  document.getElementById('broadcastModalTitle').textContent = '📌 公告管理';
+  document.getElementById('broadcastModalBody').innerHTML = '<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
+  openModal('broadcastModal');
+  const r = await api('adminGetAnnouncements');
+  const list = (r.success && r.data) ? r.data : [];
+  const bodyEl = document.getElementById('broadcastModalBody');
+  bodyEl.innerHTML = '';
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'btn btn-primary';
+  addBtn.style.cssText = 'margin-bottom:12px;width:100%';
+  addBtn.textContent = '➕ 發布新公告';
+  addBtn.onclick = openNewAnnouncementForm;
+  bodyEl.appendChild(addBtn);
+
+  if (!list.length) {
+    const empty = document.createElement('p');
+    empty.style.cssText = 'color:var(--text2);font-size:14px;text-align:center;padding:16px 0';
+    empty.textContent = '尚無公告';
+    bodyEl.appendChild(empty);
+    return;
+  }
+
+  list.forEach(a => {
+    const card = document.createElement('div');
+    card.style.cssText = 'border:1.5px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:' + (a.is_show ? '#fff' : '#f9f9f9');
+    const inner = document.createElement('div');
+    inner.style.cssText = 'display:flex;align-items:flex-start;justify-content:space-between;gap:8px';
+
+    const info = document.createElement('div');
+    info.style.cssText = 'flex:1;min-width:0';
+    const titleDiv = document.createElement('div');
+    titleDiv.style.cssText = 'font-size:14px;font-weight:700;margin-bottom:4px';
+    titleDiv.textContent = a.title || '';
+    const contentDiv = document.createElement('div');
+    contentDiv.style.cssText = 'font-size:12px;color:var(--text2);margin-bottom:6px;white-space:pre-line';
+    contentDiv.textContent = a.content || a['內容'] || '';
+    const meta = document.createElement('div');
+    meta.style.cssText = 'display:flex;gap:8px;align-items:center';
+    const timeSpan = document.createElement('span');
+    timeSpan.style.cssText = 'font-size:11px;color:#aaa';
+    timeSpan.textContent = a.created_at || '';
+    const statusSpan = document.createElement('span');
+    statusSpan.style.cssText = 'font-size:11px;padding:1px 7px;border-radius:8px;background:' + (a.is_show ? '#e8f8ef' : '#f9f9f9') + ';color:' + (a.is_show ? '#1a7a44' : '#aaa');
+    statusSpan.textContent = a.is_show ? '顯示中' : '已隱藏';
+    meta.appendChild(timeSpan); meta.appendChild(statusSpan);
+    info.appendChild(titleDiv); info.appendChild(contentDiv); info.appendChild(meta);
+
+    const btns = document.createElement('div');
+    btns.style.cssText = 'display:flex;flex-direction:column;gap:5px;flex-shrink:0';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn btn-xs btn-outline';
+    editBtn.textContent = '✏️';
+    editBtn.onclick = () => editAnnouncementById(a.id);
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'btn btn-xs btn-outline';
+    toggleBtn.style.cssText = 'border-color:var(--warning);color:var(--warning)';
+    toggleBtn.textContent = a.is_show ? '🙈' : '👁️';
+    toggleBtn.onclick = () => toggleAnnouncement(a.id, !a.is_show);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn btn-xs btn-outline';
+    delBtn.style.cssText = 'border-color:var(--danger);color:var(--danger)';
+    delBtn.textContent = '🗑️';
+    delBtn.onclick = () => deleteAnnouncement(a.id, a.title || '');
+
+    btns.appendChild(editBtn); btns.appendChild(toggleBtn); btns.appendChild(delBtn);
+    inner.appendChild(info); inner.appendChild(btns);
+    card.appendChild(inner);
+    bodyEl.appendChild(card);
+  });
+}
+
+function openNewAnnouncementForm() {
+  const el = document.getElementById('broadcastModalBody');
+  el.innerHTML = '';
+  const tDiv = document.createElement('div'); tDiv.className='form-group';
+  tDiv.innerHTML='<label>公告標題</label><input type="text" id="annTitle" class="form-control" placeholder="請輸入標題">';
+  const cDiv = document.createElement('div'); cDiv.className='form-group';
+  cDiv.innerHTML='<label>公告內容</label><textarea id="annContent" class="form-control" rows="5" placeholder="請輸入內容"></textarea>';
+  const bDiv = document.createElement('div'); bDiv.style.cssText='display:flex;gap:8px';
+  const backBtn = document.createElement('button');
+  backBtn.className='btn btn-outline'; backBtn.textContent='← 返回'; backBtn.onclick=openAnnouncementPanel;
+  const subBtn = document.createElement('button');
+  subBtn.className='btn btn-primary'; subBtn.textContent='📌 發布公告'; subBtn.onclick=submitAnnouncement;
+  bDiv.appendChild(backBtn); bDiv.appendChild(subBtn);
+  el.appendChild(tDiv); el.appendChild(cDiv); el.appendChild(bDiv);
+}
+
+async function submitAnnouncement() {
+  const title   = document.getElementById('annTitle').value.trim();
+  const content = document.getElementById('annContent').value.trim();
+  if (!title || !content) return showToast('請填入標題和內容','error');
   const r = await api('adminAddAnnouncement', { title, content });
-  showToast(r.success ? '公告已發布' : '失敗', r.success ? 'success' : 'error');
+  if (r.success) { showToast('✅ 公告已發布','success'); openAnnouncementPanel(); }
+  else showToast(r.error||'發布失敗','error');
+}
+
+async function editAnnouncementById(id) {
+  const r = await api('adminGetAnnouncements');
+  const ann = (r.success && r.data) ? r.data.find(a => a.id === id) : null;
+  if (!ann) return showToast('找不到公告','error');
+  editAnnouncement(id, ann.title || '', ann.content || ann['內容'] || '');
+}
+
+function editAnnouncement(id, title, content) {
+  const el = document.getElementById('broadcastModalBody');
+  el.innerHTML = '';
+  const tDiv = document.createElement('div'); tDiv.className='form-group';
+  tDiv.innerHTML='<label>公告標題</label><input type="text" id="editAnnTitle" class="form-control">';
+  const cDiv = document.createElement('div'); cDiv.className='form-group';
+  cDiv.innerHTML='<label>公告內容</label><textarea id="editAnnContent" class="form-control" rows="5"></textarea>';
+  const bDiv = document.createElement('div'); bDiv.style.cssText='display:flex;gap:8px';
+  const backBtn = document.createElement('button');
+  backBtn.className='btn btn-outline'; backBtn.textContent='← 返回'; backBtn.onclick=openAnnouncementPanel;
+  const saveBtn = document.createElement('button');
+  saveBtn.className='btn btn-primary'; saveBtn.textContent='💾 儲存修改'; saveBtn.onclick=()=>submitEditAnnouncement(id);
+  bDiv.appendChild(backBtn); bDiv.appendChild(saveBtn);
+  el.appendChild(tDiv); el.appendChild(cDiv); el.appendChild(bDiv);
+  document.getElementById('editAnnTitle').value   = title;
+  document.getElementById('editAnnContent').value = content;
+}
+
+async function submitEditAnnouncement(id) {
+  const title   = document.getElementById('editAnnTitle').value.trim();
+  const content = document.getElementById('editAnnContent').value.trim();
+  if (!title || !content) return showToast('請填入標題和內容','error');
+  const r = await api('adminUpdateAnnouncement', { id, title, content });
+  if (r.success) { showToast('✅ 公告已更新','success'); openAnnouncementPanel(); }
+  else showToast(r.error||'更新失敗','error');
+}
+
+async function toggleAnnouncement(id, is_show) {
+  const r = await api('adminUpdateAnnouncement', { id, is_show });
+  if (r.success) { showToast(is_show ? '✅ 公告已顯示' : '已隱藏公告','success'); openAnnouncementPanel(); }
+  else showToast(r.error||'操作失敗','error');
+}
+
+async function deleteAnnouncement(id, title) {
+  showConfirm('刪除公告「' + title + '」？', '刪除後無法復原', '確定刪除', 'btn-danger', async () => {
+    const r = await api('adminDeleteAnnouncement', { id });
+    if (r.success) { showToast('✅ 已刪除','success'); openAnnouncementPanel(); }
+    else showToast(r.error||'刪除失敗','error');
+  });
+}
+
+// ── 刷新功能 ────────────────────────────────────────────────
+async function doRefresh() {
+  const btn = document.getElementById('refreshBtn');
+  if (btn) { btn.style.animation = 'spin 0.6s linear'; btn.disabled = true; }
+  setProgress(10);
+  try {
+    setProgress(20);
+    await loadSimCards();
+    setProgress(65);
+    await loadDashboard();
+    setProgress(90);
+    const calPage = document.getElementById('pageCalendar');
+    if (calPage && calPage.classList.contains('active')) loadCalendar();
+    showToast('✅ 已刷新', 'success');
+    setProgress(100);
+    setTimeout(() => setProgress(0), 600);
+  } finally {
+    if (btn) { btn.style.animation = ''; btn.disabled = false; }
+  }
+}
+
+// ── 行事曆 mini 月曆 ───────────────────────────────────────
+let calViewYear  = new Date().getFullYear();
+let calViewMonth = new Date().getMonth(); // 0-indexed
+
+function calendarPrevMonth() {
+  calViewMonth--;
+  if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; }
+  renderMiniCalendar();
+}
+function calendarNextMonth() {
+  calViewMonth++;
+  if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
+  renderMiniCalendar();
+}
+
+function renderMiniCalendar() {
+  const titleEl = document.getElementById('calMonthTitle');
+  const calEl   = document.getElementById('miniCalendar');
+  if (!titleEl || !calEl) return;
+
+  titleEl.textContent = calViewYear + ' 年 ' + (calViewMonth + 1) + ' 月';
+
+  // 收集此月份有到期門號的日期 → { day: [simNum, ...] }
+  const expireMap = {};
+  STATE.simCards.forEach(card => {
+    const expRaw = card['到期日'] || card.expire_date || '';
+    if (!expRaw) return;
+    const d = new Date(String(expRaw).replace(/\//g,'-'));
+    if (isNaN(d)) return;
+    if (d.getFullYear() === calViewYear && d.getMonth() === calViewMonth) {
+      const day = d.getDate();
+      if (!expireMap[day]) expireMap[day] = [];
+      const sn = String(card['門號編號']||card.sim_number||'').trim()||'無';
+      expireMap[day].push(sn);
+    }
+  });
+
+  const weekDays = ['日','一','二','三','四','五','六'];
+  const firstDay = new Date(calViewYear, calViewMonth, 1).getDay();
+  const daysInMonth = new Date(calViewYear, calViewMonth + 1, 0).getDate();
+  const today = new Date();
+  const isThisMonth = today.getFullYear() === calViewYear && today.getMonth() === calViewMonth;
+
+  let html = '<table style="width:100%;border-collapse:collapse;table-layout:fixed">';
+  // 週標題
+  html += '<tr>' + weekDays.map(d => `<th style="text-align:center;padding:4px 2px;font-size:11px;color:var(--text2);font-weight:600">${d}</th>`).join('') + '</tr>';
+  // 日期格子
+  let day = 1;
+  for (let week = 0; week < 6; week++) {
+    if (day > daysInMonth) break;
+    html += '<tr>';
+    for (let dow = 0; dow < 7; dow++) {
+      if (week === 0 && dow < firstDay) {
+        html += '<td></td>';
+      } else if (day > daysInMonth) {
+        html += '<td></td>';
+      } else {
+        const isToday = isThisMonth && day === today.getDate();
+        const hasSim  = expireMap[day];
+        const bgStyle = isToday ? 'background:var(--primary);border-radius:50%;color:#fff;' : '';
+        let cell = `<td style="text-align:center;padding:2px 1px;position:relative">`;
+        cell += `<div style="${bgStyle}font-size:12px;font-weight:${isToday?'700':'400'};width:22px;height:22px;line-height:22px;margin:0 auto;border-radius:50%">${day}</div>`;
+        if (hasSim) {
+          cell += `<div style="display:flex;flex-wrap:wrap;gap:1px;justify-content:center;margin-top:1px">`;
+          hasSim.slice(0, 2).forEach(sn => {
+            cell += `<span style="background:#f39c12;color:#fff;font-size:8px;font-weight:700;padding:1px 3px;border-radius:3px;line-height:1.3">${esc(sn)}</span>`;
+          });
+          if (hasSim.length > 2) cell += `<span style="font-size:8px;color:var(--warning)">+${hasSim.length-2}</span>`;
+          cell += '</div>';
+        }
+        cell += '</td>';
+        html += cell;
+        day++;
+      }
+    }
+    html += '</tr>';
+  }
+  html += '</table>';
+  calEl.innerHTML = html;
+}
+
+// ── 跨門號 APP 批量設定 ────────────────────────────────────
+function openCrossSimAppModal() {
+  document.getElementById('broadcastModalTitle').textContent = '🌐 跨門號批量設定 APP';
+  const platOpts = STATE.appPlatforms.map(p => {
+    const id   = p['編號']||p.id||'';
+    const name = p['名稱']||p.name||'';
+    const icon = p['圖標']||p.icon||'📱';
+    const canR = (p.can_repeat===true||p.can_repeat==='true'||p.can_repeat==='TRUE');
+    return `<option value="${esc(id)}" data-canrepeat="${canR}">${icon} ${esc(name)}${canR?' (可重複)':''}</option>`;
+  }).join('');
+
+  document.getElementById('broadcastModalBody').innerHTML = `
+    <div class="form-group">
+      <label>選擇 APP 平台</label>
+      <select id="crossSimPlatSelect" class="form-control" onchange="updateCrossSimPlatInfo()">${platOpts}</select>
+    </div>
+    <div class="form-group">
+      <label>設定為</label>
+      <select id="crossSimStatus" class="form-control">
+        <option value="true">✅ 已註冊</option>
+        <option value="false">❌ 未註冊</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px">
+        <span>可重複使用</span>
+        <span id="crossSimCanRepeatBadge" style="font-size:11px;padding:2px 7px;border-radius:8px;background:#f9f9f9;color:var(--text2)">請先選擇 APP</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:#f9f9f9;border-radius:10px;cursor:pointer">
+        <input type="checkbox" id="crossSimCanRepeat" style="width:16px;height:16px;accent-color:var(--primary)">
+        <span style="font-size:14px">此 APP 可以用同一門號重複註冊</span>
+      </label>
+    </div>
+    <div class="form-group">
+      <label>重新註冊間隔天數</label>
+      <input type="number" id="crossSimRegDays" class="form-control" value="30" min="1" placeholder="例如：30">
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+      <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">
+        套用到的門號 <span style="font-size:11px;color:var(--text2);font-weight:400">（不選 = 全部 ${STATE.simCards.length} 張）</span>
+      </label>
+      <div style="max-height:150px;overflow-y:auto;border:1.5px solid var(--border);border-radius:10px;padding:8px;margin-bottom:10px">
+        ${STATE.simCards.map(c => {
+          const id     = c['編號']||c.id||'';
+          const sn     = c['門號編號']||c.sim_number||'';
+          const carrier= c['電信業者']||c.carrier||'';
+          const phone  = c['門號號碼']||c.phone_number||'';
+          const label  = (sn?'['+sn+'] ':'')+esc(carrier)+' '+esc(phone);
+          return `<label style="display:flex;align-items:center;gap:8px;padding:5px 2px;cursor:pointer;font-size:13px">
+            <input type="checkbox" class="cross-sim-chk" value="${esc(id)}" style="accent-color:var(--primary)">
+            ${label}
+          </label>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" onclick="closeModal('broadcastModal')">取消</button>
+        <button class="btn btn-primary" onclick="applyCrossSimApp()">✅ 套用</button>
+      </div>
+    </div>`;
+  openModal('broadcastModal');
+  updateCrossSimPlatInfo();
+}
+
+function updateCrossSimPlatInfo() {
+  const sel    = document.getElementById('crossSimPlatSelect');
+  const badge  = document.getElementById('crossSimCanRepeatBadge');
+  const chk    = document.getElementById('crossSimCanRepeat');
+  if (!sel || !sel.selectedOptions.length) return;
+  const opt     = sel.selectedOptions[0];
+  const canR    = opt.dataset.canrepeat === 'true';
+  if (badge) {
+    badge.textContent   = canR ? '✅ 此 APP 預設可重複' : '❌ 此 APP 預設不可重複';
+    badge.style.background = canR ? '#e8f8ef' : '#fde8e8';
+    badge.style.color      = canR ? '#1a7a44' : '#9b1c1c';
+  }
+  if (chk) chk.checked = canR;
+  // 找平台的 register_days
+  const platId = opt.value;
+  const plat = STATE.appPlatforms.find(p => (p['編號']||p.id) === platId);
+  const daysEl = document.getElementById('crossSimRegDays');
+  if (daysEl && plat) daysEl.value = plat.register_days || 30;
+}
+
+async function applyCrossSimApp() {
+  const platId   = document.getElementById('crossSimPlatSelect')?.value;
+  const status   = document.getElementById('crossSimStatus')?.value === 'true';
+  const canRepeat= document.getElementById('crossSimCanRepeat')?.checked || false;
+  const days     = parseInt(document.getElementById('crossSimRegDays')?.value) || 30;
+  if (!platId) return showToast('請選擇 APP 平台', 'error');
+  const checked = Array.from(document.querySelectorAll('.cross-sim-chk:checked')).map(el => el.value);
+  const simIds  = checked.length > 0 ? checked : STATE.simCards.map(c => c['編號']||c.id||'').filter(Boolean);
+  if (!simIds.length) return showToast('沒有門號可設定', 'error');
+  const btn = document.querySelector('#broadcastModal .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 套用中...'; }
+  let ok = 0;
+  for (const simId of simIds) {
+    const r = await api('updateAppRegistration', {
+      sim_card_id: simId, platform_id: platId,
+      is_registered: status, register_days: days,
+      last_register_date: status ? new Date().toISOString().split('T')[0] : '',
+    });
+    if (r.success) ok++;
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '✅ 套用'; }
+  showToast(`✅ 已套用 ${ok}/${simIds.length} 張門號`, 'success');
+  closeModal('broadcastModal');
+  loadAppRegistrations();
+}
+
+// ── 管理員統計分析 ─────────────────────────────────────────
+async function openAdminStats() {
+  document.getElementById('broadcastModalTitle').textContent = '📊 統計分析';
+  document.getElementById('broadcastModalBody').innerHTML = '<p style="color:var(--text2);padding:20px 0;text-align:center">載入中...</p>';
+  openModal('broadcastModal');
+  const r = await api('adminGetAllSimCards');
+  if (!r.success || !r.data) { document.getElementById('broadcastModalBody').innerHTML = '<p style="color:var(--danger)">載入失敗</p>'; return; }
+  const cards = r.data;
+  const today = new Date();
+  // 業者分布
+  const carrierMap = {};
+  cards.forEach(c => {
+    const car = c['電信業者']||c.carrier||'未知';
+    carrierMap[car] = (carrierMap[car]||0) + 1;
+  });
+  // 到期分布
+  const expired    = cards.filter(c => c.days_left != null && c.days_left < 0).length;
+  const expToday   = cards.filter(c => c.days_left === 0).length;
+  const exp7       = cards.filter(c => c.days_left != null && c.days_left >= 0 && c.days_left <= 7).length;
+  const exp30      = cards.filter(c => c.days_left != null && c.days_left > 7 && c.days_left <= 30).length;
+  const ok         = cards.filter(c => c.days_left != null && c.days_left > 30).length;
+  const noExpire   = cards.filter(c => c.days_left == null).length;
+
+  const carrierRows = Object.entries(carrierMap)
+    .sort((a,b) => b[1]-a[1])
+    .map(([name, count]) => {
+      const pct = Math.round(count/cards.length*100);
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:13px;min-width:80px">${esc(name)}</span>
+        <div style="flex:1;height:16px;background:#f0f0f0;border-radius:8px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:var(--primary);border-radius:8px"></div>
+        </div>
+        <span style="font-size:12px;color:var(--text2);min-width:40px;text-align:right">${count} (${pct}%)</span>
+      </div>`;
+    }).join('');
+
+  document.getElementById('broadcastModalBody').innerHTML = `
+    <div style="max-height:65vh;overflow-y:auto">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+        ${[['總門號',cards.length,'var(--primary)'],['已到期',expired,'var(--danger)'],['今天到期',expToday,'var(--danger)'],
+           ['7天內',exp7,'var(--warning)'],['30天內',exp30,'var(--info)'],['正常',ok,'var(--primary)']].map(([l,v,color])=>
+          `<div style="background:#f9f9f9;border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:20px;font-weight:700;color:${color}">${v}</div>
+            <div style="font-size:11px;color:var(--text2)">${l}</div>
+          </div>`).join('')}
+      </div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px">📡 電信業者分布</div>
+      ${carrierRows}
+      ${noExpire > 0 ? `<div style="font-size:12px;color:var(--text2);margin-top:8px">※ ${noExpire} 張門號未設定到期日</div>` : ''}
+    </div>`;
+}
+
+// ── 首頁統計卡片點擊：顯示門號清單 Modal ─────────────────
+async function openSimListModal(filter) {
+  const titleMap = { all:'📱 所有門號', expiring:'⚠️ 7天內到期門號', expired:'❌ 已到期門號' };
+  document.getElementById('broadcastModalTitle').textContent = titleMap[filter] || '門號列表';
+  // 若 simCards 為空則先載入
+  if (!STATE.simCards.length) {
+    const r = await api('getSimCards', {});
+    if (r.success && r.data) {
+      STATE.simCards = [...r.data].sort((a,b) => {
+        const na = parseInt((a['門號編號']||a.sim_number||'').replace(/[^0-9]/g,''))||99999;
+        const nb = parseInt((b['門號編號']||b.sim_number||'').replace(/[^0-9]/g,''))||99999;
+        return na-nb;
+      });
+      updateAppSimSelect(STATE.simCards);
+    }
+  }
+
+  const today = new Date();
+  let cards = [...STATE.simCards];
+  if (filter === 'expiring') {
+    cards = cards.filter(c => {
+      const dl = c.days_left != null ? c.days_left : (c['到期日'] ? Math.ceil((new Date(String(c['到期日']).replace(/\//g,'-'))-today)/86400000) : null);
+      return dl != null && dl >= 0 && dl <= 7;
+    });
+  } else if (filter === 'expired') {
+    cards = cards.filter(c => {
+      const dl = c.days_left != null ? c.days_left : (c['到期日'] ? Math.ceil((new Date(String(c['到期日']).replace(/\//g,'-'))-today)/86400000) : null);
+      return dl != null && dl < 0;
+    });
+  }
+  // 預設排序：門號編號由小到大
+  cards.sort((a, b) => {
+    const na = parseInt((a['門號編號']||a.sim_number||'').replace(/\D/g,'')) || 99999;
+    const nb = parseInt((b['門號編號']||b.sim_number||'').replace(/\D/g,'')) || 99999;
+    return na - nb;
+  });
+
+  if (!cards.length) {
+    document.getElementById('broadcastModalBody').innerHTML = '<div class="empty-state" style="padding:24px 0"><span class="icon" style="font-size:36px">📭</span><p>沒有符合的門號</p></div>';
+    openModal('broadcastModal');
+    return;
+  }
+
+  const listHtml = `
+    <div style="max-height:65vh;overflow-y:auto">
+    ${cards.map(c => {
+      const id      = c['編號']     || c.id           || '';
+      const carrier = c['電信業者'] || c.carrier       || '';
+      const phone   = c['門號號碼'] || c.phone_number  || '';
+      const expire  = c['到期日']   || c.expire_date   || '';
+      const simNum  = c['門號編號'] || c.sim_number    || '';
+      const dl      = c.days_left;
+      const badge   = dl == null ? ''
+        : dl <= 0 ? '<span style="background:#fde8e8;color:#9b1c1c;font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px">已到期</span>'
+        : dl <= 7 ? `<span style="background:#fff3cd;color:#856404;font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px">${dl}天</span>`
+        : `<span style="background:#e8f8ef;color:#1a7a44;font-size:11px;padding:2px 7px;border-radius:10px">${dl}天</span>`;
+      return `<div style="padding:10px 2px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:14px;font-weight:600">${esc(carrier)} ${esc(phone)}</div>
+            ${simNum?`<div style="font-size:11px;color:var(--text2)">編號：${esc(simNum)} · 到期：${expire||'未設定'}</div>`:`<div style="font-size:11px;color:var(--text2)">到期：${expire||'未設定'}</div>`}
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">${badge}
+            <button class="btn btn-xs btn-outline" onclick="closeModal('broadcastModal');openEditSim('${esc(id)}')">✏️</button>
+            <button class="btn btn-xs btn-outline btn-danger-xs" onclick="closeModal('broadcastModal');deleteSim('${esc(id)}')">🗑️</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+    </div>
+    <button class="btn btn-outline" style="margin-top:12px" onclick="closeModal('broadcastModal');switchPage('SimCards')">📱 前往門號管理頁</button>`;
+  document.getElementById('broadcastModalBody').innerHTML = listHtml;
+  openModal('broadcastModal');
+}
+
+// ── APP 批量設定 ────────────────────────────────────────────
+function openBatchAppModal() {
+  const simId = document.getElementById('appSimSelect')?.value;
+  if (!simId) return showToast('請先選擇門號', 'error');
+  // 填入 APP 清單
+  const listEl = document.getElementById('batchAppList');
+  if (!listEl) return;
+  if (!STATE.appPlatforms.length) {
+    listEl.innerHTML = '<p style="font-size:13px;color:var(--text2);padding:8px">尚無 APP 平台資料</p>';
+  } else {
+    listEl.innerHTML = STATE.appPlatforms.map(p => {
+      const id   = p['編號']||p.id||'';
+      const name = p['名稱']||p.name||'';
+      const icon = p['圖標']||p.icon||'📱';
+      return `<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;cursor:pointer;font-size:14px">
+        <input type="checkbox" class="batch-app-chk" value="${esc(id)}" style="width:15px;height:15px;accent-color:var(--primary)">
+        <span>${icon} ${esc(name)}</span>
+      </label>`;
+    }).join('');
+  }
+  openModal('batchAppModal');
+}
+
+async function applyBatchApp() {
+  const simId = document.getElementById('appSimSelect')?.value;
+  if (!simId) return showToast('請先選擇門號', 'error');
+  const status = document.getElementById('batchAppStatus').value === 'true';
+  const checked = Array.from(document.querySelectorAll('.batch-app-chk:checked')).map(el => el.value);
+  // 若沒選 = 全選
+  const targets = checked.length > 0 ? checked : STATE.appPlatforms.map(p => p['編號']||p.id||'');
+  if (!targets.length) return showToast('沒有可設定的平台', 'error');
+
+  const btn = document.querySelector('#batchAppModal .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 套用中...'; }
+  let ok = 0;
+  for (const platId of targets) {
+    const plat = STATE.appPlatforms.find(p => (p['編號']||p.id) === platId);
+    const days = plat?.register_days || 30;
+    const r = await api('quickToggleApp', { sim_card_id: simId, platform_id: platId, is_registered: status, register_days: days });
+    if (r.success) ok++;
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '✅ 套用設定'; }
+  showToast(`✅ 已套用 ${ok} 個平台`, 'success');
+  closeModal('batchAppModal');
+  loadAppRegistrations();
+}
+
+async function adminViewAllSims() {
+  document.getElementById('broadcastModalTitle').textContent = '📱 全部門號總覽';
+  document.getElementById('broadcastModalBody').innerHTML = '<p style="color:var(--text2);font-size:14px;padding:20px 0 10px;text-align:center">載入中...</p>';
+  openModal('broadcastModal');
+  const r = await api('adminGetAllSimCards');
+  if (!r.success || !r.data) {
+    document.getElementById('broadcastModalBody').innerHTML = '<p style="color:var(--danger);padding:10px">載入失敗</p>';
+    return;
+  }
+  const today = new Date();
+  const cards = r.data;
+  const expiringSoon = cards.filter(c => {
+    const dl = c.days_left;
+    return dl != null && dl >= 0 && dl <= 7;
+  });
+  document.getElementById('broadcastModalBody').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="background:#f0fbf4;border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:var(--primary)">${cards.length}</div>
+        <div style="font-size:11px;color:var(--text2)">總門號數</div>
+      </div>
+      <div style="background:#fff3cd;border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:var(--warning)">${expiringSoon.length}</div>
+        <div style="font-size:11px;color:var(--text2)">7天內到期</div>
+      </div>
+    </div>
+    <div style="max-height:50vh;overflow-y:auto">
+    ${cards.map(c => {
+      const carrier = c['電信業者']||c.carrier||'';
+      const phone   = c['門號號碼']||c.phone_number||'';
+      const acc     = c.account||'';
+      const expire  = c['到期日']||c.expire_date||'';
+      const dl      = c.days_left;
+      const badge   = dl == null ? '' : dl <= 0 ? '<span style="color:#9b1c1c;font-size:11px;font-weight:700">已到期</span>' : dl <= 7 ? `<span style="color:#856404;font-size:11px;font-weight:700">${dl}天</span>` : `<span style="color:#1a7a44;font-size:11px">${dl}天</span>`;
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:13px;font-weight:600">${esc(carrier)} ${esc(phone)}</div>
+          <div style="font-size:11px;color:var(--text2)">${esc(acc)} · ${expire||'未設定'}</div>
+        </div>
+        <div>${badge}</div>
+      </div>`;
+    }).join('')}
+    </div>`;
 }
 
 async function adminExport() {
   const r = await api('adminExportAll');
-  if (!r.success) return showToast('匯出失敗', 'error');
+  if (!r.success) return showToast('匯出失敗','error');
   const headers = ['帳號','電信業者','門號號碼','門號編號','初辦日','到期日','辦理人','備註'];
-  const rows = r.data.map(c => [c.account,c.carrier,c.phone_number,c.sim_number,c.start_date,c.expire_date,c.applicant,c.notes]);
-  const csv = [headers, ...rows].map(r => r.map(v => `"${v||''}"`).join(',')).join('\n');
-  const blob = new Blob(['\ufeff'+csv], { type: 'text/csv;charset=utf-8;' });
+  const rows = r.data.map(c => [
+    c['帳號']||c.account, c['電信業者']||c.carrier, c['門號號碼']||c.phone_number,
+    c['門號編號']||c.sim_number, c['初辦日']||c.start_date, c['到期日']||c.expire_date,
+    c['辦理人']||c.applicant, c['備註']||c.notes
+  ]);
+  const csv = [headers,...rows].map(r=>r.map(v=>`"${v||''}"`).join(',')).join('\n');
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = '全部門號資料.csv'; a.click();
-  showToast('匯出成功', 'success');
+  a.href = URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download='全部門號資料.csv'; a.click();
+  showToast('✅ 匯出成功','success');
 }
 
 // ============================================================
-//  工具
+//  工具 - Modal / Dialog / Toast
 // ============================================================
 function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = '';  // 重置 display，避免被覆蓋
+  });
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.add('active');
+    el.style.display = '';
+  }
 }
-
-function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
 
 function openAddPlatformModal() {
-  document.getElementById('newPlatName').value  = '';
-  document.getElementById('newPlatIcon').value  = '📱';
+  document.getElementById('newPlatName').value = '';
+  document.getElementById('newPlatIcon').value = '📱';
   openModal('addPlatformModal');
 }
 
+// 自訂確認對話框（取代 confirm）
+function showConfirm(title, msg, confirmLabel, confirmClass, onConfirm) {
+  const ov = document.getElementById('dialogOverlay');
+  document.getElementById('dialogContent').innerHTML = `
+    <div class="confirm-modal">
+      <span class="confirm-icon">⚠️</span>
+      <div class="confirm-title">${esc(title)}</div>
+      <div class="confirm-msg">${esc(msg)}</div>
+      <div class="confirm-btns">
+        <button class="btn btn-outline" onclick="closeDialog()">取消</button>
+        <button class="btn ${confirmClass||'btn-primary'}" onclick="closeDialog();(${onConfirm.toString()})()">
+          ${esc(confirmLabel||'確定')}
+        </button>
+      </div>
+    </div>`;
+  ov.classList.add('open');
+}
+
+// 自訂輸入對話框（取代 prompt）
+function openInputModal(title, sub, placeholder, onSubmit, isTextarea) {
+  document.getElementById('broadcastModalTitle').textContent = title;
+  const inputHtml = isTextarea
+    ? `<textarea id="inputModalVal" class="form-control" rows="4" placeholder="${esc(placeholder)}"></textarea>`
+    : `<input type="text" id="inputModalVal" class="form-control" placeholder="${esc(placeholder)}">`;
+  document.getElementById('broadcastModalBody').innerHTML = `
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">${esc(sub)}</p>
+    <div class="form-group">${inputHtml}</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-outline" onclick="closeModal('broadcastModal')">取消</button>
+      <button class="btn btn-primary" onclick="
+        const v=document.getElementById('inputModalVal').value.trim();
+        if(!v){showToast('請輸入內容','error');return;}
+        closeModal('broadcastModal');
+        (${onSubmit.toString()})(v);
+      ">確定送出</button>
+    </div>`;
+  openModal('broadcastModal');
+}
+
+function closeDialog() { document.getElementById('dialogOverlay').classList.remove('open'); }
+
+// ── 試算表管理 ─────────────────────────────────────────────
+function openSheetToggle() {
+  document.getElementById('broadcastModalTitle').textContent = '📊 試算表資料管理';
+  document.getElementById('broadcastModalBody').innerHTML = `
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px">
+      此功能可顯示或隱藏 Google 試算表中的所有工作表，<br>
+      請輸入密碼確認身份。
+    </p>
+    <div class="form-group">
+      <label>顯示密碼</label>
+      <input type="password" id="sheetPwd" class="form-control" placeholder="請輸入密碼" maxlength="20">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-outline" style="flex:1" onclick="closeModal('broadcastModal')">取消</button>
+      <button class="btn btn-outline" style="flex:1;border-color:var(--info);color:var(--info)" onclick="doSheetToggle(false)">🙈 隱藏工作表</button>
+      <button class="btn btn-primary" style="flex:1" onclick="doSheetToggle(true)">👁️ 顯示工作表</button>
+    </div>`;
+  openModal('broadcastModal');
+}
+
+async function doSheetToggle(show) {
+  const pwd = document.getElementById('sheetPwd').value;
+  if (!pwd) return showToast('請輸入密碼', 'error');
+  // 先驗證密碼
+  const v = await api('verifySheetPwd', { password: pwd });
+  if (!v.success) return showToast('❌ 密碼錯誤', 'error');
+  // 操作
+  const r = await api('adminToggleSheets', { show });
+  if (r.success) {
+    showToast(show ? '✅ 已顯示所有工作表' : '✅ 已隱藏工作表', 'success');
+    closeModal('broadcastModal');
+  } else { showToast(r.error || '操作失敗', 'error'); }
+}
+
+// ── 防重複點擊 ──────────────────────────────────────────────
+const _loading = new Set();
+async function withLoading(key, btn, loadingText, fn) {
+  if (_loading.has(key)) return;
+  _loading.add(key);
+  const origText = btn ? btn.innerHTML : '';
+  const origDisabled = btn ? btn.disabled : false;
+  if (btn) { btn.disabled = true; btn.innerHTML = `<span style="opacity:.7">${loadingText}</span>`; }
+  try { await fn(); }
+  finally {
+    _loading.delete(key);
+    if (btn) { btn.disabled = origDisabled; btn.innerHTML = origText; }
+  }
+}
+
 let toastTimer;
-function showToast(msg, type = '') {
+function showToast(msg, type='') {
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.className = 'show ' + type;
@@ -1202,11 +3119,17 @@ function showToast(msg, type = '') {
   toastTimer = setTimeout(() => { el.className = ''; }, 3000);
 }
 
-// 點擊 overlay 外部關閉
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) overlay.classList.remove('open');
-  });
+// XSS 防護
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// 點擊 overlay 背景關閉
+document.querySelectorAll('.modal-overlay').forEach(ov => {
+  ov.addEventListener('click', e => { if (e.target === ov) ov.classList.remove('open'); });
+});
+document.getElementById('dialogOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('dialogOverlay')) closeDialog();
 });
 
 // 啟動
