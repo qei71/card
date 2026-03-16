@@ -211,6 +211,20 @@ textarea.form-control { resize: vertical; min-height: 80px; }
         <label>密碼</label>
         <input type="password" id="loginPassword" class="form-control" placeholder="請輸入密碼">
       </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;color:var(--text)">
+          <input type="checkbox" id="chkSaveAccount" style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer">
+          記住帳號
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;color:var(--text)">
+          <input type="checkbox" id="chkSavePassword" style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer">
+          記住密碼
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;color:var(--primary);font-weight:600">
+          <input type="checkbox" id="chkAutoLogin" style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer">
+          自動登入（下次開啟自動進入）
+        </label>
+      </div>
       <button class="btn btn-primary" onclick="doLogin()">🔐 登入</button>
     </div>
     <div id="registerForm" style="display:none">
@@ -456,8 +470,8 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 // ============================================================
 //  全域狀態
 // ============================================================
-const GAS_URL = ''; // ← 部署後填入 GAS Web App URL
-const LIFF_ID = ''; // ← 填入你的 LIFF ID
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyHnm1c5pxJtCoK2CzgeqlMxT-g6P2cTCnB-HViPGsY0NU9Bxr2qlkotNfXHG3D9N8qcw/exec'; // ← 部署後將 %%GAS_URL%% 換成你的 Web App URL
+const LIFF_ID = '2009472960-ppLd7yCA';
 
 let STATE = {
   token: localStorage.getItem('token') || '',
@@ -466,6 +480,8 @@ let STATE = {
   simCards: [],
   appPlatforms: [],
 };
+// 登入偏好設定
+const LOGIN_PREF = JSON.parse(localStorage.getItem('login_pref') || '{"saveAccount":false,"savedAccount":"","savePassword":false,"savedPassword":"","autoLogin":false}');
 
 // ============================================================
 //  LIFF 初始化
@@ -490,11 +506,29 @@ async function initLiff() {
 
 function initApp() {
   document.getElementById('loading').style.display = 'none';
+  // 帶入已儲存的帳號密碼
+  if (LOGIN_PREF.saveAccount && LOGIN_PREF.savedAccount) {
+    document.getElementById('loginAccount').value = LOGIN_PREF.savedAccount;
+    document.getElementById('chkSaveAccount').checked = true;
+  }
+  if (LOGIN_PREF.savePassword && LOGIN_PREF.savedPassword) {
+    document.getElementById('loginPassword').value = LOGIN_PREF.savedPassword;
+    document.getElementById('chkSavePassword').checked = true;
+  }
+  if (LOGIN_PREF.autoLogin) {
+    document.getElementById('chkAutoLogin').checked = true;
+  }
+  // 自動登入：有 token + 有開啟自動登入
+  if (LOGIN_PREF.autoLogin && STATE.token && STATE.session) {
+    showApp();
+    return;
+  }
+  // 一般已登入（token 存在）
   if (STATE.token && STATE.session) {
     showApp();
-  } else {
-    showScreen('authScreen');
+    return;
   }
+  showScreen('authScreen');
 }
 
 // ============================================================
@@ -526,6 +560,17 @@ async function doLogin() {
   const account  = document.getElementById('loginAccount').value.trim();
   const password = document.getElementById('loginPassword').value;
   if (!account || !password) return showToast('請填入帳號密碼', 'error');
+  // 儲存登入偏好
+  const saveAcc   = document.getElementById('chkSaveAccount').checked;
+  const savePwd   = document.getElementById('chkSavePassword').checked;
+  const autoLogin = document.getElementById('chkAutoLogin').checked;
+  localStorage.setItem('login_pref', JSON.stringify({
+    saveAccount:   saveAcc,
+    savedAccount:  saveAcc ? account : '',
+    savePassword:  savePwd,
+    savedPassword: savePwd ? password : '',
+    autoLogin:     autoLogin,
+  }));
   showToast('登入中...');
   const r = await api('login', { account, password, line_user_id: STATE.lineUserId });
   if (r.success) {
@@ -559,6 +604,10 @@ function doLogout() {
   STATE.session = null;
   localStorage.removeItem('token');
   localStorage.removeItem('session');
+  // 登出時關閉自動登入，但保留已儲存的帳號密碼
+  const pref = JSON.parse(localStorage.getItem('login_pref') || '{}');
+  pref.autoLogin = false;
+  localStorage.setItem('login_pref', JSON.stringify(pref));
   showScreen('authScreen');
 }
 
