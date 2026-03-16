@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>預付卡管理系統</title>
+<script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
+<style>
+:root {
+  --primary: #06C755;
+  --primary-dark: #05a847;
+  --danger: #e74c3c;
+  --warning: #f39c12;
+  --info: #3498db;
+  --bg: #f0f2f5;
+  --card: #ffffff;
+  --text: #1a1a1a;
+  --text2: #666;
+  --border: #e5e7eb;
+  --radius: 12px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── 載入畫面 ── */
+#loading { position: fixed; inset: 0; background: var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; }
+#loading .logo { font-size: 48px; margin-bottom: 16px; }
+#loading p { color: #fff; font-size: 16px; }
+
+/* ── 畫面切換 ── */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: block; }
+
+/* ── 登入/註冊 ── */
+#authScreen { background: linear-gradient(160deg, #06C755 0%, #05a847 100%); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.auth-card { background: #fff; border-radius: 20px; padding: 32px 24px; width: 100%; max-width: 360px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
+.auth-logo { text-align: center; margin-bottom: 24px; }
+.auth-logo .icon { font-size: 48px; display: block; margin-bottom: 8px; }
+.auth-logo h1 { font-size: 20px; font-weight: 700; color: var(--text); }
+.auth-logo p { font-size: 13px; color: var(--text2); margin-top: 4px; }
+.tab-btns { display: flex; background: var(--bg); border-radius: 8px; padding: 4px; margin-bottom: 20px; }
+.tab-btn { flex: 1; padding: 8px; border: none; background: none; border-radius: 6px; font-size: 14px; cursor: pointer; color: var(--text2); transition: all .2s; }
+.tab-btn.active { background: #fff; color: var(--primary); font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+
+/* ── 表單元素 ── */
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
+.form-control { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 15px; outline: none; transition: border .2s; background: #fff; }
+.form-control:focus { border-color: var(--primary); }
+select.form-control { cursor: pointer; }
+textarea.form-control { resize: vertical; min-height: 80px; }
+
+/* ── 按鈕 ── */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 20px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all .15s; width: 100%; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:active { background: var(--primary-dark); transform: scale(0.98); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-outline { background: none; border: 1.5px solid var(--border); color: var(--text); }
+.btn-sm { padding: 8px 14px; font-size: 13px; width: auto; border-radius: 8px; }
+.btn-icon { width: 36px; height: 36px; padding: 0; border-radius: 8px; }
+
+/* ── 導航 ── */
+#appScreen { padding-bottom: 70px; }
+.top-bar { background: #fff; padding: 14px 16px 10px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
+.top-bar h2 { font-size: 17px; font-weight: 700; }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid var(--border); display: flex; z-index: 100; }
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 8px 0 6px; cursor: pointer; color: var(--text2); font-size: 10px; gap: 3px; transition: color .2s; border: none; background: none; }
+.nav-item.active { color: var(--primary); }
+.nav-item .ni { font-size: 22px; line-height: 1; }
+
+/* ── 頁籤內容 ── */
+.page { display: none; padding: 12px 14px; }
+.page.active { display: block; }
+
+/* ── 卡片 ── */
+.card { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.card-title { font-size: 15px; font-weight: 700; }
+
+/* ── 儀表板統計 ── */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.stat-card { background: #fff; border-radius: 12px; padding: 14px 12px; box-shadow: var(--shadow); text-align: center; }
+.stat-num { font-size: 28px; font-weight: 700; line-height: 1; }
+.stat-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.stat-card.green .stat-num { color: var(--primary); }
+.stat-card.red .stat-num { color: var(--danger); }
+.stat-card.orange .stat-num { color: var(--warning); }
+.stat-card.blue .stat-num { color: var(--info); }
+
+/* ── 門號卡片 ── */
+.sim-card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); border-left: 4px solid var(--primary); }
+.sim-card.warning { border-left-color: var(--warning); }
+.sim-card.expired { border-left-color: var(--danger); opacity: .8; }
+.sim-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.sim-badge { padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-ok { background: #e8f8ef; color: #1a7a44; }
+.badge-warning { background: #fff3cd; color: #856404; }
+.badge-expired { background: #fde8e8; color: #9b1c1c; }
+.sim-info { font-size: 14px; color: var(--text2); }
+.sim-info span { display: block; margin-bottom: 4px; }
+.sim-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+/* ── APP 平台 ── */
+.app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.app-item { background: #fff; border-radius: 10px; padding: 10px 8px; text-align: center; box-shadow: var(--shadow); cursor: pointer; transition: all .15s; border: 2px solid transparent; }
+.app-item.checked { border-color: var(--primary); background: #f0fbf4; }
+.app-item .app-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+.app-item .app-name { font-size: 11px; font-weight: 600; color: var(--text); }
+.app-item .app-days { font-size: 10px; color: var(--text2); margin-top: 2px; }
+.app-item .app-countdown { font-size: 10px; color: var(--danger); font-weight: 600; }
+
+/* ── 日誌 ── */
+.log-item { padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 10px; }
+.log-icon { font-size: 18px; flex-shrink: 0; }
+.log-action { font-size: 13px; font-weight: 600; }
+.log-detail { font-size: 12px; color: var(--text2); }
+.log-time { font-size: 11px; color: #999; margin-left: auto; flex-shrink: 0; }
+
+/* ── 通知 ── */
+.notify-item { padding: 12px; background: #f8f9ff; border-radius: 10px; margin-bottom: 8px; }
+.notify-msg { font-size: 13px; white-space: pre-line; }
+.notify-time { font-size: 11px; color: #999; margin-top: 6px; }
+.notify-status { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+.notify-sent { background: #e8f8ef; color: #1a7a44; }
+.notify-failed { background: #fde8e8; color: #9b1c1c; }
+
+/* ── Modal ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: flex-end; }
+.modal-overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 20px 20px 0 0; padding: 20px 16px; width: 100%; max-height: 92vh; overflow-y: auto; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.modal-title { font-size: 17px; font-weight: 700; }
+.modal-close { font-size: 22px; cursor: pointer; color: var(--text2); line-height: 1; border: none; background: none; }
+
+/* ── Toast ── */
+#toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; padding: 10px 20px; border-radius: 24px; font-size: 14px; z-index: 999; display: none; white-space: nowrap; }
+#toast.show { display: block; }
+#toast.success { background: var(--primary); }
+#toast.error { background: var(--danger); }
+
+/* ── 管理員 ── */
+.admin-section { margin-bottom: 16px; }
+.admin-section-title { font-size: 13px; font-weight: 700; color: var(--text2); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
+.member-row { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #f9f9f9; border-radius: 10px; margin-bottom: 6px; }
+.member-info .name { font-size: 14px; font-weight: 600; }
+.member-info .meta { font-size: 12px; color: var(--text2); }
+
+/* ── 批量新增 ── */
+.sim-form-block { background: #f8f9fa; border-radius: 10px; padding: 14px; margin-bottom: 10px; position: relative; }
+.sim-form-block .block-num { position: absolute; top: 10px; right: 12px; font-size: 12px; color: var(--text2); font-weight: 600; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ── 公告 ── */
+.announce-item { padding: 12px; background: linear-gradient(135deg, #f0fbf4, #e8f8ef); border-radius: 10px; border-left: 3px solid var(--primary); margin-bottom: 8px; }
+.announce-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.announce-content { font-size: 13px; color: var(--text2); }
+.announce-time { font-size: 11px; color: #999; margin-top: 6px; }
+
+/* ── 行事曆 ── */
+.calendar-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.calendar-date { text-align: center; background: var(--primary); color: #fff; border-radius: 8px; padding: 6px 10px; min-width: 48px; }
+.calendar-date .day { font-size: 18px; font-weight: 700; line-height: 1; }
+.calendar-date .month { font-size: 10px; opacity: .85; }
+.calendar-info .carrier { font-size: 14px; font-weight: 600; }
+.calendar-info .phone { font-size: 12px; color: var(--text2); }
+.calendar-days { margin-left: auto; font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 12px; }
+
+/* ── 搜尋 ── */
+.search-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+.search-bar .form-control { flex: 1; padding: 10px 14px; }
+
+/* ── 空狀態 ── */
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text2); }
+.empty-state .icon { font-size: 48px; margin-bottom: 12px; display: block; }
+.empty-state p { font-size: 14px; }
+
+/* ── 響應式 ── */
+@media (max-width: 360px) {
+  .app-grid { grid-template-columns: repeat(3, 1fr); }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- 載入畫面 -->
+<div id="loading">
+  <div class="logo">📱</div>
+  <p>預付卡管理系統載入中...</p>
+</div>
+
+<!-- 登入/註冊 -->
+<div id="authScreen" class="screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="icon">📱</span>
+      <h1>預付卡管理系統</h1>
+      <p>管理您的所有預付卡門號</p>
+    </div>
+    <div class="tab-btns">
+      <button class="tab-btn active" onclick="switchAuthTab('login')">登入</button>
+      <button class="tab-btn" onclick="switchAuthTab('register')">註冊</button>
+    </div>
+    <div id="loginForm">
+      <div class="form-group">
+        <label>帳號</label>
+        <input type="text" id="loginAccount" class="form-control" placeholder="請輸入帳號">
+      </div>
+      <div class="form-group">
+        <label>密碼</label>
+        <input type="password" id="loginPassword" class="form-control" placeholder="請輸入密碼">
+      </div>
+      <button class="btn btn-primary" onclick="doLogin()">🔐 登入</button>
+    </div>
+    <div id="registerForm" style="display:none">
+      <div class="form-group">
+        <label>帳號（4字元以上）</label>
+        <input type="text" id="regAccount" class="form-control" placeholder="請輸入帳號">
+      </div>
+      <div class="form-group">
+        <label>暱稱</label>
+        <input type="text" id="regNickname" class="form-control" placeholder="顯示名稱">
+      </div>
+      <div class="form-group">
+        <label>密碼（6字元以上）</label>
+        <input type="password" id="regPassword" class="form-control" placeholder="請輸入密碼">
+      </div>
+      <button class="btn btn-primary" onclick="doRegister()">✅ 立即註冊</button>
+    </div>
+  </div>
+</div>
+
+<!-- 主應用 -->
+<div id="appScreen" class="screen">
+  <div class="top-bar">
+    <div>
+      <div style="font-size:12px;color:var(--text2)">歡迎回來</div>
+      <h2 id="topBarTitle">📱 預付卡管理</h2>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sm btn-outline btn-icon" id="adminBtn" style="display:none" onclick="showAdminPanel()">⚙️</button>
+      <button class="btn btn-sm btn-outline btn-icon" onclick="doLogout()">🚪</button>
+    </div>
+  </div>
+
+  <!-- 儀表板 -->
+  <div id="pageDashboard" class="page active">
+    <div id="announceArea"></div>
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card green"><div class="stat-num" id="stat-total">-</div><div class="stat-label">門號總數</div></div>
+      <div class="stat-card orange"><div class="stat-num" id="stat-expiring">-</div><div class="stat-label">7天內到期</div></div>
+      <div class="stat-card red"><div class="stat-num" id="stat-expired">-</div><div class="stat-label">已到期</div></div>
+      <div class="stat-card blue"><div class="stat-num" id="stat-notify">-</div><div class="stat-label">通知次數</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">🗓️ 近期到期門號</span></div>
+      <div id="upcomingList"></div>
+    </div>
+  </div>
+
+  <!-- 預付卡管理 -->
+  <div id="pageSimCards" class="page">
+    <div class="search-bar">
+      <input type="text" id="simSearch" class="form-control" placeholder="🔍 搜尋門號..." oninput="filterSims()">
+      <select id="simCarrierFilter" class="form-control" style="max-width:110px" onchange="filterSims()">
+        <option value="">全部業者</option>
+        <option>中華電信</option><option>台灣大哥大</option><option>遠傳電信</option>
+        <option>台灣之星</option><option>亞太電信</option><option>其他</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" style="margin-bottom:12px" onclick="openAddSimModal()">➕ 新增門號</button>
+    <div id="simCardsList"></div>
+  </div>
+
+  <!-- APP 平台 -->
+  <div id="pageApps" class="page">
+    <div class="card" style="margin-bottom:12px">
+      <div class="form-group" style="margin-bottom:0">
+        <label>選擇門號</label>
+        <select id="appSimSelect" class="form-control" onchange="loadAppRegistrations()">
+          <option value="">-- 請先選擇門號 --</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:14px;font-weight:700">已登記的 APP 平台</span>
+      <button class="btn btn-sm btn-outline" onclick="openAddPlatformModal()">＋ 新增APP</button>
+    </div>
+    <div id="appGrid" class="app-grid"></div>
+  </div>
+
+  <!-- 行事曆 -->
+  <div id="pageCalendar" class="page">
+    <div class="card">
+      <div class="card-header"><span class="card-title">📅 門號到期行事曆</span></div>
+      <div id="calendarList"></div>
+    </div>
+  </div>
+
+  <!-- 通知/日誌 -->
+  <div id="pageLog" class="page">
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn btn-sm btn-outline" id="logTabNotify" onclick="switchLogTab('notify')" style="flex:1;border-color:var(--primary);color:var(--primary)">🔔 通知記錄</button>
+      <button class="btn btn-sm btn-outline" id="logTabAudit" onclick="switchLogTab('audit')" style="flex:1">📋 操作日誌</button>
+    </div>
+    <div id="notifyList"></div>
+    <div id="auditList" style="display:none"></div>
+  </div>
+
+  <!-- 個人資料 -->
+  <div id="pageProfile" class="page">
+    <div class="card">
+      <div class="card-header"><span class="card-title">👤 個人資料</span></div>
+      <div class="form-group"><label>帳號</label><input type="text" id="profileAccount" class="form-control" readonly style="background:#f5f5f5"></div>
+      <div class="form-group"><label>暱稱</label><input type="text" id="profileNickname" class="form-control"></div>
+      <div class="form-group"><label>LINE 綁定狀態</label><input type="text" id="profileLineId" class="form-control" readonly style="background:#f5f5f5"></div>
+      <div class="form-group"><label>最後登入</label><input type="text" id="profileLastLogin" class="form-control" readonly style="background:#f5f5f5"></div>
+      <button class="btn btn-primary" onclick="saveProfile()">💾 儲存資料</button>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="card-header"><span class="card-title">🔒 修改密碼</span></div>
+      <div class="form-group"><label>舊密碼</label><input type="password" id="oldPwd" class="form-control" placeholder="請輸入舊密碼"></div>
+      <div class="form-group"><label>新密碼</label><input type="password" id="newPwd" class="form-control" placeholder="新密碼（6字元以上）"></div>
+      <button class="btn btn-outline" onclick="doChangePassword()">🔑 修改密碼</button>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="card-header"><span class="card-title">📤 資料匯出</span></div>
+      <button class="btn btn-outline" onclick="exportMyData()">📥 匯出我的門號資料</button>
+    </div>
+  </div>
+</div>
+
+<!-- 底部導航 -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="nav-item active" onclick="switchPage('Dashboard')"><span class="ni">🏠</span>首頁</button>
+  <button class="nav-item" onclick="switchPage('SimCards')"><span class="ni">📱</span>門號</button>
+  <button class="nav-item" onclick="switchPage('Apps')"><span class="ni">📲</span>APP</button>
+  <button class="nav-item" onclick="switchPage('Calendar')"><span class="ni">📅</span>行事曆</button>
+  <button class="nav-item" onclick="switchPage('Log')"><span class="ni">📋</span>日誌</button>
+  <button class="nav-item" onclick="switchPage('Profile')"><span class="ni">👤</span>我的</button>
+</nav>
+
+<!-- === MODALS === -->
+
+<!-- 新增門號 Modal -->
+<div class="modal-overlay" id="addSimModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">新增預付卡門號</span>
+      <button class="modal-close" onclick="closeModal('addSimModal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label>要新增幾個門號？</label>
+      <select id="simCount" class="form-control" onchange="renderSimForms()">
+        <option value="1">1 個</option>
+        <option value="2">2 個</option>
+        <option value="3">3 個</option>
+        <option value="5">5 個</option>
+        <option value="10">10 個</option>
+      </select>
+    </div>
+    <div id="simFormsContainer"></div>
+    <button class="btn btn-primary" style="margin-top:8px" onclick="submitSimCards()">✅ 確認新增</button>
+  </div>
+</div>
+
+<!-- 編輯門號 Modal -->
+<div class="modal-overlay" id="editSimModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">編輯門號</span>
+      <button class="modal-close" onclick="closeModal('editSimModal')">✕</button>
+    </div>
+    <input type="hidden" id="editSimId">
+    <div class="form-row">
+      <div class="form-group"><label>電信業者</label>
+        <select id="editCarrier" class="form-control"><option>中華電信</option><option>台灣大哥大</option><option>遠傳電信</option><option>台灣之星</option><option>亞太電信</option><option>其他</option></select>
+      </div>
+      <div class="form-group"><label>門號號碼</label><input type="text" id="editPhone" class="form-control"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>門號編號</label><input type="text" id="editSimNum" class="form-control"></div>
+      <div class="form-group"><label>序號</label><input type="text" id="editSerial" class="form-control"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>初辦日</label><input type="date" id="editStartDate" class="form-control"></div>
+      <div class="form-group"><label>到期日</label><input type="date" id="editExpireDate" class="form-control"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>辦理人</label><input type="text" id="editApplicant" class="form-control"></div>
+      <div class="form-group"><label>辦理人證號</label><input type="text" id="editApplicantId" class="form-control"></div>
+    </div>
+    <div class="form-group"><label>備註</label><textarea id="editNotes" class="form-control"></textarea></div>
+    <button class="btn btn-primary" onclick="submitEditSim()">💾 儲存</button>
+  </div>
+</div>
+
+<!-- APP 詳細 Modal -->
+<div class="modal-overlay" id="appDetailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="appDetailTitle">APP 詳情</span>
+      <button class="modal-close" onclick="closeModal('appDetailModal')">✕</button>
+    </div>
+    <input type="hidden" id="appDetailPlatId">
+    <input type="hidden" id="appDetailSimId">
+    <div class="form-group">
+      <label>是否已註冊</label>
+      <select id="appIsRegistered" class="form-control">
+        <option value="true">✅ 已註冊</option>
+        <option value="false">❌ 未註冊</option>
+      </select>
+    </div>
+    <div class="form-group"><label>最後註冊日期</label><input type="date" id="appLastRegDate" class="form-control"></div>
+    <div class="form-group"><label>可重複使用嗎？</label><input type="text" id="appCanRepeat" class="form-control" readonly style="background:#f5f5f5"></div>
+    <div class="form-group"><label>需間隔天數（下次註冊週期）</label><input type="number" id="appRegDays" class="form-control" value="30" min="1"></div>
+    <div class="form-group"><label>下次可用日（自動計算）</label><input type="text" id="appNextDate" class="form-control" readonly style="background:#f5f5f5"></div>
+    <button class="btn btn-primary" onclick="saveAppRegistration()">💾 儲存設定</button>
+  </div>
+</div>
+
+<!-- 新增 APP 平台 Modal -->
+<div class="modal-overlay" id="addPlatformModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">新增 APP 平台</span>
+      <button class="modal-close" onclick="closeModal('addPlatformModal')">✕</button>
+    </div>
+    <div class="form-group"><label>平台名稱</label><input type="text" id="newPlatName" class="form-control" placeholder="例如：美食APP"></div>
+    <div class="form-group"><label>圖標（Emoji）</label><input type="text" id="newPlatIcon" class="form-control" placeholder="例如：🍔" value="📱"></div>
+    <div class="form-group"><label>是否可重複註冊</label>
+      <select id="newPlatRepeat" class="form-control">
+        <option value="true">✅ 可重複</option>
+        <option value="false">❌ 不可重複</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="submitAddPlatform()">✅ 新增</button>
+  </div>
+</div>
+
+<!-- 管理員面板 Modal -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">⚙️ 管理員控制台</span>
+      <button class="modal-close" onclick="closeModal('adminModal')">✕</button>
+    </div>
+    <div id="adminContent"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ============================================================
+//  全域狀態
+// ============================================================
+const GAS_URL = ''; // ← 部署後填入 GAS Web App URL
+const LIFF_ID = ''; // ← 填入你的 LIFF ID
+
+let STATE = {
+  token: localStorage.getItem('token') || '',
+  session: JSON.parse(localStorage.getItem('session') || 'null'),
+  lineUserId: '',
+  simCards: [],
+  appPlatforms: [],
+};
+
+// ============================================================
+//  LIFF 初始化
+// ============================================================
+async function initLiff() {
+  try {
+    if (LIFF_ID) {
+      await liff.init({ liffId: LIFF_ID });
+      if (liff.isLoggedIn()) {
+        const profile = await liff.getProfile();
+        STATE.lineUserId = profile.userId;
+      } else {
+        liff.login();
+        return;
+      }
+    }
+  } catch (e) {
+    console.log('LIFF init error (ok in browser):', e);
+  }
+  initApp();
+}
+
+function initApp() {
+  document.getElementById('loading').style.display = 'none';
+  if (STATE.token && STATE.session) {
+    showApp();
+  } else {
+    showScreen('authScreen');
+  }
+}
+
+// ============================================================
+//  API 請求
+// ============================================================
+async function api(action, data = {}) {
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action, token: STATE.token, ...data }),
+    });
+    return await res.json();
+  } catch (e) {
+    showToast('網路錯誤，請稍後再試', 'error');
+    return { success: false, error: e.message };
+  }
+}
+
+// ============================================================
+//  認證
+// ============================================================
+function switchAuthTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === (tab === 'login' ? 0 : 1)));
+  document.getElementById('loginForm').style.display    = tab === 'login' ? '' : 'none';
+  document.getElementById('registerForm').style.display = tab === 'register' ? '' : 'none';
+}
+
+async function doLogin() {
+  const account  = document.getElementById('loginAccount').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if (!account || !password) return showToast('請填入帳號密碼', 'error');
+  showToast('登入中...');
+  const r = await api('login', { account, password, line_user_id: STATE.lineUserId });
+  if (r.success) {
+    STATE.token = r.token;
+    STATE.session = r.session;
+    localStorage.setItem('token', r.token);
+    localStorage.setItem('session', JSON.stringify(r.session));
+    showApp();
+  } else {
+    showToast(r.error || '登入失敗', 'error');
+  }
+}
+
+async function doRegister() {
+  const account  = document.getElementById('regAccount').value.trim();
+  const nickname = document.getElementById('regNickname').value.trim();
+  const password = document.getElementById('regPassword').value;
+  if (!account || !password) return showToast('請填入帳號密碼', 'error');
+  const r = await api('register', { account, nickname, password });
+  if (r.success) {
+    showToast('註冊成功！請登入', 'success');
+    switchAuthTab('login');
+    document.getElementById('loginAccount').value = account;
+  } else {
+    showToast(r.error || '註冊失敗', 'error');
+  }
+}
+
+function doLogout() {
+  STATE.token = '';
+  STATE.session = null;
+  localStorage.removeItem('token');
+  localStorage.removeItem('session');
+  showScreen('authScreen');
+}
+
+// ============================================================
+//  主畫面
+// ============================================================
+function showApp() {
+  showScreen('appScreen');
+  document.getElementById('topBarTitle').textContent = '👋 ' + (STATE.session.nickname || STATE.session.account);
+  if (STATE.session.is_admin) {
+    document.getElementById('adminBtn').style.display = '';
+  }
+  loadDashboard();
+  loadSimCards();
+  loadProfile();
+}
+
+function switchPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page' + name).classList.add('active');
+  const navIdx = ['Dashboard','SimCards','Apps','Calendar','Log','Profile'].indexOf(name);
+  document.querySelectorAll('.nav-item')[navIdx]?.classList.add('active');
+
+  if (name === 'Calendar') loadCalendar();
+  if (name === 'Log') { loadNotifications(); loadAuditLogs(); }
+  if (name === 'Apps') loadAppSimSelect();
+}
+
+// ============================================================
+//  儀表板
+// ============================================================
+async function loadDashboard() {
+  const [dash, announce] = await Promise.all([
+    api('getDashboard'),
+    api('getAnnouncements'),
+  ]);
+  if (dash.success) {
+    document.getElementById('stat-total').textContent    = dash.data.total;
+    document.getElementById('stat-expiring').textContent = dash.data.expiring;
+    document.getElementById('stat-expired').textContent  = dash.data.expired;
+    document.getElementById('stat-notify').textContent   = dash.data.notifyCount;
+  }
+  if (announce.success && announce.data.length > 0) {
+    document.getElementById('announceArea').innerHTML = announce.data.map(a =>
+      `<div class="announce-item"><div class="announce-title">📢 ${a.title}</div><div class="announce-content">${a.content}</div><div class="announce-time">${a.created_at}</div></div>`
+    ).join('');
+  }
+  loadUpcoming();
+}
+
+async function loadUpcoming() {
+  const r = await api('getSimCards', {});
+  if (!r.success) return;
+  const upcoming = r.data.filter(c => c.days_left !== undefined && c.days_left >= 0 && c.days_left <= 14)
+    .sort((a, b) => a.days_left - b.days_left).slice(0, 5);
+  const el = document.getElementById('upcomingList');
+  if (upcoming.length === 0) {
+    el.innerHTML = '<div class="empty-state"><span class="icon">✅</span><p>近期無即將到期的門號</p></div>';
+    return;
+  }
+  el.innerHTML = upcoming.map(c => `
+    <div class="calendar-item">
+      <div class="calendar-date ${c.days_left <= 3 ? 'style=background:var(--danger)' : ''}">
+        <div class="day">${c.days_left}</div>
+        <div class="month">天後</div>
+      </div>
+      <div class="calendar-info">
+        <div class="carrier">${c.carrier} ${c.phone_number}</div>
+        <div class="phone">到期：${c.expire_date}</div>
+      </div>
+      <span class="calendar-days ${c.days_left <= 3 ? 'badge-expired' : 'badge-warning'}">${c.days_left <= 3 ? '🚨 緊急' : '⚠️ 注意'}</span>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+//  預付卡管理
+// ============================================================
+async function loadSimCards() {
+  const r = await api('getSimCards', {});
+  if (!r.success) return;
+  STATE.simCards = r.data;
+  renderSimCards(r.data);
+  updateAppSimSelect(r.data);
+}
+
+function renderSimCards(cards) {
+  const el = document.getElementById('simCardsList');
+  if (cards.length === 0) {
+    el.innerHTML = '<div class="empty-state"><span class="icon">📭</span><p>還沒有門號，點上方按鈕新增</p></div>';
+    return;
+  }
+  el.innerHTML = cards.map(c => `
+    <div class="sim-card ${c.status || ''}">
+      <div class="sim-card-header">
+        <strong>${c.carrier} ${c.phone_number}</strong>
+        <span class="sim-badge badge-${c.status || 'ok'}">${c.status === 'expired' ? '❌ 已到期' : c.status === 'warning' ? `⚠️ ${c.days_left}天` : `✅ ${c.days_left ?? '-'}天`}</span>
+      </div>
+      <div class="sim-info">
+        ${c.sim_number ? `<span>📌 門號編號：${c.sim_number}</span>` : ''}
+        <span>📅 到期日：${c.expire_date || '未設定'}</span>
+        ${c.applicant ? `<span>👤 辦理人：${c.applicant}</span>` : ''}
+        ${c.notes ? `<span>📝 備註：${c.notes}</span>` : ''}
+      </div>
+      <div class="sim-actions">
+        <button class="btn btn-sm btn-outline" onclick="openEditSim('${c.id}')">✏️ 編輯</button>
+        <button class="btn btn-sm btn-outline" onclick="deleteSim('${c.id}')">🗑️ 刪除</button>
+        <button class="btn btn-sm btn-outline" onclick="copySimInfo('${c.carrier}','${c.phone_number}')">📋 複製</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterSims() {
+  const search  = document.getElementById('simSearch').value.toLowerCase();
+  const carrier = document.getElementById('simCarrierFilter').value;
+  let cards = STATE.simCards;
+  if (search)  cards = cards.filter(c => (c.phone_number || '').includes(search) || (c.sim_number || '').includes(search));
+  if (carrier) cards = cards.filter(c => c.carrier === carrier);
+  renderSimCards(cards);
+}
+
+function openAddSimModal() {
+  document.getElementById('simCount').value = '1';
+  renderSimForms();
+  openModal('addSimModal');
+}
+
+function renderSimForms() {
+  const count = parseInt(document.getElementById('simCount').value);
+  const carriers = ['中華電信','台灣大哥大','遠傳電信','台灣之星','亞太電信','其他'];
+  const carrierOpts = carriers.map(c => `<option>${c}</option>`).join('');
+  let html = '';
+  for (let i = 0; i < count; i++) {
+    html += `
+    <div class="sim-form-block">
+      <span class="block-num">#${i+1}</span>
+      <div class="form-row">
+        <div class="form-group"><label>電信業者</label><select class="form-control sf-carrier">${carrierOpts}</select></div>
+        <div class="form-group"><label>門號號碼</label><input type="text" class="form-control sf-phone" placeholder="0900000000"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>門號編號</label><input type="text" class="form-control sf-simnum" placeholder="SIM編號"></div>
+        <div class="form-group"><label>序號</label><input type="text" class="form-control sf-serial" placeholder="序號"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>初辦日</label><input type="date" class="form-control sf-start"></div>
+        <div class="form-group"><label>到期日</label><input type="date" class="form-control sf-expire"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>辦理人</label><input type="text" class="form-control sf-applicant"></div>
+        <div class="form-group"><label>辦理人證號</label><input type="text" class="form-control sf-appid"></div>
+      </div>
+      <div class="form-group"><label>備註</label><input type="text" class="form-control sf-notes"></div>
+    </div>`;
+  }
+  document.getElementById('simFormsContainer').innerHTML = html;
+}
+
+async function submitSimCards() {
+  const blocks = document.querySelectorAll('.sim-form-block');
+  const cards = Array.from(blocks).map(b => ({
+    carrier:        b.querySelector('.sf-carrier').value,
+    phone_number:   b.querySelector('.sf-phone').value.trim(),
+    sim_number:     b.querySelector('.sf-simnum').value.trim(),
+    serial_number:  b.querySelector('.sf-serial').value.trim(),
+    start_date:     b.querySelector('.sf-start').value,
+    expire_date:    b.querySelector('.sf-expire').value,
+    applicant:      b.querySelector('.sf-applicant').value.trim(),
+    applicant_id:   b.querySelector('.sf-appid').value.trim(),
+    notes:          b.querySelector('.sf-notes').value.trim(),
+  }));
+  if (cards.some(c => !c.phone_number)) return showToast('請填入門號號碼', 'error');
+  const r = await api('addSimCards', { cards });
+  if (r.success) {
+    showToast(`成功新增 ${cards.length} 個門號`, 'success');
+    closeModal('addSimModal');
+    loadSimCards();
+    loadDashboard();
+  } else {
+    showToast(r.error || '新增失敗', 'error');
+  }
+}
+
+function openEditSim(id) {
+  const c = STATE.simCards.find(s => s.id === id);
+  if (!c) return;
+  document.getElementById('editSimId').value        = id;
+  document.getElementById('editCarrier').value      = c.carrier || '中華電信';
+  document.getElementById('editPhone').value        = c.phone_number || '';
+  document.getElementById('editSimNum').value       = c.sim_number || '';
+  document.getElementById('editSerial').value       = c.serial_number || '';
+  document.getElementById('editStartDate').value    = c.start_date || '';
+  document.getElementById('editExpireDate').value   = c.expire_date || '';
+  document.getElementById('editApplicant').value    = c.applicant || '';
+  document.getElementById('editApplicantId').value  = c.applicant_id || '';
+  document.getElementById('editNotes').value        = c.notes || '';
+  openModal('editSimModal');
+}
+
+async function submitEditSim() {
+  const id = document.getElementById('editSimId').value;
+  const data = {
+    id,
+    carrier:        document.getElementById('editCarrier').value,
+    phone_number:   document.getElementById('editPhone').value.trim(),
+    sim_number:     document.getElementById('editSimNum').value.trim(),
+    serial_number:  document.getElementById('editSerial').value.trim(),
+    start_date:     document.getElementById('editStartDate').value,
+    expire_date:    document.getElementById('editExpireDate').value,
+    applicant:      document.getElementById('editApplicant').value.trim(),
+    applicant_id:   document.getElementById('editApplicantId').value.trim(),
+    notes:          document.getElementById('editNotes').value.trim(),
+  };
+  const r = await api('updateSimCard', data);
+  if (r.success) {
+    showToast('門號更新成功', 'success');
+    closeModal('editSimModal');
+    loadSimCards();
+    loadDashboard();
+  } else {
+    showToast(r.error || '更新失敗', 'error');
+  }
+}
+
+async function deleteSim(id) {
+  if (!confirm('確定要刪除此門號？')) return;
+  const r = await api('deleteSimCard', { id });
+  if (r.success) {
+    showToast('已刪除', 'success');
+    loadSimCards();
+    loadDashboard();
+  } else {
+    showToast(r.error || '刪除失敗', 'error');
+  }
+}
+
+function copySimInfo(carrier, phone) {
+  const text = `${carrier} ${phone}`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('已複製：' + text, 'success'));
+  } else {
+    showToast('複製：' + text, 'success');
+  }
+}
+
+// ============================================================
+//  APP 平台
+// ============================================================
+function updateAppSimSelect(cards) {
+  const sel = document.getElementById('appSimSelect');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">-- 請選擇門號 --</option>' +
+    cards.map(c => `<option value="${c.id}">${c.carrier} ${c.phone_number}</option>`).join('');
+  if (current) sel.value = current;
+}
+
+function loadAppSimSelect() {
+  updateAppSimSelect(STATE.simCards);
+}
+
+async function loadAppRegistrations() {
+  const simId = document.getElementById('appSimSelect').value;
+  if (!simId) {
+    document.getElementById('appGrid').innerHTML = '<p style="color:var(--text2);font-size:14px;text-align:center;padding:20px">請先選擇門號</p>';
+    return;
+  }
+  const r = await api('getAppRegistrations', { sim_card_id: simId });
+  if (!r.success) return;
+  STATE.appPlatforms = r.data;
+  renderAppGrid(r.data, simId);
+}
+
+function renderAppGrid(platforms, simId) {
+  const el = document.getElementById('appGrid');
+  if (platforms.length === 0) {
+    el.innerHTML = '<div class="empty-state"><span class="icon">📲</span><p>尚無 APP 平台</p></div>';
+    return;
+  }
+  el.innerHTML = platforms.map(p => {
+    const countdown = p.countdown !== null ? (p.countdown <= 0 ? '今天到期！' : p.countdown + '天後重新') : '';
+    return `
+    <div class="app-item ${p.is_registered ? 'checked' : ''}" onclick="openAppDetail('${p.id}','${simId}')">
+      <span class="app-icon">${p.icon || '📱'}</span>
+      <div class="app-name">${p.name}</div>
+      <div class="app-days">${p.register_days || 30}天週期</div>
+      ${p.is_registered ? `<div class="app-countdown">${countdown}</div>` : '<div class="app-days">未登記</div>'}
+    </div>`;
+  }).join('');
+}
+
+function openAppDetail(platformId, simId) {
+  const p = STATE.appPlatforms.find(x => x.id === platformId);
+  if (!p) return;
+  document.getElementById('appDetailTitle').textContent  = (p.icon || '📱') + ' ' + p.name;
+  document.getElementById('appDetailPlatId').value       = platformId;
+  document.getElementById('appDetailSimId').value        = simId;
+  document.getElementById('appIsRegistered').value       = p.is_registered ? 'true' : 'false';
+  document.getElementById('appLastRegDate').value        = p.last_register_date || '';
+  document.getElementById('appCanRepeat').value          = p.can_repeat ? '✅ 可重複使用' : '❌ 不可重複使用';
+  document.getElementById('appRegDays').value            = p.register_days || 30;
+  document.getElementById('appNextDate').value           = p.next_register_date || '（設定後自動計算）';
+  document.getElementById('appRegDays').oninput = () => {
+    const d = document.getElementById('appLastRegDate').value;
+    const days = parseInt(document.getElementById('appRegDays').value);
+    if (d && days) {
+      const next = new Date(d);
+      next.setDate(next.getDate() + days);
+      document.getElementById('appNextDate').value = next.toISOString().split('T')[0];
+    }
+  };
+  document.getElementById('appLastRegDate').oninput = document.getElementById('appRegDays').oninput;
+  openModal('appDetailModal');
+}
+
+async function saveAppRegistration() {
+  const data = {
+    sim_card_id:        document.getElementById('appDetailSimId').value,
+    platform_id:        document.getElementById('appDetailPlatId').value,
+    is_registered:      document.getElementById('appIsRegistered').value === 'true',
+    last_register_date: document.getElementById('appLastRegDate').value,
+    register_days:      parseInt(document.getElementById('appRegDays').value) || 30,
+  };
+  const r = await api('updateAppRegistration', data);
+  if (r.success) {
+    showToast('已更新', 'success');
+    closeModal('appDetailModal');
+    loadAppRegistrations();
+  } else {
+    showToast(r.error || '更新失敗', 'error');
+  }
+}
+
+async function submitAddPlatform() {
+  const name   = document.getElementById('newPlatName').value.trim();
+  const icon   = document.getElementById('newPlatIcon').value.trim();
+  const repeat = document.getElementById('newPlatRepeat').value === 'true';
+  if (!name) return showToast('請填入平台名稱', 'error');
+  const r = await api('addCustomPlatform', { name, icon, can_repeat: repeat });
+  if (r.success) {
+    showToast('已新增 ' + name, 'success');
+    closeModal('addPlatformModal');
+    loadAppRegistrations();
+  } else {
+    showToast(r.error || '新增失敗', 'error');
+  }
+}
+
+// ============================================================
+//  行事曆
+// ============================================================
+async function loadCalendar() {
+  const r = await api('getCalendar');
+  if (!r.success) return;
+  const cards = r.data.sort((a, b) => new Date(a.expire_date) - new Date(b.expire_date));
+  const el = document.getElementById('calendarList');
+  if (cards.length === 0) {
+    el.innerHTML = '<div class="empty-state"><span class="icon">📅</span><p>尚無門號</p></div>';
+    return;
+  }
+  const today = new Date();
+  el.innerHTML = cards.map(c => {
+    const d = new Date(c.expire_date);
+    const daysLeft = Math.ceil((d - today) / 86400000);
+    const cls = daysLeft <= 0 ? 'badge-expired' : daysLeft <= 7 ? 'badge-warning' : 'badge-ok';
+    const label = daysLeft <= 0 ? '已到期' : daysLeft + '天';
+    return `
+    <div class="calendar-item">
+      <div class="calendar-date" style="${daysLeft <= 3 ? 'background:var(--danger)' : daysLeft <= 7 ? 'background:var(--warning)' : ''}">
+        <div class="day">${d.getDate()}</div>
+        <div class="month">${d.getMonth()+1}月</div>
+      </div>
+      <div class="calendar-info">
+        <div class="carrier">${c.carrier}</div>
+        <div class="phone">${c.phone_number}</div>
+      </div>
+      <span class="sim-badge ${cls}">${label}</span>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+//  通知 & 日誌
+// ============================================================
+const logActions = {
+  login:'🔑', register:'✅', add_sim:'📱', update_sim:'✏️', delete_sim:'🗑️',
+  update_profile:'👤', change_password:'🔒', update_app_reg:'📲', add_platform:'➕'
+};
+
+async function loadNotifications() {
+  const r = await api('getNotifications');
+  if (!r.success) return;
+  const el = document.getElementById('notifyList');
+  if (r.data.length === 0) {
+    el.innerHTML = '<div class="empty-state"><span class="icon">🔔</span><p>還沒有通知記錄</p></div>';
+    return;
+  }
+  el.innerHTML = r.data.slice(0,30).map(n =>
+    `<div class="notify-item">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <span class="notify-status ${n.status === 'sent' ? 'notify-sent' : 'notify-failed'}">${n.status === 'sent' ? '✅ 已發送' : '❌ 失敗'}</span>
+        <span style="font-size:11px;color:#999">${n.sent_at}</span>
+      </div>
+      <div class="notify-msg">${n.message}</div>
+    </div>`
+  ).join('');
+}
+
+async function loadAuditLogs() {
+  const r = await api('getAuditLogs');
+  if (!r.success) return;
+  const el = document.getElementById('auditList');
+  if (r.data.length === 0) {
+    el.innerHTML = '<div class="empty-state"><span class="icon">📋</span><p>尚無操作記錄</p></div>';
+    return;
+  }
+  el.innerHTML = r.data.map(l =>
+    `<div class="log-item">
+      <span class="log-icon">${logActions[l.action] || '📌'}</span>
+      <div>
+        <div class="log-action">${l.action}</div>
+        <div class="log-detail">${l.detail}</div>
+      </div>
+      <span class="log-time">${(l.created_at || '').substring(5,16)}</span>
+    </div>`
+  ).join('');
+}
+
+function switchLogTab(tab) {
+  document.getElementById('notifyList').style.display = tab === 'notify' ? '' : 'none';
+  document.getElementById('auditList').style.display  = tab === 'audit' ? '' : 'none';
+  document.getElementById('logTabNotify').style.borderColor = tab === 'notify' ? 'var(--primary)' : 'var(--border)';
+  document.getElementById('logTabNotify').style.color       = tab === 'notify' ? 'var(--primary)' : 'var(--text2)';
+  document.getElementById('logTabAudit').style.borderColor  = tab === 'audit' ? 'var(--primary)' : 'var(--border)';
+  document.getElementById('logTabAudit').style.color        = tab === 'audit' ? 'var(--primary)' : 'var(--text2)';
+}
+
+// ============================================================
+//  個人資料
+// ============================================================
+async function loadProfile() {
+  const r = await api('getProfile');
+  if (!r.success) return;
+  document.getElementById('profileAccount').value   = r.account || r.data?.account || STATE.session.account;
+  document.getElementById('profileNickname').value  = r.nickname || r.data?.nickname || '';
+  document.getElementById('profileLineId').value    = r.line_user_id || r.data?.line_user_id ? '✅ 已綁定' : '❌ 未綁定';
+  document.getElementById('profileLastLogin').value = r.last_login || r.data?.last_login || '';
+}
+
+async function saveProfile() {
+  const nickname = document.getElementById('profileNickname').value.trim();
+  const r = await api('updateProfile', { nickname, line_user_id: STATE.lineUserId || undefined });
+  showToast(r.success ? '已更新' : (r.error || '更新失敗'), r.success ? 'success' : 'error');
+}
+
+async function doChangePassword() {
+  const old_password = document.getElementById('oldPwd').value;
+  const new_password = document.getElementById('newPwd').value;
+  const r = await api('changePassword', { old_password, new_password });
+  if (r.success) {
+    showToast('密碼修改成功', 'success');
+    document.getElementById('oldPwd').value = '';
+    document.getElementById('newPwd').value = '';
+  } else {
+    showToast(r.error || '修改失敗', 'error');
+  }
+}
+
+async function exportMyData() {
+  const r = await api('exportSimCards');
+  if (!r.success) return showToast('匯出失敗', 'error');
+  const headers = ['電信業者','門號號碼','門號編號','初辦日','到期日','辦理人','辦理人證號','序號','備註'];
+  const rows = r.data.map(c => [c.carrier,c.phone_number,c.sim_number,c.start_date,c.expire_date,c.applicant,c.applicant_id,c.serial_number,c.notes]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${v||''}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff'+csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = '門號資料.csv'; a.click();
+  showToast('匯出成功', 'success');
+}
+
+// ============================================================
+//  管理員面板
+// ============================================================
+async function showAdminPanel() {
+  const [stats, members] = await Promise.all([
+    api('adminGetStats'),
+    api('adminGetAllMembers'),
+  ]);
+  let html = '';
+  if (stats.success) {
+    const d = stats.data;
+    html += `<div class="stats-grid" style="margin-bottom:16px">
+      <div class="stat-card blue"><div class="stat-num">${d.totalMembers}</div><div class="stat-label">總會員數</div></div>
+      <div class="stat-card green"><div class="stat-num">${d.totalSim}</div><div class="stat-label">總門號數</div></div>
+      <div class="stat-card orange"><div class="stat-num">${d.expiringSoon}</div><div class="stat-label">7天到期</div></div>
+      <div class="stat-card red"><div class="stat-num">${d.expired}</div><div class="stat-label">已到期</div></div>
+    </div>`;
+  }
+  html += `<div class="admin-section">
+    <div class="admin-section-title">會員管理</div>`;
+  if (members.success) {
+    html += members.data.map(m => `
+      <div class="member-row">
+        <div class="member-info">
+          <div class="name">${m.nickname || m.account} ${m.is_admin ? '👑' : ''}</div>
+          <div class="meta">${m.account} · ${m.status === 'active' ? '✅ 正常' : '⛔ 停用'} · LINE:${m.line_user_id ? '✅' : '❌'}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          ${!m.is_admin ? `<button class="btn btn-sm btn-outline" onclick="toggleMember('${m.id}','${m.status === 'active' ? 'inactive' : 'active'}')">${m.status === 'active' ? '停用' : '啟用'}</button>` : ''}
+          ${m.line_user_id ? `<button class="btn btn-sm btn-outline" onclick="sendManualNotify('${m.id}','${m.nickname||m.account}')">📨</button>` : ''}
+        </div>
+      </div>`).join('');
+  }
+  html += `</div>
+  <div class="admin-section">
+    <div class="admin-section-title">系統操作</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <button class="btn btn-sm btn-outline" onclick="adminBroadcastAll()">📢 全員廣播</button>
+      <button class="btn btn-sm btn-outline" onclick="addAnnouncement()">📌 發布公告</button>
+      <button class="btn btn-sm btn-outline" onclick="adminExport()">📥 匯出全部資料</button>
+    </div>
+  </div>`;
+
+  document.getElementById('adminContent').innerHTML = html;
+  openModal('adminModal');
+}
+
+async function toggleMember(id, status) {
+  const r = await api('adminToggleMember', { member_id: id, status });
+  if (r.success) { showToast('已更新', 'success'); showAdminPanel(); }
+}
+
+async function sendManualNotify(id, name) {
+  const msg = prompt(`發送訊息給 ${name}：`);
+  if (!msg) return;
+  const r = await api('adminSendManualNotify', { member_id: id, message: msg });
+  showToast(r.success ? '發送成功' : '發送失敗', r.success ? 'success' : 'error');
+}
+
+async function adminBroadcastAll() {
+  const msg = prompt('輸入要廣播給所有會員的訊息：');
+  if (!msg) return;
+  const r = await api('adminBroadcast', { message: msg });
+  showToast(r.success ? `已發送給 ${r.sent} 位會員` : '發送失敗', r.success ? 'success' : 'error');
+}
+
+async function addAnnouncement() {
+  const title = prompt('公告標題：');
+  const content = title ? prompt('公告內容：') : null;
+  if (!title || !content) return;
+  const r = await api('adminAddAnnouncement', { title, content });
+  showToast(r.success ? '公告已發布' : '失敗', r.success ? 'success' : 'error');
+}
+
+async function adminExport() {
+  const r = await api('adminExportAll');
+  if (!r.success) return showToast('匯出失敗', 'error');
+  const headers = ['帳號','電信業者','門號號碼','門號編號','初辦日','到期日','辦理人','備註'];
+  const rows = r.data.map(c => [c.account,c.carrier,c.phone_number,c.sim_number,c.start_date,c.expire_date,c.applicant,c.notes]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${v||''}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff'+csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = '全部門號資料.csv'; a.click();
+  showToast('匯出成功', 'success');
+}
+
+// ============================================================
+//  工具
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function openAddPlatformModal() {
+  document.getElementById('newPlatName').value  = '';
+  document.getElementById('newPlatIcon').value  = '📱';
+  openModal('addPlatformModal');
+}
+
+let toastTimer;
+function showToast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 3000);
+}
+
+// 點擊 overlay 外部關閉
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// 啟動
+window.addEventListener('load', initLiff);
+</script>
+</body>
+</html>
