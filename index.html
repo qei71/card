@@ -3306,16 +3306,28 @@ async function loadUpcomingApps() {
   
   const today = new Date(); today.setHours(0,0,0,0);
   let apps = [];
+  
   Object.entries(r.data).forEach(([sid, regs]) => {
     regs.forEach(reg => {
       if (reg.is_registered && reg.can_repeat && reg.next_register_date) {
-        const nd = new Date(reg.next_register_date.replace(/\//g,'-'));
-        nd.setHours(0,0,0,0);
-        const dl = Math.ceil((nd - today)/86400000);
-        if (dl >= 0 && dl <= 14) { // 只顯示 14 天內的
-          const sim = STATE.simCards.find(c => (c['編號']||c.id) === sid);
-          const simStr = sim ? `${sim['電信業者']||sim.carrier} ${sim['門號號碼']||sim.phone_number}` : '';
-          apps.push({ ...reg, daysLeft: dl, simStr, simId: sid });
+        // 確保日期能正確解析
+        const nd = new Date(String(reg.next_register_date).replace(/\//g,'-'));
+        if (!isNaN(nd.getTime())) {
+          nd.setHours(0,0,0,0);
+          const dl = Math.ceil((nd - today)/86400000);
+          
+          if (dl >= 0 && dl <= 14) { // 只顯示 14 天內的
+            const sim = STATE.simCards.find(c => (c['編號']||c.id) === sid);
+            const simStr = sim ? `${sim['電信業者']||sim.carrier} ${sim['門號號碼']||sim.phone_number}` : '';
+            
+            // ── 新增：將日期格式化為 YYYY/MM/DD ──
+            const y = nd.getFullYear();
+            const m = String(nd.getMonth() + 1).padStart(2, '0');
+            const d = String(nd.getDate()).padStart(2, '0');
+            const formattedDate = `${y}/${m}/${d}`;
+
+            apps.push({ ...reg, daysLeft: dl, simStr, simId: sid, displayDate: formattedDate });
+          }
         }
       }
     });
@@ -3334,9 +3346,9 @@ async function loadUpcomingApps() {
     return `<div class="calendar-item" style="padding:10px 0; border-bottom:1px solid var(--border)">
       <div style="font-size:28px;margin-right:12px">${a.icon||'📱'}</div>
       <div class="cal-info" style="flex:1; min-width:0;">
-        <div class="car" style="font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(a.name)}</div>
-        <div class="ph" style="font-size:12px;color:var(--text)">${esc(a.simStr)}</div>
-        <div style="font-size:11px;color:var(--text2)">下次可用日：${a.next_register_date}</div>
+        <div class="car" style="font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(a.name)}</div>
+        <div class="ph" style="font-size:12px;color:var(--text);margin-top:2px;">${esc(a.simStr)}</div>
+        <div style="font-size:11px;color:var(--primary);margin-top:2px;">下次可用日：${a.displayDate}</div>
       </div>
       <span class="cal-badge ${badge}" style="flex-shrink:0">${label}</span>
     </div>`;
