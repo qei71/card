@@ -421,6 +421,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
           <span style="font-size:14px;font-weight:700">📱 APP 平台管理</span>
           <div style="display:flex;gap:5px;flex-wrap:wrap">
             <button class="btn btn-xs btn-outline" onclick="openAppRegOverview()" style="font-size:11px;border-color:#6c757d;color:#6c757d">📊 註冊情形</button>
+            <button class="btn btn-xs btn-outline" onclick="openAppRegMatrix()" style="font-size:11px;border-color:#3498db;color:#3498db">📋 總覽表</button>
             <button class="btn btn-xs btn-outline" id="platSelAllBtn" onclick="togglePlatSelect()" style="font-size:11px">☑️ 全選</button>
             <button class="btn btn-xs btn-outline" onclick="openAddPlatformModal()" style="font-size:11px;border-color:var(--primary);color:var(--primary)">＋ 新增</button>
           </div>
@@ -2875,6 +2876,97 @@ async function openAppRegOverview() {
   el.appendChild(closeBtn);
 }
 
+// ── 門號 APP 註冊矩陣總覽表 ──
+async function openAppRegMatrix() {
+  document.getElementById('broadcastModalTitle').textContent = '📋 門號 APP 註冊總覽';
+  document.getElementById('broadcastModalBody').innerHTML = '<p style="text-align:center;color:var(--text2);padding:16px">表格載入中，請稍候...</p>';
+  openModal('broadcastModal');
+
+  // 取得註冊資料
+  let bySimId = {};
+  try {
+    const res = await api('getAllMyAppRegistrations', {});
+    if (res.success) bySimId = res.data || {};
+  } catch(e) {}
+
+  const platforms = STATE.appPlatforms;
+  if (!platforms.length) {
+    document.getElementById('broadcastModalBody').innerHTML = '<p style="text-align:center;color:var(--text2);padding:20px">尚無 APP 平台</p>';
+    return;
+  }
+
+  // 排序門號 (依據編號由小到大)
+  const sortedSims = [...STATE.simCards].sort((a, b) => {
+    const na = parseInt((a['門號編號']||a.sim_number||'0').replace(/\D/g,'')) || 9999;
+    const nb = parseInt((b['門號編號']||b.sim_number||'0').replace(/\D/g,'')) || 9999;
+    return na - nb;
+  });
+
+  // 組合 HTML 表格
+  let tableHtml = '<div style="overflow-x:auto; max-height:65vh; border:1.5px solid var(--border); border-radius:10px;">';
+  tableHtml += '<table style="width:100%; border-collapse:collapse; font-size:12px; text-align:center; white-space:nowrap;">';
+  
+  // 表頭 (設定 Sticky 讓往下滑時表頭固定)
+  tableHtml += '<thead style="position:sticky; top:0; background:#f8f9fa; z-index:10; box-shadow:0 1px 3px rgba(0,0,0,0.1);">';
+  tableHtml += '<tr>';
+  tableHtml += '<th style="padding:10px 8px; border-right:1px solid var(--border); font-weight:700;">編號</th>';
+  tableHtml += '<th style="padding:10px 8px; border-right:1px solid var(--border); font-weight:700;">門號</th>';
+  
+  platforms.forEach(p => {
+    tableHtml += `<th style="padding:8px 4px; border-right:1px solid var(--border); min-width:45px;">
+                    <div style="font-size:18px;">${p.icon||'📱'}</div>
+                    <div style="font-size:10px; font-weight:600; margin-top:2px;">${esc(p.name)}</div>
+                  </th>`;
+  });
+  tableHtml += '</tr></thead><tbody>';
+
+  // 表格內容
+  if (!sortedSims.length) {
+    tableHtml += `<tr><td colspan="${platforms.length + 2}" style="padding:20px; color:var(--text2);">尚無門號資料</td></tr>`;
+  } else {
+    sortedSims.forEach((sim, index) => {
+      const sid = sim['編號'] || sim.id || '';
+      const simNum = sim['門號編號'] || sim.sim_number || '-';
+      const phone = sim['門號號碼'] || sim.phone_number || '';
+      const bg = index % 2 === 0 ? '#ffffff' : '#fcfcfc'; // 斑馬紋底色
+      
+      tableHtml += `<tr style="background:${bg}; border-bottom:1px solid var(--border);">`;
+      
+      // 左側固定資訊：編號與門號
+      tableHtml += `<td style="padding:10px 8px; border-right:1px solid var(--border); font-weight:600; color:var(--text2);">${esc(simNum)}</td>`;
+      tableHtml += `<td style="padding:10px 8px; border-right:1px solid var(--border); font-weight:700; color:var(--text); letter-spacing:0.5px;">${esc(phone)}</td>`;
+      
+      // 每個 APP 的狀態 (○ 或 X)
+      const regs = bySimId[sid] || [];
+      platforms.forEach(p => {
+        const pid = String(p['編號']||p.id||'');
+        const reg = regs.find(r => String(r['平台編號']||r.platform_id||'').trim() === pid.trim());
+        const isReg = reg && (reg['是否已註冊'] === true || reg.is_registered === true);
+        
+        if (isReg) {
+          tableHtml += `<td style="padding:10px 8px; border-right:1px solid var(--border); color:#06C755; font-size:14px; font-weight:800;">○</td>`;
+        } else {
+          tableHtml += `<td style="padding:10px 8px; border-right:1px solid var(--border); color:#dcdcdc; font-size:12px;">X</td>`;
+        }
+      });
+      tableHtml += '</tr>';
+    });
+  }
+  tableHtml += '</tbody></table></div>';
+
+  // 加入關閉按鈕
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'btn btn-outline';
+  closeBtn.style.cssText = 'width:100%; margin-top:12px; font-size:13px;';
+  closeBtn.textContent = '關閉總覽';
+  closeBtn.onclick = () => closeModal('broadcastModal');
+
+  // 渲染到 Modal
+  const el = document.getElementById('broadcastModalBody');
+  el.innerHTML = tableHtml;
+  el.appendChild(closeBtn);
+}
+  
 // 2. 儲存 API 抓回來的 APP 狀態供 Modal 讀取
 async function loadAppRegistrations() {
   const simId = document.getElementById('appSimSelect').value;
