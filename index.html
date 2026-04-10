@@ -969,6 +969,55 @@ textarea.form-control { resize:vertical; min-height:80px; }
 <div id="toast"></div>
 
 <script>
+function openMemberPerms(memberId, account, simLine, simTg, appLine, appTg) {
+  document.getElementById('broadcastModalTitle').textContent = `🛡️ ${account} 的通知權限`;
+  const el = document.getElementById('broadcastModalBody');
+  el.innerHTML = `
+    <div style="background:#f8f9fa;padding:12px;border-radius:10px;margin-bottom:12px">
+      <div style="font-weight:700;margin-bottom:8px">📱 門號到期通知</div>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer">
+        <input type="checkbox" id="permSimLine" ${simLine?'checked':''} style="width:16px;height:16px;accent-color:var(--primary)"> 允許發送 LINE
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="permSimTg" ${simTg?'checked':''} style="width:16px;height:16px;accent-color:#229ED9"> 允許發送 Telegram
+      </label>
+    </div>
+    <div style="background:#f8f9fa;padding:12px;border-radius:10px;margin-bottom:16px">
+      <div style="font-weight:700;margin-bottom:8px">📲 APP 註冊通知</div>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer">
+        <input type="checkbox" id="permAppLine" ${appLine?'checked':''} style="width:16px;height:16px;accent-color:var(--primary)"> 允許發送 LINE
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="permAppTg" ${appTg?'checked':''} style="width:16px;height:16px;accent-color:#229ED9"> 允許發送 Telegram
+      </label>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" onclick="closeModal('broadcastModal')">取消</button>
+      <button class="btn btn-primary" onclick="saveMemberPerms('${memberId}')">💾 儲存權限</button>
+    </div>
+  `;
+  openModal('broadcastModal');
+}
+
+async function saveMemberPerms(memberId) {
+  const perms = {
+    sim_line: document.getElementById('permSimLine').checked,
+    sim_tg:   document.getElementById('permSimTg').checked,
+    app_line: document.getElementById('permAppLine').checked,
+    app_tg:   document.getElementById('permAppTg').checked
+  };
+  const btn = document.querySelector('#broadcastModal .btn-primary');
+  btn.disabled = true; btn.textContent = '⏳ 儲存中...';
+  const r = await api('adminUpdateMemberPerms', { member_id: memberId, perms });
+  if (r.success) {
+    showToast('✅ 權限已更新', 'success');
+    closeModal('broadcastModal');
+    showAdminPanel(); // 重整列表
+  } else {
+    showToast(r.error || '儲存失敗', 'error');
+    btn.disabled = false; btn.textContent = '💾 儲存權限';
+  }
+}
 // ============================================================
 //  設定
 // ============================================================
@@ -4143,7 +4192,8 @@ async function loadProfile() {
   }
   // 存到 STATE 供通知設定使用
   if (STATE.session) STATE.session.tg_enabled = !!(d.tg_enabled);
-
+  // 同步權限到 session
+  if (STATE.session) STATE.session.perms = d.perms;
     // 顯示會員狀態
   const msEl = document.getElementById('membershipStatus');
   if (msEl && STATE.session) {
@@ -4454,15 +4504,34 @@ async function loadNotifySettings() {
     chLine = enabledSettings[0].channels.includes('line');
     chTg   = enabledSettings[0].channels.includes('tg');
   }
-  document.getElementById('notifyChLine').checked = chLine;
-  if (document.getElementById('notifyChTg') && STATE.session?.tg_enabled) {
-    document.getElementById('notifyChTg').checked = chTg;
+
+  // --- 新增：檢查權限並鎖定 UI ---
+  const canSimLine = STATE.session?.is_admin || STATE.session?.perms?.sim_line !== false;
+  const canSimTg   = STATE.session?.is_admin || STATE.session?.perms?.sim_tg !== false;
+
+  const chkLine = document.getElementById('notifyChLine');
+  const chkTg   = document.getElementById('notifyChTg');
+  
+  if (chkLine) {
+    chkLine.checked = chLine && canSimLine; // 如果無權限，強制取消打勾
+    chkLine.disabled = !canSimLine;         // 如果無權限，鎖定按鈕不可點擊
+    // 若無權限且還沒加上標籤，則補上(無權限)紅字
+    if (!canSimLine && !chkLine.parentElement.innerHTML.includes('無權限')) {
+      chkLine.parentElement.insertAdjacentHTML('beforeend', ' <span style="font-size:11px;color:var(--danger)">(無權限)</span>');
+    }
+  }
+  
+  if (chkTg && STATE.session?.tg_enabled) {
+    chkTg.checked = chTg && canSimTg;
+    chkTg.disabled = !canSimTg;
+    if (!canSimTg && !chkTg.parentElement.innerHTML.includes('無權限')) {
+      chkTg.parentElement.insertAdjacentHTML('beforeend', ' <span style="font-size:11px;color:var(--danger)">(無權限)</span>');
+    }
   }
 
   const testArea = document.getElementById('notifyTestArea');
   if (testArea) testArea.style.display = '';
 }
-
 // 自訂通知天數行操作
 function addCustomNotifyRow() {
   const container = document.getElementById('notifyRowsContainer');
@@ -4698,6 +4767,7 @@ async function showAdminPanel() {
           <div class="mmeta">${esc(account)} · ${status==='active'?'✅正常':'⛔停用'} · LINE:${lineId?'✅':'❌'}</div>
         </div>
         <div class="member-actions">
+          ${!isAdmin?`<button class="btn btn-xs btn-outline" style="border-color:var(--info);color:var(--info)" onclick="openMemberPerms('${id}', '${esc(account)}', ${m.perms.sim_line}, ${m.perms.sim_tg}, ${m.perms.app_line}, ${m.perms.app_tg})">🛡️ 權限</button>`:''}
           ${!isAdmin?`<button class="btn btn-xs btn-outline" onclick="toggleMember('${id}','${status==='active'?'inactive':'active'}')">${status==='active'?'停用':'啟用'}</button>`:''}
           ${lineId?`<button class="btn btn-xs btn-outline" onclick="openSendNotify('${id}','${esc(nick)}')">📨</button>`:''}
           ${!isAdmin?`<button class="btn btn-xs btn-outline" style="border-color:var(--danger);color:var(--danger)" onclick="deleteMember('${id}','${esc(account)}')">🗑️</button>`:''}
