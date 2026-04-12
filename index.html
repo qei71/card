@@ -771,7 +771,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
       
       <div style="display:flex; gap:10px;">
         <button class="btn btn-outline" style="flex:1" onclick="closeModal('topUpModal')">取消</button>
-        <button class="btn btn-primary" style="flex:1" onclick="submitTopUp()">✅ 確定儲值</button>
+        <button class="btn btn-primary" style="flex:1" onclick="submitSimTopUp()">✅ 確定儲值</button>
       </div>
     </div>
   </div>
@@ -1436,7 +1436,7 @@ function toggleTopUpDate(show) {
   document.getElementById('topUpDateGroup').style.display = show ? 'block' : 'none';
 }
 
-async function submitTopUp() {
+async function submitSimTopUp() {
   const simId = document.getElementById('topUpSimId').value;
   const type = document.querySelector('input[name="topUpType"]:checked').value;
   let topUpDate = new Date();
@@ -1450,7 +1450,12 @@ async function submitTopUp() {
     topUpDate = new Date(customVal);
   }
   
-  const dateStr = topUpDate.toISOString().split('T')[0];
+  // 加上防呆：如果選擇今天，確保不會因為時區問題變成昨天
+  const y = topUpDate.getFullYear();
+  const m = String(topUpDate.getMonth() + 1).padStart(2, '0');
+  const d = String(topUpDate.getDate()).padStart(2, '0');
+  const dateStr = `${y}-${m}-${d}`;
+
   const btn = document.querySelector('#topUpModal .btn-primary');
   
   await withLoading('submitTopUp', btn, '處理中...', async () => {
