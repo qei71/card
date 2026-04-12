@@ -772,8 +772,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
     </div>
   </div>
 <div class="modal-overlay" id="appDetailModal">
-  
-  
+
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-header">
@@ -2093,7 +2092,7 @@ function renderSimCards(cards) {
             <button class="btn btn-sm btn-outline" onclick="openEditSim('${esc(id)}')">✏️ 編輯</button>
             <button class="btn btn-sm btn-outline" onclick="deleteSim('${esc(id)}')">🗑️ 刪除</button>
             <button class="btn btn-sm btn-outline" onclick="copySimInfo('${esc(carrier)}','${esc(phone)}')">📋 複製</button>
-            <button class="btn btn-xs btn-outline" onclick="openTopUpModal('${sim.id}')" style="font-size:11px; border-color:#2ecc71; color:#2ecc71; margin-left:4px;">💰 儲值</button>
+            <button class="btn btn-xs btn-outline" onclick="openTopUpModal('${esc(id)}')" style="font-size:11px; border-color:#2ecc71; color:#2ecc71; margin-left:4px;">💰 儲值</button>
           </div>
         </div>
       </div>
