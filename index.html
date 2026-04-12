@@ -733,8 +733,48 @@ textarea.form-control { resize:vertical; min-height:80px; }
 
 <!-- APP 詳細 -->
 
-<div class="modal-overlay" id="appDetailModal">
 
+  
+<div class="modal-overlay" id="topUpModal">
+    <div class="modal-content" style="max-width:320px">
+      <div class="modal-header">
+        <div class="modal-title">💰 門號儲值展延</div>
+        <button class="btn btn-outline" style="border:none;padding:4px" onclick="closeModal('topUpModal')">✖</button>
+      </div>
+      <div class="modal-body">
+        <div id="topUpSimInfo" style="font-weight:700; margin-bottom:15px; font-size:16px; color:var(--primary); text-align:center;"></div>
+        <input type="hidden" id="topUpSimId">
+        
+        <div class="form-group">
+          <label>請選擇您的儲值日</label>
+          <div style="display:flex; flex-direction:column; gap:12px; margin-top:8px;">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; background:#f9f9f9; padding:10px; border-radius:8px; border:1px solid var(--border)">
+              <input type="radio" name="topUpType" value="today" checked onclick="toggleTopUpDate(false)" style="accent-color:var(--primary); width:16px; height:16px;">
+              <span style="font-size:14px; font-weight:600">今日已完成儲值</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; background:#f9f9f9; padding:10px; border-radius:8px; border:1px solid var(--border)">
+              <input type="radio" name="topUpType" value="custom" onclick="toggleTopUpDate(true)" style="accent-color:var(--primary); width:16px; height:16px;">
+              <span style="font-size:14px; font-weight:600">指定其他儲值日期</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="form-group" id="topUpDateGroup" style="display:none; margin-top:10px;">
+          <label>指定儲值日</label>
+          <input type="date" id="topUpCustomDate" class="form-control">
+        </div>
+        
+        <div style="background:#fff3cd; padding:10px; border-radius:8px; margin-top:15px; font-size:12px; color:#856404; text-align:center; border:1px solid #ffeeba;">
+          💡 系統將從您選擇的日期，自動往後展延 <b>180</b> 天。
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex; gap:10px;">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal('topUpModal')">取消</button>
+        <button class="btn btn-primary" style="flex:1" onclick="submitTopUp()">✅ 確定儲值</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="appDetailModal">
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-header">
@@ -810,45 +850,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
     <button class="btn btn-outline" style="margin-top:6px;border-color:var(--danger);color:var(--danger);font-size:13px" onclick="deleteMyPlatform()">🗑️ 刪除此平台</button>
   </div>
 </div>
-<div class="modal-overlay" id="topUpModal">
-    <div class="modal-content" style="max-width:320px">
-      <div class="modal-header">
-        <div class="modal-title">💰 門號儲值展延</div>
-        <button class="btn btn-outline" style="border:none;padding:4px" onclick="closeModal('topUpModal')">✖</button>
-      </div>
-      <div class="modal-body">
-        <div id="topUpSimInfo" style="font-weight:700; margin-bottom:15px; font-size:16px; color:var(--primary); text-align:center;"></div>
-        <input type="hidden" id="topUpSimId">
-        
-        <div class="form-group">
-          <label>請選擇您的儲值日</label>
-          <div style="display:flex; flex-direction:column; gap:12px; margin-top:8px;">
-            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; background:#f9f9f9; padding:10px; border-radius:8px; border:1px solid var(--border)">
-              <input type="radio" name="topUpType" value="today" checked onclick="toggleTopUpDate(false)" style="accent-color:var(--primary); width:16px; height:16px;">
-              <span style="font-size:14px; font-weight:600">今日已完成儲值</span>
-            </label>
-            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; background:#f9f9f9; padding:10px; border-radius:8px; border:1px solid var(--border)">
-              <input type="radio" name="topUpType" value="custom" onclick="toggleTopUpDate(true)" style="accent-color:var(--primary); width:16px; height:16px;">
-              <span style="font-size:14px; font-weight:600">指定其他儲值日期</span>
-            </label>
-          </div>
-        </div>
-        
-        <div class="form-group" id="topUpDateGroup" style="display:none; margin-top:10px;">
-          <label>指定儲值日</label>
-          <input type="date" id="topUpCustomDate" class="form-control">
-        </div>
-        
-        <div style="background:#fff3cd; padding:10px; border-radius:8px; margin-top:15px; font-size:12px; color:#856404; text-align:center; border:1px solid #ffeeba;">
-          💡 系統將從您選擇的日期，自動往後展延 <b>180</b> 天。
-        </div>
-      </div>
-      <div class="modal-footer" style="display:flex; gap:10px;">
-        <button class="btn btn-outline" style="flex:1" onclick="closeModal('topUpModal')">取消</button>
-        <button class="btn btn-primary" style="flex:1" onclick="submitTopUp()">✅ 確定儲值</button>
-      </div>
-    </div>
-  </div>
+
 <!-- 新增 APP 平台 -->
 <div class="modal-overlay" id="addPlatformModal">
   <div class="modal">
