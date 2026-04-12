@@ -1009,57 +1009,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
 <div id="toast"></div>
 
 <script>
-// === 門號儲值功能 ===
-function openTopUpModal(simId) {
-  const sim = STATE.simCards.find(c => (c['編號']||c.id) === simId);
-  if (!sim) return;
-  
-  document.getElementById('topUpSimId').value = simId;
-  const carrier = sim['電信業者'] || sim.carrier || '';
-  const phone = sim['門號號碼'] || sim.phone_number || '';
-  document.getElementById('topUpSimInfo').textContent = `${carrier} ${phone}`;
-  
-  // 重置狀態為預設的「今日」
-  document.querySelector('input[name="topUpType"][value="today"]').checked = true;
-  toggleTopUpDate(false);
-  document.getElementById('topUpCustomDate').value = new Date().toISOString().split('T')[0];
-  
-  openModal('topUpModal');
-}
 
-function toggleTopUpDate(show) {
-  document.getElementById('topUpDateGroup').style.display = show ? 'block' : 'none';
-}
-
-async function submitTopUp() {
-  const simId = document.getElementById('topUpSimId').value;
-  const type = document.querySelector('input[name="topUpType"]:checked').value;
-  let topUpDate = new Date();
-  
-  if (type === 'custom') {
-    const customVal = document.getElementById('topUpCustomDate').value;
-    if (!customVal) {
-      showToast('請選擇儲值日期', 'error');
-      return;
-    }
-    topUpDate = new Date(customVal);
-  }
-  
-  const dateStr = topUpDate.toISOString().split('T')[0];
-  const btn = document.querySelector('#topUpModal .btn-primary');
-  
-  await withLoading('submitTopUp', btn, '處理中...', async () => {
-    const res = await api('topUpSim', { sim_id: simId, topup_date: dateStr });
-    if (res.success) {
-      showToast(`✅ 儲值成功！新到期日為：${res.new_expire}`, 'success');
-      closeModal('topUpModal');
-      await loadSimCards(); // 重新讀取門號資料
-      loadDashboard();      // 更新首頁數字與清單
-    } else {
-      showToast(res.error || '儲值失敗', 'error');
-    }
-  });
-}
   
 function openMemberPerms(memberId, account, simLine, simTg, appLine, appTg) {
   document.getElementById('broadcastModalTitle').textContent = `🛡️ ${account} 的通知權限`;
@@ -1459,6 +1409,58 @@ async function doLineLogin() {
 // LINE 登入按鈕的 HTML（用於重置）
 const lineLoginBtnHTML = `<div class="line-icon"><svg viewBox="0 0 24 24" fill="#06C755"><path d="M12 2C6.48 2 2 6.03 2 11c0 3.57 2.13 6.62 5.26 8.34-.22.78-.8 2.83-.92 3.26-.14.52.19.51.4.37.16-.1 2.56-1.74 3.59-2.44.54.07 1.1.11 1.67.11 5.52 0 10-4.03 10-9 0-4.97-4.48-9-10-9z"/></svg></div> 使用 LINE 帳號登入`;
 
+// === 門號儲值功能 ===
+function openTopUpModal(simId) {
+  const sim = STATE.simCards.find(c => (c['編號']||c.id) === simId);
+  if (!sim) return;
+  
+  document.getElementById('topUpSimId').value = simId;
+  const carrier = sim['電信業者'] || sim.carrier || '';
+  const phone = sim['門號號碼'] || sim.phone_number || '';
+  document.getElementById('topUpSimInfo').textContent = `${carrier} ${phone}`;
+  
+  // 重置狀態為預設的「今日」
+  document.querySelector('input[name="topUpType"][value="today"]').checked = true;
+  toggleTopUpDate(false);
+  document.getElementById('topUpCustomDate').value = new Date().toISOString().split('T')[0];
+  
+  openModal('topUpModal');
+}
+
+function toggleTopUpDate(show) {
+  document.getElementById('topUpDateGroup').style.display = show ? 'block' : 'none';
+}
+
+async function submitTopUp() {
+  const simId = document.getElementById('topUpSimId').value;
+  const type = document.querySelector('input[name="topUpType"]:checked').value;
+  let topUpDate = new Date();
+  
+  if (type === 'custom') {
+    const customVal = document.getElementById('topUpCustomDate').value;
+    if (!customVal) {
+      showToast('請選擇儲值日期', 'error');
+      return;
+    }
+    topUpDate = new Date(customVal);
+  }
+  
+  const dateStr = topUpDate.toISOString().split('T')[0];
+  const btn = document.querySelector('#topUpModal .btn-primary');
+  
+  await withLoading('submitTopUp', btn, '處理中...', async () => {
+    const res = await api('topUpSim', { sim_id: simId, topup_date: dateStr });
+    if (res.success) {
+      showToast(`✅ 儲值成功！新到期日為：${res.new_expire}`, 'success');
+      closeModal('topUpModal');
+      await loadSimCards(); // 重新讀取門號資料
+      loadDashboard();      // 更新首頁數字與清單
+    } else {
+      showToast(res.error || '儲值失敗', 'error');
+    }
+  });
+}
+  
 // ============================================================
 //  帳號密碼 登入/註冊
 // ============================================================
