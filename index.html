@@ -5974,16 +5974,33 @@ async function openSimListModal(filter) {
 }
 
 // ── APP 批量設定 ────────────────────────────────────────────
-function openBatchAppModal() {
+// ── 單一門號 APP 批量設定 (加入自動載入防呆) ──
+async function openBatchAppModal() {
   const simId = document.getElementById('appSimSelect')?.value;
   if (!simId) return showToast('請先選擇門號', 'error');
-  // 填入 APP 清單
+
+  // 1. 確保平台資料已載入
+  if (!STATE.appPlatforms || STATE.appPlatforms.length === 0) {
+    document.getElementById('broadcastModalTitle').textContent = '⚡ APP 批量設定';
+    document.getElementById('batchAppList').innerHTML = '<p style="text-align:center;padding:10px;color:var(--text2);">載入平台資料中...</p>';
+    openModal('batchAppModal');
+    
+    try {
+      const res = await api('getAppPlatforms', {});
+      if (res.success && res.data) STATE.appPlatforms = res.data;
+    } catch(e) {}
+  }
+
+  // 2. 過濾掉本地「已刪除」但尚未重整的平台
+  const validPlats = STATE.appPlatforms.filter(p => !_deletedPlats.find(d => (d['編號']||d.id) === (p['編號']||p.id)));
+
   const listEl = document.getElementById('batchAppList');
   if (!listEl) return;
-  if (!STATE.appPlatforms.length) {
-    listEl.innerHTML = '<p style="font-size:13px;color:var(--text2);padding:8px">尚無 APP 平台資料</p>';
+
+  if (validPlats.length === 0) {
+    listEl.innerHTML = '<p style="font-size:13px;color:var(--danger);padding:8px">尚無 APP 平台資料，請先新增</p>';
   } else {
-    listEl.innerHTML = STATE.appPlatforms.map(p => {
+    listEl.innerHTML = validPlats.map(p => {
       const id   = p['編號']||p.id||'';
       const name = p['名稱']||p.name||'';
       const icon = p['圖標']||p.icon||'📱';
