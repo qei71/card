@@ -2288,8 +2288,11 @@ function toggleAllBatchExpire(checked) {
 async function submitBatchExpire() {
   const checked = Array.from(document.querySelectorAll('.batch-expire-chk:checked'));
   if (!checked.length) return showToast('請先勾選門號', 'error');
+  
   const mode = document.querySelector('input[name=batchExpireMode]:checked')?.value || 'topup';
-  const simIds = checked.map(c => c.value);
+  
+  // 確保傳送的是乾淨的字串陣列，去除空值
+  const simIds = checked.map(c => String(c.value).trim()).filter(Boolean);
 
   let body = {};
   if (mode === 'custom') {
@@ -2304,7 +2307,9 @@ async function submitBatchExpire() {
 
   const saveBtn = document.querySelector('#broadcastModal .btn-primary');
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ 執行中...'; }
+  
   const r = await api('batchUpdateExpireDate', body);
+  
   if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '✅ 確認執行'; }
 
   if (r.success) {
