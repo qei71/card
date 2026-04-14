@@ -743,21 +743,28 @@ textarea.form-control { resize:vertical; min-height:80px; }
       <button class="modal-close" onclick="closeModal('topUpModal')">✕</button>
     </div>
     <div class="modal-body">
-      <div id="topUpSimInfo" style="font-weight:700; margin-bottom:15px; font-size:16px; color:var(--primary); text-align:center;"></div>
+      <div id="topUpSimInfo" style="font-weight:700; margin-bottom:10px; font-size:16px; color:var(--primary); text-align:center;"></div>
       <input type="hidden" id="topUpSimId">
       
+      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:15px; justify-content:center;">
+        <a href="https://www.cht.com.tw/Prepaid/recharge/BuyList?productid=PR00000076" target="_blank" class="btn btn-xs btn-outline" style="font-size:11px; border-color:#3498db; color:#3498db; text-decoration:none;">中華儲值</a>
+        <a href="https://www.myfone.com.tw/mfo/estore/prepaid/zh-tw/verification" target="_blank" class="btn btn-xs btn-outline" style="font-size:11px; border-color:#f39c12; color:#f39c12; text-decoration:none;">台哥大/台灣之星</a>
+        <a href="https://www.fetnet.net/content/cbu/tw/postpaid/prepaid/add-value.html" target="_blank" class="btn btn-xs btn-outline" style="font-size:11px; border-color:#e74c3c; color:#e74c3c; text-decoration:none;">遠傳/亞太</a>
+        <a href="https://www.ibonmobile.com.tw/act/2_2/" target="_blank" class="btn btn-xs btn-outline" style="font-size:11px; border-color:#8e44ad; color:#8e44ad; text-decoration:none;">統一儲值</a>
+      </div>
+
       <div class="form-group">
         <label>請選擇儲值方式</label>
         <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
-          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; background:#f9f9f9; padding:12px; border-radius:10px; border:1px solid var(--border)">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; background:#f9f9f9; padding:12px; border-radius:10px; border:1.5px solid var(--primary)">
             <input type="radio" name="topUpType" value="today" checked onclick="updateTopUpUI('today')" style="accent-color:var(--primary); width:18px; height:18px;">
             <span style="font-size:14px; font-weight:600">今日已儲值 (+180天)</span>
           </label>
-          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; background:#f9f9f9; padding:12px; border-radius:10px; border:1px solid var(--border)">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; background:#f9f9f9; padding:12px; border-radius:10px; border:1.5px solid var(--border)">
             <input type="radio" name="topUpType" value="custom" onclick="updateTopUpUI('custom')" style="accent-color:var(--primary); width:18px; height:18px;">
-            <span style="font-size:14px; font-weight:600">自訂儲值日期 (+180天)</span>
+            <span style="font-size:14px; font-weight:600">自訂起算日 (+180天)</span>
           </label>
-          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; background:#f9f9f9; padding:12px; border-radius:10px; border:1px solid var(--border)">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; background:#f9f9f9; padding:12px; border-radius:10px; border:1.5px solid var(--border)">
             <input type="radio" name="topUpType" value="expire" onclick="updateTopUpUI('expire')" style="accent-color:var(--primary); width:18px; height:18px;">
             <span style="font-size:14px; font-weight:600">直接指定新到期日</span>
           </label>
@@ -770,7 +777,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
       </div>
       
       <div id="topUpHint" style="background:#fff3cd; padding:12px; border-radius:10px; margin-top:15px; margin-bottom:20px; font-size:13px; color:#856404; text-align:center; border:1px solid #ffeeba;">
-        💡 系統將從今天起算，展延 180 天。
+        💡 系統將從今天起算，自動往後展延 <b>180</b> 天。
       </div>
       
       <div style="display:flex; gap:10px;">
@@ -1467,12 +1474,13 @@ async function submitSimTopUp() {
     // 根據不同模式打包資料
     let payload = { sim_id: simId };
     if (type === 'today') {
+      // 交給後端 topUpSim 處理
       const t = new Date();
       payload.topup_date = `${t.getFullYear()}-${t.getMonth()+1}-${t.getDate()}`;
     } else if (type === 'custom') {
       payload.topup_date = customDate;
     } else if (type === 'expire') {
-      // 借用 batchUpdate 邏輯，指定單一 ID
+      // 直接指定到期日：借用 batchUpdateExpireDate 的 API 邏輯
       const res = await api('batchUpdateExpireDate', { sim_ids: [simId], expire_date: customDate });
       if (res.success) {
         showToast(`✅ 已更新到期日為：${customDate}`, 'success');
@@ -1744,6 +1752,7 @@ async function api(action, data = {}) {
 // ============================================================
 //  儀表板
 // ============================================================
+// 🌟 修復首頁通知計數 (前端暴力計算版)
 async function loadDashboard() {
   if (STATE.session?.id !== undefined) STATE.session.id = String(STATE.session.id);
 
@@ -1755,7 +1764,7 @@ async function loadDashboard() {
     document.getElementById('stat-expired').textContent  = expired;
   }
 
-  // 強化版通知統計
+  // 讓前端直接撈記錄算，無畏後端限制
   api('getNotifications').then(res => {
     if (res.success && res.data) {
       let line = 0, tg = 0;
@@ -1778,26 +1787,6 @@ async function loadDashboard() {
       }
     }
   }).catch(()=>{});
-}
-// 🌟 更新儲值視窗互動邏輯
-function updateTopUpUI(type) {
-  const dateGrp = document.getElementById('topUpDateGroup');
-  const label = document.getElementById('topUpDateLabel');
-  const hint = document.getElementById('topUpHint');
-  
-  if (type === 'today') {
-    dateGrp.style.display = 'none';
-    hint.innerHTML = '💡 系統將從<b>今天</b>起算，自動往後展延 <b>180</b> 天。';
-  } else if (type === 'custom') {
-    dateGrp.style.display = 'block';
-    label.textContent = '儲值日期';
-    hint.innerHTML = '💡 系統將從您<b>選擇的儲值日</b>起算，展延 <b>180</b> 天。';
-  } else if (type === 'expire') {
-    dateGrp.style.display = 'block';
-    label.textContent = '新到期日';
-    hint.innerHTML = '💡 系統將直接把到期日設定為您選擇的日期。';
-  }
-}
 
   api('getDashboard').then(dash => {
     if (dash.success && dash.data) {
@@ -1826,6 +1815,32 @@ function updateTopUpUI(type) {
   } else {
     setTimeout(() => { if (STATE.simCards.length > 0) loadUpcoming(); }, 2000);
     setTimeout(() => { if (STATE.simCards.length > 0) loadUpcoming(); }, 5000);
+  }
+}
+
+// 🌟 更新儲值視窗互動邏輯 (切換時改變邊框顏色)
+function updateTopUpUI(type) {
+  const dateGrp = document.getElementById('topUpDateGroup');
+  const label = document.getElementById('topUpDateLabel');
+  const hint = document.getElementById('topUpHint');
+  
+  // 讓點選的按鈕變色
+  document.querySelectorAll('input[name="topUpType"]').forEach(r => {
+    r.parentElement.style.borderColor = r.checked ? 'var(--primary)' : 'var(--border)';
+    r.parentElement.style.borderWidth = '1.5px';
+  });
+  
+  if (type === 'today') {
+    dateGrp.style.display = 'none';
+    hint.innerHTML = '💡 系統將從<b>今天</b>起算，自動往後展延 <b>180</b> 天。<br><span style="font-size:11px;color:var(--text2)">(遠傳/統一若為 186 天，請改用「直接指定新到期日」)</span>';
+  } else if (type === 'custom') {
+    dateGrp.style.display = 'block';
+    label.textContent = '儲值日期';
+    hint.innerHTML = '💡 系統將從您<b>選擇的儲值日</b>起算，展延 <b>180</b> 天。<br><span style="font-size:11px;color:var(--text2)">(遠傳/統一若為 186 天，請改用「直接指定新到期日」)</span>';
+  } else if (type === 'expire') {
+    dateGrp.style.display = 'block';
+    label.textContent = '新到期日';
+    hint.innerHTML = '💡 系統將直接把到期日設定為您選擇的日期。';
   }
 }
 
@@ -2322,30 +2337,33 @@ function toggleAllBatchExpire(checked) {
 }
 
 async function submitBatchExpire() {
-  const chks = document.querySelectorAll('.batch-expire-chk:checked');
-  if (chks.length === 0) return showToast('請先勾選要處理的門號', 'error');
+  // 🌟 將選取範圍限定在清單容器內，避免抓到網頁其他隱藏的 checkbox
+  const container = document.getElementById('batchExpireList');
+  if (!container) return showToast('系統錯誤，找不到門號清單', 'error');
+  
+  const checked = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'));
+  if (!checked.length) return showToast('請先勾選要處理的門號', 'error');
   
   const mode = document.querySelector('input[name=batchExpireMode]:checked')?.value || 'topup';
   
-  // 強制確保轉換為純字串陣列
-  const simIds = Array.from(chks).map(c => String(c.value).trim()).filter(v => v !== '');
+  // 確保傳送的是乾淨的字串陣列，去除空值
+  const simIds = checked.map(c => String(c.value).trim()).filter(Boolean);
 
-  let payload = { sim_ids: simIds };
-  
+  let body = {};
   if (mode === 'custom') {
     const dateVal = document.getElementById('batchExpireDate')?.value;
     if (!dateVal) return showToast('請選擇到期日', 'error');
-    payload.expire_date = dateVal;
+    body = { sim_ids: simIds, expire_date: dateVal };
   } else if (mode === 'topup') {
-    payload.topup_today = true;
+    body = { sim_ids: simIds, topup_today: true };
   } else {
-    payload.add_days = 180;
+    body = { sim_ids: simIds, expire_date: '', add_days: 180 };
   }
 
   const saveBtn = document.querySelector('#broadcastModal .btn-primary');
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ 執行中...'; }
   
-  const r = await api('batchUpdateExpireDate', payload);
+  const r = await api('batchUpdateExpireDate', body);
   
   if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '✅ 確認執行'; }
 
