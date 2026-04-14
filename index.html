@@ -1748,12 +1748,13 @@ async function loadDashboard() {
     document.getElementById('stat-expired').textContent  = expired;
   }
 
-  // 🌟 新增：直接從「通知記錄」API 計算發送數量，確保管理員也能看到 100% 準確的自己發送量
+  // 🌟 新增：讓前端直接呼叫「通知記錄 API」自己算，繞過後端的限制，保證 100% 準確！
   api('getNotifications').then(res => {
     if (res.success && res.data) {
       let line = 0, tg = 0;
       res.data.forEach(n => {
-        if ((n['狀態'] || n.status) === 'sent') {
+        const status = String(n['狀態'] || n.status || '').toLowerCase();
+        if (status === 'sent') {
           const ch = String(n['通道'] || n.channel || '').toLowerCase();
           const tid = String(n['目標ID'] || n.targetId || '');
           if (ch === 'tg') tg++;
@@ -1764,6 +1765,8 @@ async function loadDashboard() {
       });
       document.getElementById('stat-notify-line').textContent = line;
       document.getElementById('stat-notify-tg').textContent = tg;
+      
+      // 如果有 TG 通知記錄或有開通 TG，就顯示 TG 區塊
       if (STATE.session?.tg_enabled || tg > 0) {
         const tgWrap = document.getElementById('stat-tg-wrap');
         if (tgWrap) tgWrap.style.display = '';
