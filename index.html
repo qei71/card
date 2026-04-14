@@ -5633,9 +5633,32 @@ async function openCalDayDetail(year, month, day) {
 }
 
 // ── 跨門號 APP 批量設定 ────────────────────────────────────
-function openCrossSimAppModal() {
+// ── 跨門號 APP 批量設定 (加入自動載入防呆) ──
+async function openCrossSimAppModal() {
+  // 1. 確保平台資料已載入，若無則自動去後端抓
+  if (!STATE.appPlatforms || STATE.appPlatforms.length === 0) {
+    document.getElementById('broadcastModalTitle').textContent = '🌐 跨門號批量設定 APP';
+    document.getElementById('broadcastModalBody').innerHTML = '<p style="text-align:center;padding:20px;color:var(--text2);">載入平台資料中...</p>';
+    openModal('broadcastModal');
+    
+    try {
+      const res = await api('getAppPlatforms', {});
+      if (res.success && res.data) STATE.appPlatforms = res.data;
+    } catch(e) {}
+  }
+
+  // 2. 過濾掉本地「已刪除」但尚未重整的平台
+  const validPlats = STATE.appPlatforms.filter(p => !_deletedPlats.find(d => (d['編號']||d.id) === (p['編號']||p.id)));
+
+  if (validPlats.length === 0) {
+    document.getElementById('broadcastModalTitle').textContent = '🌐 跨門號批量設定 APP';
+    document.getElementById('broadcastModalBody').innerHTML = '<p style="text-align:center;padding:20px;color:var(--danger);">尚無 APP 平台資料，請先新增平台</p>';
+    openModal('broadcastModal');
+    return;
+  }
+
   document.getElementById('broadcastModalTitle').textContent = '🌐 跨門號批量設定 APP';
-  const platOpts = STATE.appPlatforms.map(p => {
+  const platOpts = validPlats.map(p => {
     const id   = p['編號']||p.id||'';
     const name = p['名稱']||p.name||'';
     const icon = p['圖標']||p.icon||'📱';
@@ -5680,7 +5703,7 @@ function openCrossSimAppModal() {
       <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">🔔 批量 APP 到期通知設定</div>
       <div style="display:flex;gap:12px;margin-bottom:10px">
         <label id="crossSimNotifyLineWrap" style="display:${STATE.session?.is_admin ? 'flex' : 'none'};align-items:center;gap:6px;font-size:13px;cursor:pointer">
-          <input type="checkbox" id="crossSimNotifyLine" style="width:16px;height:16px;accent-color:#06C755"> 💚 LINE
+          <input type="checkbox" id="crossSimNotifyLine" style="width:16px;height:16px;accent-color:#06C755" checked> 💚 LINE
         </label>
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
           <input type="checkbox" id="crossSimNotifyTg" checked style="width:16px;height:16px;accent-color:#229ED9"> ✈️ Telegram
@@ -5739,7 +5762,7 @@ function openCrossSimAppModal() {
     </div>`;
   openModal('broadcastModal');
   updateCrossSimPlatInfo();
-  recalcCrossSimDate(); // 初始化一下預設提醒日期
+  recalcCrossSimDate();
 }
 function recalcCrossSimDate() {
   let d = document.getElementById('crossSimLastDate')?.value;
