@@ -1070,7 +1070,20 @@ async function saveMemberPerms(memberId) {
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyHnm1c5pxJtCoK2CzgeqlMxT-g6P2cTCnB-HViPGsY0NU9Bxr2qlkotNfXHG3D9N8qcw/exec';
 const LIFF_ID = '2009472960-ppLd7yCA';
 // 專門處理 iOS Safari 無法解析 "GMT+0800 (台北標準時間)" 的問題
-
+function safeParseDate(dStr) {
+  if (!dStr) return null;
+  let s = String(dStr).replace(/\s*\(.*\)\s*$/, '').replace(/\//g, '-'); 
+  let d = new Date(s);
+  if (!isNaN(d.getTime())) return d;
+  // 強制處理 iPhone 吐出的英文字串: Fri Apr 17 2026 00:00:00 GMT+0800
+  const m = s.match(/([A-Z][a-z]{2})\s+([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{4})/);
+  if (m) {
+    const months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+    d = new Date(parseInt(m[4]), months[m[2]], parseInt(m[3]));
+    if (!isNaN(d.getTime())) return d;
+  }
+  return null;
+}
 // ============================================================
 //  全域狀態
 // ============================================================
@@ -2172,29 +2185,35 @@ function filterSims() {
 
 
 // ── 批量修改到期日 ──────────────────────────────────────────
+// ── 批量修改到期日 ──────────────────────────────────────────
 function openBatchExpireModal() {
   if (!STATE.simCards.length) return showToast('目前沒有門號資料', 'error');
   document.getElementById('broadcastModalTitle').textContent = '📅 批量修改到期日';
   const el = document.getElementById('broadcastModalBody');
   el.innerHTML = '';
 
-  // 說明
   const desc = document.createElement('div');
   desc.style.cssText = 'background:#EBF5FF;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#2980B9';
-  desc.innerHTML = '📌 選擇要修改的門號，再設定新的到期日或選擇 +180天。';
+  desc.innerHTML = '📌 選擇要處理的門號，並設定批量儲值或修改到期日。';
   el.appendChild(desc);
 
-  // 全選/取消全選
   const selectRow = document.createElement('div');
   selectRow.style.cssText = 'display:flex;gap:8px;margin-bottom:10px';
   selectRow.innerHTML = '<button class="btn btn-xs btn-outline" onclick="toggleAllBatchExpire(true)">全選</button><button class="btn btn-xs btn-outline" onclick="toggleAllBatchExpire(false)">取消全選</button>';
   el.appendChild(selectRow);
 
-  // 門號清單（含勾選框）
   const listDiv = document.createElement('div');
   listDiv.id = 'batchExpireList';
   listDiv.style.cssText = 'max-height:35vh;overflow-y:auto;margin-bottom:12px;border:1.5px solid var(--border);border-radius:10px';
-  STATE.simCards.forEach(c => {
+  
+  // ── 新增排序：依據剩餘天數 (days_left) 由小到大排，快到期的在最上面 ──
+  const sortedCards = [...STATE.simCards].sort((a, b) => {
+    const da = a.days_left != null ? a.days_left : 9999;
+    const db = b.days_left != null ? b.days_left : 9999;
+    return da - db;
+  });
+
+  sortedCards.forEach(c => {
     const id      = c['編號']||c.id||'';
     const carrier = c['電信業者']||c.carrier||'';
     const phone   = c['門號號碼']||c.phone_number||'';
@@ -2212,39 +2231,49 @@ function openBatchExpireModal() {
   });
   el.appendChild(listDiv);
 
-  // 修改方式
   const modeDiv = document.createElement('div');
   modeDiv.className = 'form-group';
-  modeDiv.innerHTML = `<label>修改方式</label>
-    <div style="display:flex;gap:8px;margin-bottom:10px">
-      <label style="flex:1;display:flex;align-items:center;gap:7px;padding:10px;border:1.5px solid var(--primary);border-radius:10px;cursor:pointer;background:#E8F8EF">
-        <input type="radio" name="batchExpireMode" value="custom" checked style="accent-color:var(--primary)"> 自訂日期
+  modeDiv.innerHTML = `<label>處理方式</label>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+      <label style="display:flex;align-items:center;gap:7px;padding:10px;border:1.5px solid var(--primary);border-radius:10px;cursor:pointer;background:#E8F8EF" id="batchModeLbl_topup">
+        <input type="radio" name="batchExpireMode" value="topup" checked style="accent-color:var(--primary)">
+        <div><div style="font-weight:700;font-size:14px;color:var(--text)">💰 批量儲值 (今天起算 +180天)</div></div>
       </label>
-      <label style="flex:1;display:flex;align-items:center;gap:7px;padding:10px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer">
-        <input type="radio" name="batchExpireMode" value="add180" style="accent-color:var(--primary)"> 到期日+180天
+      <label style="display:flex;align-items:center;gap:7px;padding:10px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer" id="batchModeLbl_add180">
+        <input type="radio" name="batchExpireMode" value="add180" style="accent-color:var(--primary)">
+        <div><div style="font-weight:600;font-size:13px;color:var(--text2)">⏳ 展延期限 (從原到期日 +180天)</div></div>
+      </label>
+      <label style="display:flex;align-items:center;gap:7px;padding:10px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer" id="batchModeLbl_custom">
+        <input type="radio" name="batchExpireMode" value="custom" style="accent-color:var(--primary)">
+        <div><div style="font-weight:600;font-size:13px;color:var(--text2)">📅 自訂指定日期</div></div>
       </label>
     </div>
-    <div id="batchCustomDateWrap">
+    <div id="batchCustomDateWrap" style="display:none">
       <input type="date" id="batchExpireDate" class="form-control" value="${new Date().toISOString().split('T')[0]}">
     </div>`;
   el.appendChild(modeDiv);
 
-  // 切換顯示自訂日期
   modeDiv.querySelectorAll('input[name=batchExpireMode]').forEach(radio => {
     radio.addEventListener('change', () => {
-      document.getElementById('batchCustomDateWrap').style.display =
-        radio.value === 'custom' ? '' : 'none';
+      document.getElementById('batchCustomDateWrap').style.display = radio.value === 'custom' ? 'block' : 'none';
+      ['topup','add180','custom'].forEach(v => {
+        const lbl = document.getElementById('batchModeLbl_' + v);
+        const isSel = radio.value === v;
+        lbl.style.borderColor = isSel ? 'var(--primary)' : 'var(--border)';
+        lbl.style.background = isSel ? '#E8F8EF' : '#fff';
+        lbl.querySelector('div>div').style.color = isSel ? 'var(--text)' : 'var(--text2)';
+        lbl.querySelector('div>div').style.fontWeight = isSel ? '700' : '600';
+      });
     });
   });
 
-  // 按鈕
   const btnDiv = document.createElement('div');
   btnDiv.style.cssText = 'display:flex;gap:8px';
   const cancelBtn = document.createElement('button');
-  cancelBtn.className = 'btn btn-outline'; cancelBtn.textContent = '取消';
+  cancelBtn.className = 'btn btn-outline'; cancelBtn.textContent = '取消'; cancelBtn.style.flex='1';
   cancelBtn.onclick = () => closeModal('broadcastModal');
   const saveBtn = document.createElement('button');
-  saveBtn.className = 'btn btn-primary'; saveBtn.textContent = '📅 確認修改';
+  saveBtn.className = 'btn btn-primary'; saveBtn.textContent = '✅ 確認執行'; saveBtn.style.flex='2';
   saveBtn.onclick = submitBatchExpire;
   btnDiv.appendChild(cancelBtn); btnDiv.appendChild(saveBtn);
   el.appendChild(btnDiv);
@@ -2258,8 +2287,8 @@ function toggleAllBatchExpire(checked) {
 
 async function submitBatchExpire() {
   const checked = Array.from(document.querySelectorAll('.batch-expire-chk:checked'));
-  if (!checked.length) return showToast('請先選擇門號', 'error');
-  const mode = document.querySelector('input[name=batchExpireMode]:checked')?.value || 'custom';
+  if (!checked.length) return showToast('請先勾選門號', 'error');
+  const mode = document.querySelector('input[name=batchExpireMode]:checked')?.value || 'topup';
   const simIds = checked.map(c => c.value);
 
   let body = {};
@@ -2267,24 +2296,25 @@ async function submitBatchExpire() {
     const dateVal = document.getElementById('batchExpireDate')?.value;
     if (!dateVal) return showToast('請選擇到期日', 'error');
     body = { sim_ids: simIds, expire_date: dateVal };
+  } else if (mode === 'topup') {
+    body = { sim_ids: simIds, topup_today: true };
   } else {
-    // +180天：交給後端對每張卡計算
     body = { sim_ids: simIds, expire_date: '', add_days: 180 };
   }
 
   const saveBtn = document.querySelector('#broadcastModal .btn-primary');
-  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ 修改中...'; }
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ 執行中...'; }
   const r = await api('batchUpdateExpireDate', body);
-  if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '📅 確認修改'; }
+  if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '✅ 確認執行'; }
 
   if (r.success) {
-    showToast('✅ 已修改 ' + r.updated + ' 筆門號到期日', 'success');
+    showToast('✅ 成功處理 ' + r.updated + ' 筆門號', 'success');
     closeModal('broadcastModal');
     loadSimCards();
     STATE.calendarData = null;
     loadCalendarData().catch(()=>{});
   } else {
-    showToast(r.error || '修改失敗', 'error');
+    showToast(r.error || '處理失敗', 'error');
   }
 }
 
@@ -3904,28 +3934,35 @@ async function loadNotifyOverview() {
     el.innerHTML = '<p style="text-align:center;color:var(--text2);font-size:13px;padding:10px">載入中...</p>';
     try {
       const r = await api('getAllMyAppRegistrations');
-      if (!r.success) throw new Error();
+      if (!r.success) throw new Error(r.error || 'API 連線失敗');
+      
       let apps = [];
       const today = new Date(); today.setHours(0,0,0,0);
       
-      Object.entries(r.data).forEach(([sid, regs]) => {
-        regs.forEach(reg => {
-          let hasChannel = false;
-          if (_ovChannel === 'line' && reg.notify_line === true) hasChannel = true;
-          if (_ovChannel === 'tg' && reg.notify_tg !== false) hasChannel = true;
+      // 🌟 終極防呆：確保 r.data 存在且為物件結構，才進行解析，避免當機
+      if (r.data && typeof r.data === 'object' && !Array.isArray(r.data)) {
+        Object.entries(r.data).forEach(([sid, regs]) => {
+          if (!Array.isArray(regs)) return; // 確保 regs 是陣列
+          
+          regs.forEach(reg => {
+            let hasChannel = false;
+            if (_ovChannel === 'line' && reg.notify_line === true) hasChannel = true;
+            if (_ovChannel === 'tg' && reg.notify_tg !== false) hasChannel = true;
 
-          if (reg.is_registered && reg.can_repeat && reg.next_register_date && hasChannel) {
-            const nd = safeParseDate(reg.next_register_date);
-            if (nd) {
-              nd.setHours(0,0,0,0);
-              const dl = Math.ceil((nd - today)/86400000);
-              if (dl >= 0 && dl <= 30) {
-                apps.push({ ...reg, daysLeft: dl, simId: sid });
+            if (reg.is_registered && reg.can_repeat && reg.next_register_date && hasChannel) {
+              const nd = safeParseDate(reg.next_register_date);
+              if (nd) {
+                nd.setHours(0,0,0,0);
+                const dl = Math.ceil((nd - today)/86400000);
+                if (dl >= 0 && dl <= 30) {
+                  apps.push({ ...reg, daysLeft: dl, simId: sid });
+                }
               }
             }
-          }
+          });
         });
-      });
+      }
+      
       apps.sort((a,b) => a.daysLeft - b.daysLeft);
       
       if (!apps.length) {
@@ -3938,7 +3975,7 @@ async function loadNotifyOverview() {
         const sim = STATE.simCards.find(c => (c['編號']||c.id) === a.simId);
         const simStr = sim ? `${sim['電信業者']||sim.carrier} ${sim['門號號碼']||sim.phone_number}` : '';
         
-        // ── 格式化日期：改為 YYYY-MM-DD 00:00:00 ──
+        // 🌟 確保印出來的日期格式永遠是乾淨的 YYYY-MM-DD 00:00:00
         const dObj = safeParseDate(a.next_register_date);
         const cleanDate = dObj 
           ? `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')} 00:00:00` 
@@ -3954,13 +3991,14 @@ async function loadNotifyOverview() {
         </div>`;
       }).join('');
     } catch(e) {
-      el.innerHTML = '<p style="font-size:13px;color:var(--danger);text-align:center;padding:8px">載入失敗</p>';
+      console.error('APP 通知總覽載入發生錯誤:', e);
+      el.innerHTML = '<p style="font-size:13px;color:var(--danger);text-align:center;padding:8px">資料載入失敗，請重試</p>';
     }
     document.getElementById('notifyOverviewMore').style.display='none';
     return;
   }
 
-  // --- 門號到期標籤分頁 (保留原樣) ---
+  // --- 門號到期標籤分頁 ---
   try {
     const [notifyRes, notifyLogRes] = await Promise.all([
       api('getNotifySettings', {}),
@@ -3995,6 +4033,7 @@ async function loadNotifyOverview() {
     const moreBtn = document.getElementById('notifyOverviewMore');
     if (moreBtn) moreBtn.style.display = _notifyOverviewAll.length > 10 ? '' : 'none';
   } catch(e) {
+    console.error('門號通知總覽載入發生錯誤:', e);
     el.innerHTML = '<p style="font-size:13px;color:var(--danger);text-align:center;padding:8px">載入失敗</p>';
   }
 }
