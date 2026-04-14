@@ -2286,8 +2286,12 @@ function toggleAllBatchExpire(checked) {
 }
 
 async function submitBatchExpire() {
-  const checked = Array.from(document.querySelectorAll('.batch-expire-chk:checked'));
-  if (!checked.length) return showToast('請先勾選門號', 'error');
+  // 🌟 將選取範圍限定在清單容器內，避免抓到網頁其他隱藏的 checkbox
+  const container = document.getElementById('batchExpireList');
+  if (!container) return showToast('系統錯誤，找不到門號清單', 'error');
+  
+  const checked = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'));
+  if (!checked.length) return showToast('請先勾選要處理的門號', 'error');
   
   const mode = document.querySelector('input[name=batchExpireMode]:checked')?.value || 'topup';
   
