@@ -3899,7 +3899,7 @@ async function loadNotifyOverview() {
   const el = document.getElementById('notifyOverviewList');
   if (!el) return;
 
-  // 切換到 APP 到期時的邏輯處理
+  // --- APP 到期標籤分頁 ---
   if (_ovTab === 'app') {
     el.innerHTML = '<p style="text-align:center;color:var(--text2);font-size:13px;padding:10px">載入中...</p>';
     try {
@@ -3910,18 +3910,18 @@ async function loadNotifyOverview() {
       
       Object.entries(r.data).forEach(([sid, regs]) => {
         regs.forEach(reg => {
-          // 過濾 LINE/TG 通道選擇
           let hasChannel = false;
           if (_ovChannel === 'line' && reg.notify_line === true) hasChannel = true;
           if (_ovChannel === 'tg' && reg.notify_tg !== false) hasChannel = true;
 
-          // 必須是已註冊、可重複，有下次日期，並且符合當前的通道
           if (reg.is_registered && reg.can_repeat && reg.next_register_date && hasChannel) {
-            const nd = new Date(reg.next_register_date.replace(/\//g,'-'));
-            nd.setHours(0,0,0,0);
-            const dl = Math.ceil((nd - today)/86400000);
-            if (dl >= 0 && dl <= 30) {
-              apps.push({ ...reg, daysLeft: dl, simId: sid });
+            const nd = safeParseDate(reg.next_register_date);
+            if (nd) {
+              nd.setHours(0,0,0,0);
+              const dl = Math.ceil((nd - today)/86400000);
+              if (dl >= 0 && dl <= 30) {
+                apps.push({ ...reg, daysLeft: dl, simId: sid });
+              }
             }
           }
         });
@@ -3937,11 +3937,18 @@ async function loadNotifyOverview() {
       el.innerHTML = apps.map(a => {
         const sim = STATE.simCards.find(c => (c['編號']||c.id) === a.simId);
         const simStr = sim ? `${sim['電信業者']||sim.carrier} ${sim['門號號碼']||sim.phone_number}` : '';
+        
+        // ── 格式化日期：改為 YYYY-MM-DD 00:00:00 ──
+        const dObj = safeParseDate(a.next_register_date);
+        const cleanDate = dObj 
+          ? `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')} 00:00:00` 
+          : a.next_register_date;
+
         return `<div style="display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0">
           <div style="font-size:24px;margin-right:10px">${a.icon||'📱'}</div>
           <div style="flex:1">
             <div style="font-size:13px;font-weight:600">${esc(a.name)} <span style="font-size:11px;color:var(--text2);font-weight:400">${simStr}</span></div>
-            <div style="font-size:11px;color:var(--primary)">下次可用：${a.next_register_date} (剩 ${a.daysLeft} 天)</div>
+            <div style="font-size:11px;color:var(--primary)">下次可用：${cleanDate} (剩 ${a.daysLeft} 天)</div>
           </div>
           <div><span style="font-size:10px;background:#E8F8EF;color:#1a7a44;padding:2px 6px;border-radius:6px">自動通知</span></div>
         </div>`;
@@ -3953,7 +3960,7 @@ async function loadNotifyOverview() {
     return;
   }
 
-  // 門號到期 邏輯（保留原樣）
+  // --- 門號到期標籤分頁 (保留原樣) ---
   try {
     const [notifyRes, notifyLogRes] = await Promise.all([
       api('getNotifySettings', {}),
