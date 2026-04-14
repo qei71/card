@@ -5784,51 +5784,50 @@ function updateCrossSimPlatInfo() {
 async function applyCrossSimApp() {
   const platId    = document.getElementById('crossSimPlatSelect')?.value;
   const status    = document.getElementById('crossSimStatus')?.value === 'true';
-  const canRepeat = document.getElementById('crossSimCanRepeat')?.checked || false;
   const days      = parseInt(document.getElementById('crossSimRegDays')?.value) || 30;
   const lastDate  = document.getElementById('crossSimLastDate')?.value || new Date().toISOString().split('T')[0];
   const accSame   = document.getElementById('crossSimAccSameAsPhone')?.checked || false;
   const batchNote = (document.getElementById('crossSimNote')?.value || '').trim();
   
-  // 讀取通知設定
   const notifyLine = document.getElementById('crossSimNotifyLine')?.checked || false;
   const notifyTg   = document.getElementById('crossSimNotifyTg')?.checked || false;
   const notifyDate = document.getElementById('crossSimNotifyDate')?.value || '';
   const notifyTime = document.getElementById('crossSimNotifyTime')?.value || '';
 
   if (!platId) return showToast('請選擇 APP 平台', 'error');
+  
   const checked = Array.from(document.querySelectorAll('.cross-sim-chk:checked')).map(el => el.value);
   const simIds  = checked.length > 0 ? checked : STATE.simCards.map(c => c['編號']||c.id||'').filter(Boolean);
+  
   if (!simIds.length) return showToast('沒有門號可設定', 'error');
   
   const btn = document.querySelector('#broadcastModal .btn-primary');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ 套用中...'; }
-  
-  let ok = 0;
-  for (const simId of simIds) {
-    const sim = STATE.simCards.find(c => (c['編號']||c.id) === simId);
-    let phoneForAcc = sim ? (sim['門號號碼']||sim.phone_number||'') : '';
-    if (phoneForAcc && phoneForAcc.length === 9 && phoneForAcc.startsWith('9')) phoneForAcc = '0' + phoneForAcc;
-
-    const r = await api('updateAppRegistration', {
-      sim_card_id:        simId, 
-      platform_id:        platId,
-      is_registered:      status, 
-      register_days:      days,
+  await withLoading('applyCrossSim', btn, '⏳ 處理中...', async () => {
+    // 🌟 核心改進：不再使用迴圈，直接將 simIds 陣列一次打包傳給後端
+    const r = await api('batchUpdateAppRegistrations', {
+      sim_ids: simIds,
+      platform_id: platId,
+      is_registered: status,
+      register_days: days,
       last_register_date: status ? lastDate : '',
-      app_account:        accSame ? phoneForAcc : (document.getElementById('crossSimAccount')?.value||'').trim(),
-      app_note:           batchNote,
-      notify_line:        notifyLine,
-      notify_tg:          notifyTg,
-      notify_date:        notifyDate,
-      notify_time:        notifyTime
+      app_account: accSame ? '' : (document.getElementById('crossSimAccount')?.value||'').trim(),
+      acc_same_as_phone: accSame,
+      app_note: batchNote,
+      notify_line: notifyLine,
+      notify_tg: notifyTg,
+      notify_date: notifyDate,
+      notify_time: notifyTime
     });
-    if (r.success) ok++;
-  }
-  if (btn) { btn.disabled = false; btn.textContent = '✅ 套用'; }
-  showToast(`✅ 已套用 ${ok}/${simIds.length} 張門號`, 'success');
-  closeModal('broadcastModal');
-  loadAppRegistrations();
+    
+    if (r.success) {
+      showToast(`✅ 成功更新 ${r.count} 筆設定`, 'success');
+      closeModal('broadcastModal');
+      // 如果目前正在查看該門號的 APP，則重刷介面
+      if (document.getElementById('appSimSelect').value) loadAppRegistrations();
+    } else {
+      showToast(r.error || '更新失敗', 'error');
+    }
+  });
 }
 
 // ── 管理員統計分析 ─────────────────────────────────────────
