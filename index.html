@@ -1873,12 +1873,6 @@ async function openNotifyDetail(channel) {
   } else {
     el.innerHTML = '<p style="text-align:center;color:var(--danger)">載入失敗</p>';
   }
-if (STATE.simCards.length > 0) {
-    loadUpcoming();
-  } else {
-    setTimeout(() => { if (STATE.simCards.length > 0) loadUpcoming(); }, 2000);
-    setTimeout(() => { if (STATE.simCards.length > 0) loadUpcoming(); }, 5000); // 👈 5000 在這裡！
-  }
 } // 👈 loadDashboard 的結束括號
 
 // 🌟 更新儲值視窗互動邏輯 (切換時改變邊框顏色)
