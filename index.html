@@ -1776,6 +1776,7 @@ async function api(action, data = {}) {
 //  儀表板
 // ============================================================
 // 🌟 修復 2：修正首頁統計 0 的問題，並讓次數可點擊
+// 🌟 修復：把所有統計與公告的 API 請求都收攏回 loadDashboard 裡面
 async function loadDashboard() {
   if (STATE.session?.id !== undefined) STATE.session.id = String(STATE.session.id);
 
@@ -1809,9 +1810,39 @@ async function loadDashboard() {
       }
     }
   }).catch(()=>{});
+
+  // 👇 把原本流浪在外面的這兩段，正確收編回 loadDashboard 裡面
+  api('getDashboard').then(dash => {
+    if (dash.success && dash.data) {
+      if (dash.data.total > 0 || !STATE.simCards.length) {
+        document.getElementById('stat-total').textContent    = dash.data.total    ?? 0;
+        document.getElementById('stat-expiring').textContent = dash.data.expiring ?? 0;
+        document.getElementById('stat-expired').textContent  = dash.data.expired  ?? 0;
+      }
+    }
+  }).catch(()=>{});
+
+  api('getAnnouncements').then(announce => {
+    if (announce.success && announce.data?.length) {
+      document.getElementById('announceArea').innerHTML = announce.data.map(a => {
+        const title   = a['標題']    || a.title      || '';
+        const content = a['內容']    || a.content    || '';
+        const time    = a['發布時間']|| a.created_at || '';
+        if (!title && !content) return '';
+        return `<div class="announce-item"><div class="announce-title">📢 ${esc(title)}</div><div class="announce-content">${esc(content)}</div><div class="announce-time">${time}</div></div>`;
+      }).filter(Boolean).join('');
+    }
+  }).catch(()=>{});
+
+  if (STATE.simCards.length > 0) {
+    loadUpcoming();
+  } else {
+    setTimeout(() => { if (STATE.simCards.length > 0) loadUpcoming(); }, 2000);
+    setTimeout(() => { if (STATE.simCards.length > 0) loadUpcoming(); }, 5000);
+  }
 }
 
-// 🌟 新增功能：點擊次數查看通知內容
+// 🌟 新增功能：點擊次數查看通知內容 (保持為獨立函數，放在 loadDashboard 下面)
 async function openNotifyDetail(channel) {
   const title = channel === 'line' ? '💚 LINE 通知記錄' : '✈️ TG 通知記錄';
   document.getElementById('broadcastModalTitle').textContent = title;
@@ -1842,37 +1873,13 @@ async function openNotifyDetail(channel) {
   } else {
     el.innerHTML = '<p style="text-align:center;color:var(--danger)">載入失敗</p>';
   }
-}
-  
-  api('getDashboard').then(dash => {
-    if (dash.success && dash.data) {
-      if (dash.data.total > 0 || !STATE.simCards.length) {
-        document.getElementById('stat-total').textContent    = dash.data.total    ?? 0;
-        document.getElementById('stat-expiring').textContent = dash.data.expiring ?? 0;
-        document.getElementById('stat-expired').textContent  = dash.data.expired  ?? 0;
-      }
-    }
-  }).catch(()=>{});
-
-  api('getAnnouncements').then(announce => {
-    if (announce.success && announce.data?.length) {
-      document.getElementById('announceArea').innerHTML = announce.data.map(a => {
-        const title   = a['標題']    || a.title      || '';
-        const content = a['內容']    || a.content    || '';
-        const time    = a['發布時間']|| a.created_at || '';
-        if (!title && !content) return '';
-        return `<div class="announce-item"><div class="announce-title">📢 ${esc(title)}</div><div class="announce-content">${esc(content)}</div><div class="announce-time">${time}</div></div>`;
-      }).filter(Boolean).join('');
-    }
-  }).catch(()=>{});
-
-  if (STATE.simCards.length > 0) {
+if (STATE.simCards.length > 0) {
     loadUpcoming();
   } else {
     setTimeout(() => { if (STATE.simCards.length > 0) loadUpcoming(); }, 2000);
-    setTimeout(() => { if (STATE.simCards.length > 0) loadUpcoming(); }, 5000);
+    setTimeout(() => { if (STATE.simCards.length > 0) loadUpcoming(); }, 5000); // 👈 5000 在這裡！
   }
-}
+} // 👈 loadDashboard 的結束括號
 
 // 🌟 更新儲值視窗互動邏輯 (切換時改變邊框顏色)
 function updateTopUpUI(type) {
