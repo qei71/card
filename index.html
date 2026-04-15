@@ -347,19 +347,18 @@ textarea.form-control { resize:vertical; min-height:80px; }
         <div class="stat-label">已到期</div>
         <div style="font-size:10px;color:var(--danger);margin-top:3px">點擊查看 ›</div>
       </div>
-      <div class="stat-card blue" style="cursor:pointer" onclick="openNotifyDetail()">
+     <div class="stat-card blue">
         <div style="display:flex;justify-content:space-around;align-items:center;height:100%">
-          <div style="text-align:center">
+          <div style="text-align:center; cursor:pointer" onclick="openNotifyDetail('line')">
             <div class="stat-num" id="stat-notify-line">-</div>
-            <div class="stat-label" style="font-size:10px">LINE通知</div>
+            <div class="stat-label" style="font-size:10px">LINE通知 (點擊)</div>
           </div>
-          <div id="stat-tg-wrap" style="display:none;text-align:center">
+          <div id="stat-tg-wrap" style="display:none;text-align:center; cursor:pointer" onclick="openNotifyDetail('tg')">
             <div class="stat-num" id="stat-notify-tg" style="font-size:16px;color:#229ED9">-</div>
-            <div class="stat-label" style="font-size:10px">TG通知</div>
+            <div class="stat-label" style="font-size:10px">TG通知 (點擊)</div>
           </div>
         </div>
       </div>
-    </div>
     <div class="card">
       <div class="card-header"><span class="card-title">🗓️ 近期到期門號</span></div>
       <div id="upcomingList"></div>
@@ -1776,10 +1775,11 @@ async function api(action, data = {}) {
 // ============================================================
 //  儀表板
 // ============================================================
-// 🌟 修復首頁通知計數 (前端暴力計算版)
+// 🌟 修復 2：修正首頁統計 0 的問題，並讓次數可點擊
 async function loadDashboard() {
   if (STATE.session?.id !== undefined) STATE.session.id = String(STATE.session.id);
 
+  // 門號統計
   if (STATE.simCards.length > 0) {
     const expired  = STATE.simCards.filter(c => c.days_left != null && c.days_left < 0).length;
     const expiring = STATE.simCards.filter(c => c.days_left != null && c.days_left >= 0 && c.days_left <= 7).length;
@@ -1788,7 +1788,7 @@ async function loadDashboard() {
     document.getElementById('stat-expired').textContent  = expired;
   }
 
-  // 讓前端直接撈記錄算，無畏後端限制
+  // 通知統計 (相容新舊欄位)
   api('getNotifications').then(res => {
     if (res.success && res.data) {
       let line = 0, tg = 0;
@@ -1797,21 +1797,53 @@ async function loadDashboard() {
         if (status === 'sent') {
           const ch = String(n['通道'] || n.channel || '').toLowerCase();
           const tid = String(n['目標ID'] || n.targetId || '');
-          if (ch === 'tg') tg++;
-          else if (ch === 'line') line++;
-          else if (tid.startsWith('U') || tid.startsWith('C') || tid.startsWith('R')) line++;
-          else if (tid) tg++;
+          if (ch === 'tg' || (tid && !tid.startsWith('U') && !tid.startsWith('C') && !tid.startsWith('R'))) tg++;
+          else line++;
         }
       });
       document.getElementById('stat-notify-line').textContent = line;
       document.getElementById('stat-notify-tg').textContent = tg;
       if (STATE.session?.tg_enabled || tg > 0) {
         const tgWrap = document.getElementById('stat-tg-wrap');
-        if (tgWrap) tgWrap.style.display = '';
+        if (tgWrap) tgWrap.style.display = 'block';
       }
     }
   }).catch(()=>{});
+}
 
+// 🌟 新增功能：點擊次數查看通知內容
+async function openNotifyDetail(channel) {
+  const title = channel === 'line' ? '💚 LINE 通知記錄' : '✈️ TG 通知記錄';
+  document.getElementById('broadcastModalTitle').textContent = title;
+  const el = document.getElementById('broadcastModalBody');
+  el.innerHTML = '<p style="text-align:center;padding:20px">載入中...</p>';
+  openModal('broadcastModal');
+
+  const res = await api('getNotifications');
+  if (res.success && res.data) {
+    const filtered = res.data.filter(n => {
+      const ch = String(n['通道'] || n.channel || '').toLowerCase();
+      const tid = String(n['目標ID'] || n.targetId || '');
+      const isTg = (ch === 'tg' || (tid && !tid.startsWith('U') && !tid.startsWith('C') && !tid.startsWith('R')));
+      return channel === 'tg' ? isTg : !isTg;
+    });
+
+    if (filtered.length === 0) {
+      el.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text2)">目前尚無發送紀錄</p>';
+      return;
+    }
+
+    el.innerHTML = `<div style="max-height:60vh;overflow-y:auto">` + filtered.map(n => `
+      <div style="padding:10px; border-bottom:1px solid #eee; font-size:13px">
+        <div style="color:var(--text2); font-size:11px; margin-bottom:4px">${n['發送時間'] || n.sent_at || ''}</div>
+        <div style="white-space:pre-wrap; line-height:1.4">${esc(n['通知內容'] || n.message || '')}</div>
+      </div>
+    `).join('') + `</div>`;
+  } else {
+    el.innerHTML = '<p style="text-align:center;color:var(--danger)">載入失敗</p>';
+  }
+}
+  
   api('getDashboard').then(dash => {
     if (dash.success && dash.data) {
       if (dash.data.total > 0 || !STATE.simCards.length) {
@@ -4711,17 +4743,27 @@ async function submitBatchAppNotify() {
 
   
 async function loadNotifySettings() {
-  // 🌟 新增：如果目前在 APP 頁籤，就交給 APP 渲染器，中斷原本的門號邏輯
+  const el = document.getElementById('notifySettingsArea');
+  if (!el) return;
+
+  // 🌟 修復 1：如果目前在 APP 頁籤，且沒有平台資料，就先自動去抓
   if (_curNotifyTab === 'app') {
-    return renderAppNotifyUI(document.getElementById('notifySettingsArea'));
+    if (!STATE.appPlatforms || STATE.appPlatforms.length === 0) {
+      el.innerHTML = '<p style="text-align:center;padding:10px;color:var(--text2)">🔄 正在同步平台資料...</p>';
+      try {
+        const res = await api('getAppPlatforms', {});
+        if (res.success && res.data) STATE.appPlatforms = res.data;
+      } catch(e) {}
+    }
+    return renderAppNotifyUI(el);
   }
+
   const selEl = document.getElementById('notifySimSelect');
-  const el    = document.getElementById('notifySettingsArea');
-  if (!selEl || !el) return;
+  if (!selEl) return;
   const simId = selEl.value;
   if (!simId) { el.innerHTML = '<p style="font-size:13px;color:var(--text2);padding:8px 0">請選擇門號</p>'; return; }
 
-  // 批量模式
+  // 批量模式 (👇 從這裡開始，完全保留你原本的程式碼，不用動！)
   if (simId === 'ALL' || simId === 'VALID') {
     const label = simId === 'VALID' ? '所有有效門號' : '所有門號';
     const testArea = document.getElementById('notifyTestArea');
