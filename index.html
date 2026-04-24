@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
-<title>預付卡管理系統 v4.9</title>
+<title>預付卡管理系統 v5.0</title>
 <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
 <style>
 :root {
@@ -245,7 +245,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
 <div id="loading">
   <div class="logo">📱</div>
   <p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:4px">預付卡儲值管理</p>
-  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v4.9</p>
+  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.0</p>
   <p id="loadingMsg" style="color:rgba(255,255,255,.85);font-size:14px">載入中...</p>
   <div style="width:200px;height:4px;background:rgba(255,255,255,.25);border-radius:4px;margin-top:20px;overflow:hidden">
     <div id="loadingBar" style="height:100%;background:#fff;border-radius:4px;width:0%;transition:width .35s ease"></div>
@@ -257,7 +257,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
   <div class="auth-card">
     <div class="auth-logo">
       <span class="icon">📱</span>
-      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v4.9</div>
+      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.0</div>
       <p>管理您的所有預付卡門號</p>
     </div>
 
@@ -1811,17 +1811,47 @@ async function loadDashboard() {
   }
 
   // 通知統計 (相容新舊欄位)
+  // 通知統計 (相容新舊欄位與終極防呆)
   api('getNotifications').then(res => {
     if (res.success && res.data) {
       let line = 0, tg = 0;
       res.data.forEach(n => {
-        const status = String(n['狀態'] || n.status || '').toLowerCase();
+        const status = String(n['狀態'] || n.status || '').toLowerCase().trim();
         if (status === 'sent') {
-          const ch = String(n['通道'] || n.channel || '').toLowerCase();
-          // 🌟 破案關鍵：加入 n['LINE ID'] 讓程式知道去哪裡抓這串數字
-          const tid = String(n['目標ID'] || n['LINE ID'] || n.targetId || '').trim();
+          let isTg = false;
+          const ch = String(n['通道'] || n.channel || '').toLowerCase().trim();
           
-          if (ch === 'tg' || (tid && !tid.startsWith('U') && !tid.startsWith('C') && !tid.startsWith('R'))) tg++;
+          if (ch === 'tg') {
+            isTg = true;
+          } else {
+            // 🕵️‍♂️ 尋找目標 ID：不管標題有沒有空白或大小寫
+            let tid = '';
+            for (let key in n) {
+              let cleanKey = key.replace(/\s+/g, '').toUpperCase();
+              if (cleanKey === 'LINEID' || cleanKey.includes('目標') || cleanKey.includes('對象') || cleanKey === 'TARGETID') {
+                tid = String(n[key]).trim();
+                break;
+              }
+            }
+            
+            // 🛡️ 終極防呆：如果還是找不到，直接去掃描內容，只要是純數字(且不是09開頭的手機號)就是 TG ID
+            if (!tid) {
+              for (let key in n) {
+                let val = String(n[key]).trim();
+                if (/^\d{7,15}$/.test(val) && !val.startsWith('09')) {
+                  tid = val;
+                  break;
+                }
+              }
+            }
+
+            // 只要拿到的 ID 不是 U、C、R 開頭，就判定為 Telegram！
+            if (tid && !tid.toUpperCase().startsWith('U') && !tid.toUpperCase().startsWith('C') && !tid.toUpperCase().startsWith('R')) {
+              isTg = true;
+            }
+          }
+
+          if (isTg) tg++;
           else line++;
         }
       });
@@ -1867,6 +1897,7 @@ async function loadDashboard() {
 
 // 🌟 新增功能：點擊次數查看通知內容 (保持為獨立函數，放在 loadDashboard 下面)
 // 🌟 新增功能：點擊次數查看通知內容 (保持為獨立函數，放在 loadDashboard 下面)
+// 🌟 新增功能：點擊次數查看通知內容
 async function openNotifyDetail(channel) {
   const title = channel === 'line' ? '💚 LINE 通知記錄' : '✈️ TG 通知記錄';
   document.getElementById('broadcastModalTitle').textContent = title;
@@ -1877,10 +1908,37 @@ async function openNotifyDetail(channel) {
   const res = await api('getNotifications');
   if (res.success && res.data) {
     const filtered = res.data.filter(n => {
-      const ch = String(n['通道'] || n.channel || '').toLowerCase();
-      // 🌟 這裡也同步加上 n['LINE ID']
-      const tid = String(n['目標ID'] || n['LINE ID'] || n.targetId || '').trim();
-      const isTg = (ch === 'tg' || (tid && !tid.startsWith('U') && !tid.startsWith('C') && !tid.startsWith('R')));
+      // 順便把沒發送成功的過濾掉
+      const status = String(n['狀態'] || n.status || '').toLowerCase().trim();
+      if (status !== 'sent') return false;
+
+      let isTg = false;
+      const ch = String(n['通道'] || n.channel || '').toLowerCase().trim();
+      
+      if (ch === 'tg') {
+        isTg = true;
+      } else {
+        let tid = '';
+        for (let key in n) {
+          let cleanKey = key.replace(/\s+/g, '').toUpperCase();
+          if (cleanKey === 'LINEID' || cleanKey.includes('目標') || cleanKey.includes('對象') || cleanKey === 'TARGETID') {
+            tid = String(n[key]).trim();
+            break;
+          }
+        }
+        if (!tid) {
+          for (let key in n) {
+            let val = String(n[key]).trim();
+            if (/^\d{7,15}$/.test(val) && !val.startsWith('09')) {
+              tid = val;
+              break;
+            }
+          }
+        }
+        if (tid && !tid.toUpperCase().startsWith('U') && !tid.toUpperCase().startsWith('C') && !tid.toUpperCase().startsWith('R')) {
+          isTg = true;
+        }
+      }
       return channel === 'tg' ? isTg : !isTg;
     });
 
@@ -1898,7 +1956,7 @@ async function openNotifyDetail(channel) {
   } else {
     el.innerHTML = '<p style="text-align:center;color:var(--danger)">載入失敗</p>';
   }
-} // 👈 loadDashboard 的結束括號
+}
 
 // 🌟 更新儲值視窗互動邏輯 (切換時改變邊框顏色)
 function updateTopUpUI(type) {
