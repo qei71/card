@@ -7,6 +7,33 @@
 <title>預付卡管理系統 v5.0</title>
 <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
 <style>
+/* ── 美化版迷你日曆 ── */
+.calendar-wrapper {
+  background-color: #ffffff;
+  /* 淡色點陣背景圖案 */
+  background-image: radial-gradient(#e5e7eb 1.5px, transparent 1.5px);
+  background-size: 16px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: inset 0 0 20px rgba(255,255,255,0.8);
+}
+.mini-cal-table { width: 100%; border-collapse: separate; border-spacing: 3px; table-layout: fixed; }
+.mini-cal-table th { text-align: center; padding: 6px 2px; font-size: 12px; color: var(--text2); font-weight: 700; border-bottom: 2px solid var(--primary); opacity: 0.8; }
+.mini-cal-table td { text-align: center; padding: 4px 2px; height: 46px; vertical-align: top; position: relative; border-radius: 10px; border: 1.5px solid transparent; transition: all 0.2s ease; background: rgba(255,255,255,0.6); }
+.mini-cal-table td.has-event { background: rgba(243, 156, 18, 0.08); border-color: rgba(243, 156, 18, 0.3); cursor: pointer; box-shadow: 0 2px 4px rgba(243, 156, 18, 0.05); }
+.mini-cal-table td.has-event:active { transform: scale(0.95); }
+.mini-cal-date { font-size: 14px; font-weight: 600; width: 26px; height: 26px; line-height: 26px; margin: 0 auto 3px; border-radius: 50%; color: var(--text); }
+.mini-cal-date.is-today { background: var(--primary); color: #fff; box-shadow: 0 2px 8px rgba(6,199,85,.4); }
+
+/* ── 美化版通知總覽表格 ── */
+.notify-table-wrap { overflow-x: auto; border: 1.5px solid var(--border); border-radius: 12px; background: #fff; }
+.notify-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; white-space: nowrap; }
+.notify-table th { padding: 10px 12px; font-weight: 700; color: var(--text2); border-bottom: 1.5px solid var(--border); background: #f8f9fa; font-size: 12px; }
+.notify-table td { padding: 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+.notify-table tr:last-child td { border-bottom: none; }
+.notify-table tr:nth-child(even) td { background: #fafbfc; }
+.notify-tag { display: inline-block; background: #E8F8EF; color: #1a7a44; font-size: 11px; padding: 3px 8px; border-radius: 8px; margin: 2px 2px 0 0; font-weight: 600; }
 :root {
   --primary: #06C755;
   --primary-dark: #05a847;
@@ -4338,111 +4365,100 @@ function showMoreNotifyOverview() {
   });
 }
 
+// 🌟 精緻卡片版通知總覽 (保留日曆圖示，但優化版面)
 function renderNotifyOverviewItems(groups, logs, el) {
-  el.innerHTML = '';
+  if (!groups.length) {
+    el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text2);background:#fafafa;border-radius:12px;margin-top:10px;"><p style="font-size:24px;margin-bottom:8px;">📭</p>目前沒有任何通知設定</div>';
+    return;
+  }
+
+  let html = `<div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">`;
+
   groups.forEach(({sid, sArr}) => {
     const sim     = STATE.simCards.find(c => (c['編號']||c.id) === sid);
     const carrier = sim ? (sim['電信業者']||sim.carrier||'') : '';
     const phone   = sim ? (sim['門號號碼']||sim.phone_number||'') : '（已刪除）';
     const simNum  = sim ? (sim['門號編號']||sim.sim_number||'') : '';
     const expire  = sim ? (sim['到期日']||sim.expire_date||'') : '';
+    
     const lastLog = logs.find(n => String(n['門號編號']||n.sim_card_id||'').trim()===sid.trim());
     const lastStatus = lastLog ? (lastLog['狀態']||lastLog.status) : null;
-    const statusIcon = lastStatus==='sent' ? '✅' : lastStatus==='failed' ? '❌' : '⏳';
+    const statusIcon = lastStatus==='sent' ? '<span style="color:#1a7a44">✅ 成功</span>' : lastStatus==='failed' ? '<span style="color:#e74c3c">❌ 失敗</span>' : '<span style="color:#f39c12">⏳ 等待中</span>';
+    const lastTime = lastLog ? String(lastLog['發送時間']||'').substring(5,16) : '無紀錄';
 
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:10px 0;border-bottom:1px solid #f0f0f0';
-
-    // 左側：門號日曆圖示（含月/日）
-    const calDiv = document.createElement('div');
-    calDiv.style.cssText = 'flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:2px';
+    // ── 左側：SVG 日曆與門號標籤 ──
+    let calHtml = '';
     if (expire) {
       const expD = new Date(String(expire).replace(/\//g,'-'));
       if (!isNaN(expD)) {
-        const mo = expD.getMonth()+1, day = expD.getDate();
-        const dl = Math.ceil((expD-new Date().setHours(0,0,0,0))/86400000);
-        const tc = dl<0?'#E74C3C':dl===0?'#E67E22':dl<=7?'#E67E22':'#2980B9';
-        const svgEl = document.createElementNS('http://www.w3.org/2000/svg','svg');
-        svgEl.setAttribute('viewBox','0 0 36 36'); svgEl.setAttribute('width','40'); svgEl.setAttribute('height','40');
-        svgEl.innerHTML='<rect x="2" y="4" width="32" height="28" rx="4" fill="#fff" stroke="#ddd" stroke-width="1.5"/>'+
-          '<rect x="2" y="4" width="32" height="9" rx="4" fill="'+tc+'"/>'+
-          '<rect x="2" y="10" width="32" height="3" fill="'+tc+'"/>'+
-          '<rect x="8" y="1" width="3" height="6" rx="1.5" fill="#888"/>'+
-          '<rect x="25" y="1" width="3" height="6" rx="1.5" fill="#888"/>'+
-          '<text x="18" y="28" text-anchor="middle" font-size="12" font-weight="700" font-family="Arial,sans-serif" fill="#1a1a2e">'+mo+'/'+day+'</text>';
-        calDiv.appendChild(svgEl);
+        const mo = expD.getMonth() + 1, day = expD.getDate();
+        const dl = Math.ceil((expD - new Date().setHours(0,0,0,0)) / 86400000);
+        const tc = dl < 0 ? '#E74C3C' : dl === 0 ? '#E67E22' : dl <= 7 ? '#E67E22' : '#2980B9';
+        calHtml = `
+          <svg viewBox="0 0 36 36" width="42" height="42" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.05))">
+            <rect x="2" y="4" width="32" height="28" rx="6" fill="#fff" stroke="#eaeaea" stroke-width="1.5"/>
+            <rect x="2" y="4" width="32" height="10" rx="6" fill="${tc}"/>
+            <rect x="2" y="10" width="32" height="4" fill="${tc}"/>
+            <rect x="8" y="1" width="3.5" height="7" rx="1.5" fill="#a0a0a0"/>
+            <rect x="24.5" y="1" width="3.5" height="7" rx="1.5" fill="#a0a0a0"/>
+            <text x="18" y="28" text-anchor="middle" font-size="13" font-weight="800" font-family="system-ui,sans-serif" fill="#2c3e50">${mo}/${day}</text>
+          </svg>
+        `;
       }
     }
-    if (simNum) {
-      const badge = document.createElement('span');
-      badge.style.cssText='background:#f39c12;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px;white-space:nowrap';
-      badge.textContent=simNum; calDiv.appendChild(badge);
-    }
-    row.appendChild(calDiv);
 
-    // 中間：資訊
-    const infoEl = document.createElement('div');
-    infoEl.style.cssText = 'flex:1;min-width:0';
-    const titleEl = document.createElement('div');
-    titleEl.style.cssText = 'font-size:13px;font-weight:600';
-    titleEl.textContent = carrier + ' ' + phone;
-    infoEl.appendChild(titleEl);
-
-    const tagsEl = document.createElement('div');
-    tagsEl.style.cssText = 'display:flex;flex-wrap:wrap;gap:3px;margin-top:4px';
-    sArr.forEach(s => {
-      const days = Number(s['提前天數']!=null?s['提前天數']:s.days_before!=null?s.days_before:0);
+    // ── 中間：通知標籤 ──
+    const tagsHtml = sArr.map(s => {
+      const days = Number(s['提前天數']!=null ? s['提前天數'] : s.days_before!=null ? s.days_before : 0);
       const hour = s['通知時段']||s.notify_hour||'';
-      const dl   = days===0?'當日':('前'+days+'天');
-      const hr   = hour?(' '+hour+':00~'+(parseInt(hour)+1)+':00'):'';
-      const tag  = document.createElement('span');
-      tag.style.cssText = 'background:#E8F8EF;color:#1a7a44;font-size:10px;padding:2px 6px;border-radius:6px';
-      tag.textContent = '🔔 '+dl+hr;
-      tagsEl.appendChild(tag);
-    });
-    infoEl.appendChild(tagsEl);
+      const dl   = days===0 ? '當日' : ('前'+days+'天');
+      const hr   = hour ? (' '+hour+':00') : '';
+      return `<span style="background:#eef6ff;color:#2980b9;font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;border:1px solid #d4e8fc;">🔔 ${dl}${hr}</span>`;
+    }).join('');
 
-    if (lastLog) {
-      const logEl = document.createElement('div');
-      logEl.style.cssText = 'font-size:10px;color:var(--text2);margin-top:3px';
-      logEl.textContent = '最近：'+String(lastLog['發送時間']||'').substring(0,16)+' '+statusIcon;
-      infoEl.appendChild(logEl);
-    }
-    row.appendChild(infoEl);
+    // ── 組合卡片 ──
+    html += `
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.02);">
+        
+        <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px;width:50px">
+          ${calHtml}
+          ${simNum ? `<span style="background:#f39c12;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px;box-shadow:0 1px 2px rgba(243,156,18,0.3)">${esc(simNum)}</span>` : ''}
+        </div>
 
-    // 右側按鈕組
-    const btnsEl = document.createElement('div');
-    btnsEl.style.cssText = 'display:flex;flex-direction:column;gap:4px;flex-shrink:0';
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;">${esc(carrier)} ${esc(phone)}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">${tagsHtml}</div>
+          <div style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px;">
+            <span style="background:#f5f6fa;padding:2px 6px;border-radius:4px;">最近發送: ${lastTime}</span>
+            ${statusIcon}
+          </div>
+        </div>
 
-    const editBtn = document.createElement('button');
-    editBtn.className='btn btn-xs btn-outline'; editBtn.style.cssText='font-size:10px;padding:3px 7px';
-    editBtn.textContent='✏️'; editBtn.dataset.simid=sid;
-    editBtn.addEventListener('click',function(e){e.stopPropagation();openEditSim(this.dataset.simid);});
-    btnsEl.appendChild(editBtn);
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+          <button class="btn btn-outline" style="padding:6px;border-radius:8px;color:var(--primary);border-color:#e0f0e8;background:#f5fbf7" onclick="openEditSim('${esc(sid)}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          </button>
+          <button class="btn btn-outline" style="padding:6px;border-radius:8px;color:var(--danger);border-color:#fceceb;background:#fef5f5" onclick="
+            showConfirm('刪除通知設定','確定刪除此門號的所有通知設定？','確定刪除','btn-danger',async ()=>{
+              const r2=await api('deleteAllNotifySettings',{sim_card_id:'${esc(sid)}'});
+              if(r2.success){
+                showToast('✅ 已刪除通知設定','success');
+                _notifyOverviewAll=[]; 
+                await loadNotifyOverview();
+              } else showToast(r2.error||'刪除失敗','error');
+            })
+          ">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          </button>
+        </div>
 
-    // 刪除通知設定按鈕
-    const delBtn = document.createElement('button');
-    delBtn.className='btn btn-xs btn-outline'; delBtn.style.cssText='font-size:10px;padding:3px 7px;border-color:var(--danger);color:var(--danger)';
-    delBtn.textContent='🗑️'; delBtn.dataset.simid=sid;
-    delBtn.addEventListener('click',function(e){
-      e.stopPropagation();
-      const csid=this.dataset.simid;
-      showConfirm('刪除通知設定','確定刪除此門號的所有通知設定？','確定刪除','btn-danger',async ()=>{
-        // 刪除此 simId 的所有通知設定
-        const r2=await api('deleteAllNotifySettings',{sim_card_id:csid});
-        if(r2.success){
-          showToast('✅ 已刪除通知設定','success');
-          _notifyOverviewAll=[]; // 清除快取
-          await loadNotifyOverview();
-        } else showToast(r2.error||'刪除失敗','error');
-      });
-    });
-    btnsEl.appendChild(delBtn);
-    row.appendChild(btnsEl);
-    el.appendChild(row);
+      </div>
+    `;
   });
-}
 
+  html += `</div>`;
+  el.innerHTML = html;
+}
 
 async function loadCalendarData() {
   const r = await api('getCalendar');
@@ -5563,7 +5579,6 @@ function renderMiniCalendar() {
 
   titleEl.textContent = calViewYear + ' 年 ' + (calViewMonth + 1) + ' 月';
 
-  // 收集此月份有到期門號的日期 → { day: [simNum, ...] }
   const expireMap = {};
   STATE.simCards.forEach(card => {
     const expRaw = card['到期日'] || card.expire_date || '';
@@ -5584,10 +5599,10 @@ function renderMiniCalendar() {
   const today = new Date();
   const isThisMonth = today.getFullYear() === calViewYear && today.getMonth() === calViewMonth;
 
-  let html = '<table style="width:100%;border-collapse:collapse;table-layout:fixed">';
-  // 週標題
-  html += '<tr>' + weekDays.map(d => `<th style="text-align:center;padding:4px 2px;font-size:11px;color:var(--text2);font-weight:600">${d}</th>`).join('') + '</tr>';
-  // 日期格子
+  // 🌟 加入美化版的外框 wrapper
+  let html = '<div class="calendar-wrapper"><table class="mini-cal-table">';
+  html += '<tr>' + weekDays.map(d => `<th>${d}</th>`).join('') + '</tr>';
+  
   let day = 1;
   for (let week = 0; week < 6; week++) {
     if (day > daysInMonth) break;
@@ -5600,17 +5615,19 @@ function renderMiniCalendar() {
       } else {
         const isToday = isThisMonth && day === today.getDate();
         const hasSim  = expireMap[day];
-        const bgStyle = isToday ? 'background:var(--primary);border-radius:50%;color:#fff;' : '';
-        // hasSim → 可點擊
-        const clickable = hasSim ? `onclick="openCalDayDetail(${calViewYear},${calViewMonth+1},${day})" style="cursor:pointer"` : '';
-        let cell = `<td ${clickable} style="text-align:center;padding:2px 1px;position:relative${hasSim?';background:rgba(243,156,18,.06);border-radius:4px':''}">`;
-        cell += `<div style="${bgStyle}font-size:12px;font-weight:${isToday?'700':'400'};width:22px;height:22px;line-height:22px;margin:0 auto;border-radius:50%">${day}</div>`;
+        const tdClass = hasSim ? 'has-event' : '';
+        const dateClass = isToday ? 'mini-cal-date is-today' : 'mini-cal-date';
+        const clickable = hasSim ? `onclick="openCalDayDetail(${calViewYear},${calViewMonth+1},${day})"` : '';
+        
+        let cell = `<td class="${tdClass}" ${clickable}>`;
+        cell += `<div class="${dateClass}">${day}</div>`;
+        
         if (hasSim) {
-          cell += `<div style="display:flex;flex-wrap:wrap;gap:1px;justify-content:center;margin-top:1px">`;
+          cell += `<div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:center">`;
           hasSim.slice(0, 2).forEach(sn => {
-            cell += `<span style="background:#f39c12;color:#fff;font-size:8px;font-weight:700;padding:1px 3px;border-radius:3px;line-height:1.3">${esc(sn)}</span>`;
+            cell += `<span style="background:#f39c12;color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,0.1)">${esc(sn)}</span>`;
           });
-          if (hasSim.length > 2) cell += `<span style="font-size:8px;color:var(--warning)">+${hasSim.length-2}</span>`;
+          if (hasSim.length > 2) cell += `<span style="font-size:9px;color:var(--warning);font-weight:700">+${hasSim.length-2}</span>`;
           cell += '</div>';
         }
         cell += '</td>';
@@ -5620,7 +5637,7 @@ function renderMiniCalendar() {
     }
     html += '</tr>';
   }
-  html += '</table>';
+  html += '</table></div>';
   calEl.innerHTML = html;
 }
 
