@@ -1748,9 +1748,12 @@ function switchPage(name) {
 // ============================================================
 //  API
 // ============================================================
+// ============================================================
+//  API 通訊與錯誤攔截器
+// ============================================================
 async function api(action, data = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 30000); // 30s timeout（50筆門號需要更多時間）
+  const timer = setTimeout(() => controller.abort(), 30000); // 30s timeout
   try {
     const res = await fetch(GAS_URL, {
       method: 'POST',
@@ -1759,7 +1762,26 @@ async function api(action, data = {}) {
     });
     clearTimeout(timer);
     const text = await res.text();
-    return JSON.parse(text);
+    const result = JSON.parse(text);
+
+    // 🌟 核心修復：全域攔截「憑證失效 / 登入過期」
+    // 如果後端回傳失敗，且錯誤訊息包含 token、登入、憑證等字眼
+    if (!result.success && result.error && 
+       (result.error.includes('登入') || result.error.includes('token') || result.error.includes('憑證') || result.error.includes('授權'))) {
+      
+      console.warn('Token 失效，自動登出清理舊資料');
+      // 清空過期的殭屍通行證
+      STATE.token = ''; 
+      STATE.session = null;
+      localStorage.removeItem('token');
+      localStorage.removeItem('session');
+      
+      // 踢回登入頁面並提示
+      showScreen('authScreen');
+      showToast('登入狀態已逾期，請重新登入', 'warning');
+    }
+
+    return result;
   } catch (e) {
     clearTimeout(timer);
     if (e.name === 'AbortError') {
@@ -1796,7 +1818,9 @@ async function loadDashboard() {
         const status = String(n['狀態'] || n.status || '').toLowerCase();
         if (status === 'sent') {
           const ch = String(n['通道'] || n.channel || '').toLowerCase();
-          const tid = String(n['目標ID'] || n.targetId || '');
+          // 🌟 破案關鍵：加入 n['LINE ID'] 讓程式知道去哪裡抓這串數字
+          const tid = String(n['目標ID'] || n['LINE ID'] || n.targetId || '').trim();
+          
           if (ch === 'tg' || (tid && !tid.startsWith('U') && !tid.startsWith('C') && !tid.startsWith('R'))) tg++;
           else line++;
         }
@@ -1842,6 +1866,7 @@ async function loadDashboard() {
 }
 
 // 🌟 新增功能：點擊次數查看通知內容 (保持為獨立函數，放在 loadDashboard 下面)
+// 🌟 新增功能：點擊次數查看通知內容 (保持為獨立函數，放在 loadDashboard 下面)
 async function openNotifyDetail(channel) {
   const title = channel === 'line' ? '💚 LINE 通知記錄' : '✈️ TG 通知記錄';
   document.getElementById('broadcastModalTitle').textContent = title;
@@ -1853,7 +1878,8 @@ async function openNotifyDetail(channel) {
   if (res.success && res.data) {
     const filtered = res.data.filter(n => {
       const ch = String(n['通道'] || n.channel || '').toLowerCase();
-      const tid = String(n['目標ID'] || n.targetId || '');
+      // 🌟 這裡也同步加上 n['LINE ID']
+      const tid = String(n['目標ID'] || n['LINE ID'] || n.targetId || '').trim();
       const isTg = (ch === 'tg' || (tid && !tid.startsWith('U') && !tid.startsWith('C') && !tid.startsWith('R')));
       return channel === 'tg' ? isTg : !isTg;
     });
