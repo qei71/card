@@ -3548,31 +3548,54 @@ function checkAppRenewable(platforms) {
 function renderAppGrid(platforms, simId) {
   const el = document.getElementById('appGrid');
   if (!platforms.length) { el.innerHTML = '<div class="empty-state"><span class="icon">📲</span><p>尚無 APP 平台</p></div>'; return; }
+
+  // 🌟 取得今天的凌晨零點，作為計算基準
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   el.innerHTML = platforms.map(p => {
     const id = p['編號'] || p.id || '';
     const name = p['名稱'] || p.name || '';
     const icon = p['圖標'] || p.icon || '📱';
     const isReg = p.is_registered;
     const days = p.register_days || 30;
-    const countdown = p.countdown;
     const canRepeat = (p.can_repeat === true || p.can_repeat === 'true' || p.can_repeat === 'TRUE');
+    
+    // 🌟 1. 前端強制重算倒數天數 (無視後端可能傳錯的 0)
+    let countdown = p.countdown;
+    if (p.next_register_date) {
+      const nd = new Date(String(p.next_register_date).replace(/\//g,'-'));
+      if (!isNaN(nd.getTime())) {
+        nd.setHours(0, 0, 0, 0);
+        countdown = Math.round((nd.getTime() - today.getTime()) / 86400000);
+      }
+    }
+
+    // 🌟 2. 自動過濾帳號欄位裡的「日期髒資料」
+    let displayAccount = p.app_account ? esc(p.app_account) : '';
+    if (displayAccount.includes('GMT') || displayAccount.includes('T18:') || displayAccount.includes('Z') || displayAccount.includes('2026-')) {
+      displayAccount = ''; // 發現是殘留的日期，直接強制隱藏
+    }
+
     let sub = '未登記';
     let danger = '';
     let extra = '';
+
+    // 🌟 3. 修復原本大亂鬥的 if-else 邏輯
     if (isReg) {
       if (!canRepeat) {
         // 不可重複：只顯示不可重複，不顯示倒計時
         sub = '不可重複';
-        } else if (countdown !== null && countdown !== undefined) {
-          if (countdown < 0) { danger = '✅ 已可重新註冊'; extra = 'expiring'; sub = `逾期 ${Math.abs(countdown)} 天`; }
-          else if (countdown === 0) { danger = '今天可重新註冊！'; extra = 'expiring'; sub = `${days}天週期`; }
-          else if (countdown <= 3) { danger = `${countdown}天後重新`; extra = 'expiring'; sub = `${days}天週期`; }
-          else { sub = `${countdown}天後重新`; }
-        } else {
+      } else if (countdown !== null && countdown !== undefined) {
+        if (countdown < 0) { danger = '✅ 已可重新註冊'; extra = 'expiring'; sub = `逾期 ${Math.abs(countdown)} 天`; }
+        else if (countdown === 0) { danger = '今天可重新註冊！'; extra = 'expiring'; sub = `${days}天週期`; }
+        else if (countdown <= 3) { danger = `${countdown}天後重新`; extra = 'expiring'; sub = `${days}天週期`; }
+        else { sub = `${countdown}天後重新`; }
       } else {
         sub = `${days}天週期`;
       }
     }
+
     // 快速核選 checkbox
     const chkId = `appchk_${esc(id)}`;
     return `<div class="app-item ${isReg?'checked':''} ${extra}">
@@ -3583,10 +3606,11 @@ function renderAppGrid(platforms, simId) {
       </label>
       <span class="app-icon" onclick="openAppDetail('${esc(id)}','${esc(simId)}')">${icon}</span>
       <div class="app-name" onclick="openAppDetail('${esc(id)}','${esc(simId)}')">${esc(name)}</div>
-      <div class="app-sub">${sub}${p.app_account?'<span style="font-size:10px;color:var(--text2)"> @'+esc(p.app_account)+'</span>':''}</div>
+      <div class="app-sub">${sub}${displayAccount ? '<span style="font-size:10px;color:var(--text2)"> @'+displayAccount+'</span>' : ''}</div>
       ${danger ? `<div class="app-danger">${danger}</div>` : ''}
     </div>`;
   }).join('');
+  
   if (platforms && platforms.length) checkAppRenewable(platforms);
 }
 
