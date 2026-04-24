@@ -3563,10 +3563,12 @@ function renderAppGrid(platforms, simId) {
       if (!canRepeat) {
         // 不可重複：只顯示不可重複，不顯示倒計時
         sub = '不可重複';
-      } else if (countdown !== null && countdown !== undefined) {
-        if (countdown <= 0) { danger = '今天到期！'; extra = 'expiring'; sub = `${days}天週期`; }
-        else if (countdown <= 3) { danger = `${countdown}天後重新`; extra = 'expiring'; sub = `${days}天週期`; }
-        else { sub = `${countdown}天後重新`; }
+        } else if (countdown !== null && countdown !== undefined) {
+          if (countdown < 0) { danger = '✅ 已可重新註冊'; extra = 'expiring'; sub = `逾期 ${Math.abs(countdown)} 天`; }
+          else if (countdown === 0) { danger = '今天可重新註冊！'; extra = 'expiring'; sub = `${days}天週期`; }
+          else if (countdown <= 3) { danger = `${countdown}天後重新`; extra = 'expiring'; sub = `${days}天週期`; }
+          else { sub = `${countdown}天後重新`; }
+        } else {
       } else {
         sub = `${days}天週期`;
       }
