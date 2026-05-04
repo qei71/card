@@ -1247,7 +1247,7 @@ async function initApp() {
     showAppReady();
     hideSplash();
     if (STATE.simCards.length) {
-      renderSimCards(STATE.simCards);
+      filterSims();
       updateAppSimSelect(STATE.simCards);
       loadNotifySimSelect();
     }
@@ -1703,7 +1703,7 @@ async function showApp() {
   showAppReady();
   hideSplash();
   if (STATE.simCards.length) {
-    renderSimCards(STATE.simCards);
+    filterSims();
     updateAppSimSelect(STATE.simCards);
     loadNotifySimSelect();
   }
@@ -2263,7 +2263,7 @@ async function loadSimCards() {
     const nb = parseInt((b['門號編號']||b.sim_number||'').replace(/[^0-9]/g,'')) || 99999;
     return na - nb;
   });
-  renderSimCards(STATE.simCards);
+  filterSims();
   updateAppSimSelect(STATE.simCards);
   // 門號載入完成，觸發 loadUpcoming（確保近期到期有資料）
   loadUpcoming();
@@ -2342,10 +2342,21 @@ function renderSimCards(cards) {
   }).join('');
 }
 
+// ── 具備自動記憶功能的排序與篩選 ──
 function filterSims() {
+  const sortSelect = document.getElementById('simSortBy');
+  
+  // 🌟 自動記憶與還原排序偏好
+  if (sortSelect && !sortSelect.dataset.loaded) {
+    const savedSort = localStorage.getItem('sim_sort_pref');
+    if (savedSort) sortSelect.value = savedSort;
+    sortSelect.dataset.loaded = 'true';
+  }
+  const sortBy = sortSelect ? sortSelect.value : 'default';
+  localStorage.setItem('sim_sort_pref', sortBy); // 將當前選擇存入手機記憶體
+
   const search  = document.getElementById('simSearch').value.toLowerCase();
   const carrier = document.getElementById('simCarrierFilter').value;
-  const sortBy  = document.getElementById('simSortBy')?.value || 'default';
   let cards = [...STATE.simCards];
 
   // 篩選
@@ -2398,6 +2409,7 @@ function filterSims() {
     });
   }
 
+  // 渲染畫面
   renderSimCards(cards);
 }
 
@@ -5545,7 +5557,7 @@ async function doRefresh() {
     if (calPage && calPage.classList.contains('active')) loadCalendar();
     STATE.calendarData = null; // 清除行事曆快取
     if (STATE.simCards.length) {
-      renderSimCards(STATE.simCards);
+      filterSims();
       updateAppSimSelect(STATE.simCards);
     }
     loadCalendarData().catch(()=>{}); // 背景重新預載行事曆
