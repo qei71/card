@@ -876,8 +876,11 @@ textarea.form-control { resize:vertical; min-height:80px; }
             與門號相同
           </label>
         </div>
-        <input type="text" id="appAccount" class="form-control" placeholder="在此 APP 使用的帳號或Email">
+        <input type="text" id="appAccount" class="form-control" placeholder="在此 APP 使用的帳號">
       </div>
+      <div class="form-group"><label>信箱 (MAIL)（選填）</label><input type="email" id="appMail" class="form-control" placeholder="輸入綁定的信箱"></div>
+      <div class="form-group"><label>APP 密碼（選填）</label><input type="text" id="appPassword" class="form-control" placeholder="輸入此 APP 的密碼"></div>
+      
       <div class="form-group"><label>備註（選填）</label><input type="text" id="appNote" class="form-control" placeholder="其他說明或備忘"></div>
     </div>
     <button class="btn btn-primary" onclick="saveAppRegistration()">💾 儲存設定</button>
@@ -3731,9 +3734,13 @@ function openAppDetail(platformId, simId) {
   recalc(); // 打開時先算一次下次可用日
 
   const accEl  = document.getElementById('appAccount');
+  const mailEl = document.getElementById('appMail');
+  const pwdEl  = document.getElementById('appPassword');
   const noteEl = document.getElementById('appNote');
-  if (accEl)  accEl.value  = p.app_account || '';
-  if (noteEl) noteEl.value = p.app_note    || '';
+  if (accEl)  accEl.value  = p.app_account || p['帳號'] || '';
+  if (mailEl) mailEl.value = p.app_mail || p['信箱'] || '';
+  if (pwdEl)  pwdEl.value  = p.app_password || p['APP密碼'] || '';
+  if (noteEl) noteEl.value = p.app_note || p['備註'] || '';
 
   const sameChk = document.getElementById('appAccountSameAsPhone');
   if (sameChk) {
@@ -3835,6 +3842,8 @@ async function saveAppRegistration() {
       last_register_date: document.getElementById('appLastRegDate').value,
       register_days:      parseInt(document.getElementById('appRegDays').value) || 30,
       app_account:        (document.getElementById('appAccount')?.value || '').trim(),
+      app_mail:           (document.getElementById('appMail')?.value || '').trim(), // 🌟 新增信箱
+      app_password:       (document.getElementById('appPassword')?.value || '').trim(), // 🌟 新增密碼
       app_note:           (document.getElementById('appNote')?.value   || '').trim(),
       notify_line:        document.getElementById('appNotifyLine')?.checked,
       notify_tg:          document.getElementById('appNotifyTg')?.checked,
