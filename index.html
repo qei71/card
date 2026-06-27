@@ -3526,6 +3526,48 @@ function renderRegOverviewList() {
   container.innerHTML = html;
 }
 
+// 🌟 新增：專屬總覽表背景默默重整函式 (不閃爍、不吃掉當前篩選條件)
+async function silentRefreshRegOverview() {
+  let bySimId = {};
+  try {
+    const res = await api('getAllMyAppRegistrations', {});
+    if (res.success) bySimId = res.data || {};
+  } catch(e) {}
+
+  const validPlats = STATE.appPlatforms.filter(p => !_deletedPlats.find(d => (d['編號']||d.id) === (p['編號']||p.id)));
+
+  // 重新建立最新矩陣資料
+  _allRegOverviewData = [];
+  STATE.simCards.forEach(sim => {
+    const sid = sim['編號'] || sim.id;
+    const regsForSim = bySimId[sid] || [];
+    
+    validPlats.forEach(plat => {
+      const pid = plat['編號'] || plat.id;
+      const existingReg = regsForSim.find(r => String(r.platform_id || r['平台編號']) === String(pid));
+      
+      if (existingReg) {
+        _allRegOverviewData.push({ sim, reg: existingReg });
+      } else {
+        _allRegOverviewData.push({
+          sim: sim,
+          reg: {
+            platform_id: pid, '平台編號': pid,
+            name: plat['名稱'] || plat.name || '',
+            icon: plat['圖標'] || plat.icon || '📱',
+            is_registered: false, '是否已註冊': false,
+            last_register_date: '', next_register_date: '',
+            app_account: '', app_mail: '', app_password: '', app_note: ''
+          }
+        });
+      }
+    });
+  });
+
+  // 重新渲染表格，此時畫面上選好的下拉選單與打勾狀態會被完美保留！
+  renderRegOverviewList();
+}
+  
 // ── 門號 APP 註冊矩陣總覽表 ──
 async function openAppRegMatrix() {
   document.getElementById('broadcastModalTitle').textContent = '📋 門號 APP 註冊總覽';
@@ -4034,12 +4076,12 @@ async function submitEditMyPlatform(platId) {
   else showToast(res.error||'失敗','error');
 }
 
+// 🌟 升級版儲存功能：儲存後自動連動總覽清單刷新
 async function saveAppRegistration() {
   const abtn = document.querySelector('#appDetailModal .btn-primary');
   await withLoading('saveApp', abtn, '⏳ 儲存中...', async () => {
     const platId = document.getElementById('appDetailPlatId').value;
     
-    // 讀取前端可重複使用的選項，並同步更新平台的屬性
     const canRepeatStr = document.querySelector('input[name="detailCanRepeat"]:checked')?.value;
     if (canRepeatStr) {
       await api('updatePersonalPlatform', { platform_id: platId, can_repeat: canRepeatStr === 'true' });
@@ -4052,8 +4094,8 @@ async function saveAppRegistration() {
       last_register_date: document.getElementById('appLastRegDate').value,
       register_days:      parseInt(document.getElementById('appRegDays').value) || 30,
       app_account:        (document.getElementById('appAccount')?.value || '').trim(),
-      app_mail:           (document.getElementById('appMail')?.value || '').trim(), // 🌟 新增信箱
-      app_password:       (document.getElementById('appPassword')?.value || '').trim(), // 🌟 新增密碼
+      app_mail:           (document.getElementById('appMail')?.value || '').trim(),
+      app_password:       (document.getElementById('appPassword')?.value || '').trim(),
       app_note:           (document.getElementById('appNote')?.value   || '').trim(),
       notify_line:        document.getElementById('appNotifyLine')?.checked,
       notify_tg:          document.getElementById('appNotifyTg')?.checked,
@@ -4064,8 +4106,18 @@ async function saveAppRegistration() {
     if (r.success) { 
       showToast('✅ 已更新', 'success'); 
       closeModal('appDetailModal'); 
-      STATE.appPlatforms = []; // 清除快取，強制重抓平台屬性，確保列表刷新
-      loadAppRegistrations(); 
+      
+      STATE.appPlatforms = []; // 清除快取
+      
+      // 1. 如果主畫面的門號設定開著，重整主畫面
+      if (document.getElementById('appSimSelect').value) {
+        loadAppRegistrations(); 
+      }
+      
+      // 🌟 2. 核心修正：如果總覽清單視窗是開啟狀態，立刻觸發背景默默刷新！
+      if (document.getElementById('broadcastModal')?.classList.contains('open')) {
+        silentRefreshRegOverview();
+      }
     }
     else { showToast(r.error || '更新失敗', 'error'); }
   });
