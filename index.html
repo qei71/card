@@ -3217,103 +3217,176 @@ function openEditMyPlatById(platId) {
   ov.classList.add('open');
 }
 
-// 從管理頁的門號選擇進入設定模式
+// 🌟 1. 建立全域變數，用來暫存列表資料，讓下拉篩選時不用重新讀取 API
+let _allRegOverviewData = []; 
+
+// 🌟 2. 升級版 APP 註冊情形 (列表式 + 篩選器)
 async function openAppRegOverview() {
-  document.getElementById('broadcastModalTitle').textContent = '📊 APP 註冊情形';
+  document.getElementById('broadcastModalTitle').textContent = '📊 APP 註冊詳細列表';
   document.getElementById('broadcastModalBody').innerHTML = '<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
   openModal('broadcastModal');
 
-  // 一次 API 取得所有門號的 APP 設定
   let bySimId = {};
   try {
     const res = await api('getAllMyAppRegistrations', {});
     if (res.success) bySimId = res.data || {};
   } catch(e) {}
 
+  // 將資料扁平化 (只抓取「已註冊」的項目)
+  _allRegOverviewData = [];
+  Object.entries(bySimId).forEach(([sid, regs]) => {
+    const sim = STATE.simCards.find(c => (c['編號']||c.id) === sid);
+    regs.forEach(reg => {
+      if (reg.is_registered === true || reg['是否已註冊'] === true) {
+         _allRegOverviewData.push({
+            sim: sim || { id: sid },
+            reg: reg
+         });
+      }
+    });
+  });
+
+  // 預設排序：依「下次可用日」由近到遠
+  _allRegOverviewData.sort((a, b) => {
+    const dateA = a.reg.next_register_date || a.reg['下次可用日'] || '9999/12/31';
+    const dateB = b.reg.next_register_date || b.reg['下次可用日'] || '9999/12/31';
+    const timeA = new Date(dateA).getTime();
+    const timeB = new Date(dateB).getTime();
+    return (isNaN(timeA) ? 9e15 : timeA) - (isNaN(timeB) ? 9e15 : timeB);
+  });
+
+  // 提取所有不重複的平台，用來產生下拉選單
+  const uniquePlats = new Map();
+  _allRegOverviewData.forEach(item => {
+    const pid = item.reg.platform_id || item.reg['平台編號'];
+    const pname = item.reg.name || '未知';
+    const picon = item.reg.icon || '📱';
+    if (pid && !uniquePlats.has(pid)) {
+      uniquePlats.set(pid, {id: pid, name: pname, icon: picon});
+    }
+  });
+
   const el = document.getElementById('broadcastModalBody');
   el.innerHTML = '';
 
-  const platforms = STATE.appPlatforms;
-  if (!platforms.length) {
-    el.innerHTML = '<p style="text-align:center;color:var(--text2);padding:20px">尚無 APP 平台，請先新增平台</p>';
+  // 建立篩選器 UI
+  const filterDiv = document.createElement('div');
+  filterDiv.style.cssText = 'margin-bottom:12px;';
+  let optHtml = '<option value="ALL">📋 顯示所有已註冊的 APP</option>';
+  uniquePlats.forEach(p => {
+     optHtml += `<option value="${p.id}">${p.icon} ${esc(p.name)}</option>`;
+  });
+  filterDiv.innerHTML = `
+    <label style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px;display:block">🔍 篩選特定平台</label>
+    <select id="regOverviewFilter" class="form-control" style="font-size:14px; font-weight:600" onchange="renderRegOverviewList()">${optHtml}</select>
+  `;
+  el.appendChild(filterDiv);
+
+  // 建立表格的容器
+  const listContainer = document.createElement('div');
+  listContainer.id = 'regOverviewListContainer';
+  listContainer.style.cssText = 'max-height:60vh;overflow-y:auto;border:1.5px solid var(--border);border-radius:10px;background:#fff';
+  el.appendChild(listContainer);
+
+  // 關閉按鈕
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'btn btn-outline';
+  closeBtn.style.cssText = 'width:100%;margin-top:12px';
+  closeBtn.textContent = '關閉列表';
+  closeBtn.onclick = () => closeModal('broadcastModal');
+  el.appendChild(closeBtn);
+
+  // 初次渲染表格 (顯示全部)
+  renderRegOverviewList();
+}
+
+// 🌟 3. 根據篩選條件渲染表格的專屬函式
+function renderRegOverviewList() {
+  const filterVal = document.getElementById('regOverviewFilter')?.value || 'ALL';
+  const container = document.getElementById('regOverviewListContainer');
+  if (!container) return;
+
+  const filtered = filterVal === 'ALL'
+    ? _allRegOverviewData
+    : _allRegOverviewData.filter(item => (item.reg.platform_id || item.reg['平台編號']) === filterVal);
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--text2);font-size:13px">目前沒有符合的註冊資料</div>';
     return;
   }
 
-  platforms.forEach(plat => {
-    const pid  = String(plat['編號']||plat.id||'');
-    const pname= plat['名稱']||plat.name||'';
-    const picon= plat['圖標']||plat.icon||'📱';
+  // 建立精美的資料表
+  let html = '<table class="notify-table" style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap;text-align:left">';
+  html += '<thead style="position:sticky;top:0;background:#f8f9fa;z-index:10;box-shadow:0 1px 2px rgba(0,0,0,0.05)"><tr>';
+  html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border)">APP 平台</th>';
+  html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border)">門號資訊</th>';
+  html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border)">帳號 / 備註</th>';
+  html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border)">註冊日 / 下次可用</th>';
+  html += '</tr></thead><tbody>';
 
-    let registeredSims = [];
-    Object.entries(bySimId).forEach(([sid, regs]) => {
-      const reg = regs.find(reg2 => String(reg2['平台編號']||reg2.platform_id||'').trim() === pid.trim());
-      if (reg && (reg['是否已註冊']===true||reg.is_registered===true)) {
-        const sim = STATE.simCards.find(c => (c['編號']||c.id) === sid);
-        registeredSims.push({ sim: sim || { id: sid }, reg });
-      }
-    });
+  // 日期格式化小工具
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    const dObj = safeParseDate(dateStr);
+    return dObj ? `${dObj.getFullYear()}/${String(dObj.getMonth()+1).padStart(2,'0')}/${String(dObj.getDate()).padStart(2,'0')}` : dateStr;
+  };
 
-    // ── 新增：依下次可用日「由近到遠」排序 ──
-    registeredSims.sort((a, b) => {
-      const dateA = a.reg['下次可用日'] || a.reg.next_register_date || '9999/12/31';
-      const dateB = b.reg['下次可用日'] || b.reg.next_register_date || '9999/12/31';
-      const timeA = new Date(dateA).getTime();
-      const timeB = new Date(dateB).getTime();
-      return (isNaN(timeA) ? 9e15 : timeA) - (isNaN(timeB) ? 9e15 : timeB);
-    });
+  filtered.forEach((item, index) => {
+    const sim = item.sim;
+    const reg = item.reg;
 
-    const card = document.createElement('div');
-    card.style.cssText = 'border:1.5px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px';
+    const picon = reg.icon || '📱';
+    const pname = reg.name || '';
+    const phone = sim['門號號碼'] || sim.phone_number || '';
+    const carrier = sim['電信業者'] || sim.carrier || '';
+    const simNum = sim['門號編號'] || sim.sim_number || '';
+    
+    // 支援最新加入的信箱與密碼欄位
+    const account = reg.app_account || reg['帳號'] || '';
+    const mail = reg.app_mail || reg['信箱'] || '';
+    const pwd = reg.app_password || reg['APP密碼'] || '';
+    const note = reg.app_note || reg['備註'] || '';
+    
+    const lastD = formatDate(reg.last_register_date || reg['最後註冊日']);
+    const nextD = formatDate(reg.next_register_date || reg['下次可用日']);
 
-    const titleEl = document.createElement('div');
-    titleEl.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:6px';
-    titleEl.innerHTML =
-      '<span style="font-size:22px">'+picon+'</span>'+
-      '<div><div style="font-size:14px;font-weight:700">'+esc(pname)+'</div>'+
-      '<div style="font-size:11px;color:var(--text2)">已註冊 '+registeredSims.length+' 個門號</div></div>';
-    card.appendChild(titleEl);
+    // 斑馬紋底色
+    const bg = index % 2 === 0 ? '#ffffff' : '#fcfcfc';
 
-    if (registeredSims.length) {
-      registeredSims.forEach(({sim, reg}) => {
-        const phone   = sim ? (sim['門號號碼']||sim.phone_number||'') : '';
-        const carrier = sim ? (sim['電信業者']||sim.carrier||'') : '';
-        const simNum  = sim ? (sim['門號編號']||sim.sim_number||'') : '';
-        const acct    = reg['帳號']||reg.app_account||'';
-        const nextD   = reg['下次可用日']||reg.next_register_date||'';
-        
-        // ── 新增：把落落長的英文日期轉換成 YYYY/MM/DD ──
-        let displayDate = nextD;
-        if (nextD) {
-          const dObj = new Date(nextD);
-          if (!isNaN(dObj.getTime())) {
-            const y = dObj.getFullYear();
-            const m = String(dObj.getMonth() + 1).padStart(2, '0');
-            const d = String(dObj.getDate()).padStart(2, '0');
-            displayDate = `${y}/${m}/${d}`;
-          }
-        }
-
-        const row = document.createElement('div');
-        row.style.cssText = 'font-size:12px;padding:4px 0 4px 8px;border-left:2px solid var(--border);margin-bottom:4px';
-        row.innerHTML =
-          '<div style="font-weight:600">'+esc(carrier)+' '+esc(phone)+(simNum?' ['+esc(simNum)+']':'')+'</div>'+
-          (acct ? '<div style="color:var(--text2)">帳號：'+esc(acct)+'</div>' : '')+
-          (nextD ? '<div style="color:var(--primary)">下次可用：'+esc(displayDate)+'</div>' : '');
-        card.appendChild(row);
-      });
-    } else {
-      const empty = document.createElement('div');
-      empty.style.cssText = 'font-size:12px;color:#aaa;padding:4px 0 4px 8px';
-      empty.textContent = '尚無門號登記此 APP';
-      card.appendChild(empty);
-    }
-    el.appendChild(card);
+    html += `<tr style="background:${bg};border-bottom:1px solid #f0f0f0;">`;
+    
+    // [1] APP 平台
+    html += `<td style="padding:10px 8px;vertical-align:top">
+               <div style="font-size:18px;margin-bottom:2px">${picon}</div>
+               <div style="font-weight:700;color:var(--text)">${esc(pname)}</div>
+             </td>`;
+             
+    // [2] 門號資訊
+    html += `<td style="padding:10px 8px;vertical-align:top">
+               <div style="font-weight:700;font-size:13px">${simNum ? `<span style="color:var(--warning)">[${esc(simNum)}]</span> ` : ''}${esc(phone)}</div>
+               <div style="font-size:11px;color:var(--text2);margin-top:2px">${esc(carrier)}</div>
+             </td>`;
+             
+    // [3] 帳號資訊 (如果有密碼跟信箱，一併顯示)
+    html += `<td style="padding:10px 8px;vertical-align:top">
+               ${account ? `<div style="color:var(--primary);font-weight:700;margin-bottom:2px">👤 ${esc(account)}</div>` : ''}
+               ${mail ? `<div style="color:var(--info);font-size:11px;margin-bottom:2px">📧 ${esc(mail)}</div>` : ''}
+               ${pwd ? `<div style="color:var(--danger);font-size:11px;margin-bottom:2px">🔑 ${esc(pwd)}</div>` : ''}
+               ${(!account && !mail && !pwd) ? '<div style="color:#ccc;font-size:11px;margin-bottom:2px">無帳號資料</div>' : ''}
+               ${note ? `<div style="font-size:10px;color:var(--text2);margin-top:4px;padding-top:4px;border-top:1px solid #eee">📝 ${esc(note)}</div>` : ''}
+             </td>`;
+             
+    // [4] 註冊時間
+    html += `<td style="padding:10px 8px;vertical-align:top;font-size:11px">
+               <div style="color:var(--text2);margin-bottom:4px">註冊：${lastD}</div>
+               <div style="color:var(--primary);font-weight:600">下次：${nextD}</div>
+             </td>`;
+             
+    html += `</tr>`;
   });
 
-  const closeBtn = document.createElement('button');
-  closeBtn.className='btn btn-outline'; closeBtn.style.cssText='width:100%;margin-top:8px';
-  closeBtn.textContent='關閉'; closeBtn.onclick=()=>closeModal('broadcastModal');
-  el.appendChild(closeBtn);
+  html += '</tbody></table>';
+  container.innerHTML = html;
 }
 
 // ── 門號 APP 註冊矩陣總覽表 ──
