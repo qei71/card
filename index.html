@@ -3329,26 +3329,38 @@ function renderRegOverviewList() {
   const sortVal = document.getElementById('regOverviewSort')?.value || 'sim_asc';
   const hideUnreg = document.getElementById('regOverviewHideUnreg')?.checked;
   const container = document.getElementById('regOverviewListContainer');
-
-  // 🌟 加入這行記憶功能
-  localStorage.setItem('regOverview_hideUnreg', hideUnreg);
+  
   if (!container) return;
 
-// 🌟 過濾邏輯 (強化型別比對與邏輯分離)
+  // 記錄狀態到記憶體
+  localStorage.setItem('regOverview_hideUnreg', hideUnreg);
+
+  // 🌟 除錯：看看總資料長度是多少
+  console.log('總資料筆數:', _allRegOverviewData.length);
+
+  // 過濾邏輯
   let filtered = _allRegOverviewData.filter(item => {
-    // 1. 取得目前這筆資料的平台編號 (統一轉為字串比較)
-    const itemPlatId = String(item.reg.platform_id || item.reg['平台編號'] || '');
+    // 取得平台 ID
+    const itemPlatId = String(item.reg.platform_id || item.reg['平台編號'] || '').trim();
     
-    // 2. 判斷是否符合「平台篩選」
-    const matchPlatform = (filterVal === 'ALL') || (itemPlatId === String(filterVal));
+    // 1. 平台篩選
+    const matchPlatform = (filterVal === 'ALL') || (itemPlatId === String(filterVal).trim());
     
-    // 3. 判斷是否符合「註冊狀態」
-    const isReg = item.reg.is_registered === true || item.reg['是否已註冊'] === true;
-    const matchRegStatus = hideUnreg ? isReg : true; // 如果勾選了隱藏，則必須是已註冊
+    // 2. 註冊狀態篩選
+    const isReg = (item.reg.is_registered === true || item.reg['是否已註冊'] === true);
+    const matchRegStatus = hideUnreg ? isReg : true; 
     
-    // 4. 同時滿足這兩個條件才顯示
     return matchPlatform && matchRegStatus;
   });
+
+  // 🌟 除錯：看看過濾後剩幾筆
+  console.log('篩選後剩餘筆數:', filtered.length, '篩選器:', filterVal, '隱藏未註冊:', hideUnreg);
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--text2);font-size:13px">沒有符合條件的資料</div>';
+    return;
+  }
+
   
   // 排序邏輯
   filtered.sort((a, b) => {
