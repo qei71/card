@@ -3236,7 +3236,7 @@ async function openAppRegOverview() {
   document.getElementById('broadcastModalTitle').textContent = '📊 APP 註冊詳細列表';
   document.getElementById('broadcastModalBody').innerHTML = '<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
   openModal('broadcastModal');
-
+  
   let bySimId = {};
   try {
     const res = await api('getAllMyAppRegistrations', {});
@@ -3311,7 +3311,14 @@ async function openAppRegOverview() {
   closeBtn.textContent = '關閉列表';
   closeBtn.onclick = () => closeModal('broadcastModal');
   el.appendChild(closeBtn);
-
+  // --- 插入這段恢復記憶的邏輯 ---
+  const hideChk = document.getElementById('regOverviewHideUnreg');
+  const savedHide = localStorage.getItem('regOverview_hideUnreg');
+  if (savedHide !== null) {
+      hideChk.checked = (savedHide === 'true');
+  } else {
+      hideChk.checked = true; // 預設值
+  }
   // 初次渲染表格
   renderRegOverviewList();
 }
