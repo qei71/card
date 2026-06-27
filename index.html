@@ -3231,44 +3231,79 @@ window.quickEditAppFromOverview = function(platId, simId) {
   openAppDetail(platId, simId);
 };
 
-// 🌟 2. 升級版 APP 註冊情形 (支援全部顯示/隱藏、進階排序、快速編輯)
+// 🌟 2. 升級版 APP 註冊情形 (完美矩陣，保證顯示所有門號)
 async function openAppRegOverview() {
   document.getElementById('broadcastModalTitle').textContent = '📊 APP 註冊詳細列表';
   document.getElementById('broadcastModalBody').innerHTML = '<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
   openModal('broadcastModal');
-  
+
+  // 1. 確保拿到最新的 APP 平台清單
+  if (!STATE.appPlatforms || STATE.appPlatforms.length === 0) {
+    try {
+      const pRes = await api('getAppPlatforms', {});
+      if (pRes.success && pRes.data) STATE.appPlatforms = pRes.data;
+    } catch(e){}
+  }
+  // 排除已刪除的平台
+  const validPlats = STATE.appPlatforms.filter(p => !_deletedPlats.find(d => (d['編號']||d.id) === (p['編號']||p.id)));
+
+  // 2. 取得所有註冊紀錄 (只會有存過檔的)
   let bySimId = {};
   try {
     const res = await api('getAllMyAppRegistrations', {});
     if (res.success) bySimId = res.data || {};
   } catch(e) {}
 
-  // 🌟 將資料扁平化 (這次不預先過濾未註冊，全部都先抓進來)
+  // 🌟 3. 完美矩陣生成：將「所有門號」配對「所有平台」
   _allRegOverviewData = [];
-  Object.entries(bySimId).forEach(([sid, regs]) => {
-    const sim = STATE.simCards.find(c => (c['編號']||c.id) === sid) || { id: sid, phone_number: '已刪除門號' };
-    regs.forEach(reg => {
-       _allRegOverviewData.push({ sim, reg });
+  
+  STATE.simCards.forEach(sim => {
+    const sid = sim['編號'] || sim.id;
+    const regsForSim = bySimId[sid] || [];
+    
+    validPlats.forEach(plat => {
+      const pid = plat['編號'] || plat.id;
+      // 找找看這個門號+平台組合，之前有沒有存過檔
+      const existingReg = regsForSim.find(r => String(r.platform_id || r['平台編號']) === String(pid));
+      
+      if (existingReg) {
+        // 有存過，直接放入
+        _allRegOverviewData.push({ sim, reg: existingReg });
+      } else {
+        // 🌟 如果沒存過，就塞一筆假的「未註冊」資料給它，這樣取消隱藏時才看得到所有門號！
+        _allRegOverviewData.push({
+          sim: sim,
+          reg: {
+            platform_id: pid,
+            '平台編號': pid,
+            name: plat['名稱'] || plat.name || '',
+            icon: plat['圖標'] || plat.icon || '📱',
+            is_registered: false,
+            '是否已註冊': false,
+            last_register_date: '',
+            next_register_date: '',
+            app_account: '',
+            app_mail: '',
+            app_password: '',
+            app_note: ''
+          }
+        });
+      }
     });
-  });
-
-  // 提取所有不重複的平台，用來產生下拉選單
-  const uniquePlats = new Map();
-  _allRegOverviewData.forEach(item => {
-    const pid = item.reg.platform_id || item.reg['平台編號'];
-    const pname = item.reg.name || '未知';
-    const picon = item.reg.icon || '📱';
-    if (pid && !uniquePlats.has(pid)) {
-      uniquePlats.set(pid, {id: pid, name: pname, icon: picon});
-    }
   });
 
   const el = document.getElementById('broadcastModalBody');
   el.innerHTML = '';
 
+  if (validPlats.length === 0) {
+     el.innerHTML = '<p style="text-align:center;color:var(--text2);padding:20px">尚無 APP 平台，請先新增平台</p>';
+     return;
+  }
+
+  // 建立篩選器 UI (直接使用 validPlats 建立選單)
   let optHtml = '<option value="ALL">📋 顯示所有 APP</option>';
-  uniquePlats.forEach(p => {
-     optHtml += `<option value="${p.id}">${p.icon} ${esc(p.name)}</option>`;
+  validPlats.forEach(p => {
+     optHtml += `<option value="${p['編號']||p.id}">${p['圖標']||p.icon||'📱'} ${esc(p['名稱']||p.name)}</option>`;
   });
 
   // 🌟 建立超強大篩選器與排序 UI
@@ -3292,14 +3327,13 @@ async function openAppRegOverview() {
     </div>
     <div style="margin-bottom:12px;">
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;color:var(--text);font-weight:700; background:#f5f6fa; padding:10px; border-radius:10px; border:1px solid var(--border)">
-        <input type="checkbox" id="regOverviewHideUnreg" checked style="width:18px;height:18px;accent-color:var(--primary)" onchange="renderRegOverviewList()">
+        <input type="checkbox" id="regOverviewHideUnreg" style="width:18px;height:18px;accent-color:var(--primary)" onchange="renderRegOverviewList()">
         隱藏未註冊門號 (只顯示有資料的)
       </label>
     </div>
   `;
   el.appendChild(filterDiv);
 
-  // 建立表格的容器
   const listContainer = document.createElement('div');
   listContainer.id = 'regOverviewListContainer';
   listContainer.style.cssText = 'max-height:55vh;overflow-y:auto;border:1.5px solid var(--border);border-radius:12px;background:#fff';
@@ -3311,7 +3345,8 @@ async function openAppRegOverview() {
   closeBtn.textContent = '關閉列表';
   closeBtn.onclick = () => closeModal('broadcastModal');
   el.appendChild(closeBtn);
-  // --- 插入這段恢復記憶的邏輯 ---
+
+  // --- 恢復記憶的邏輯 ---
   const hideChk = document.getElementById('regOverviewHideUnreg');
   const savedHide = localStorage.getItem('regOverview_hideUnreg');
   if (savedHide !== null) {
@@ -3319,6 +3354,7 @@ async function openAppRegOverview() {
   } else {
       hideChk.checked = true; // 預設值
   }
+
   // 初次渲染表格
   renderRegOverviewList();
 }
