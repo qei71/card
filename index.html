@@ -3217,10 +3217,21 @@ function openEditMyPlatById(platId) {
   ov.classList.add('open');
 }
 
-// 🌟 1. 建立全域變數，用來暫存列表資料，讓下拉篩選時不用重新讀取 API
+// 🌟 1. 建立全域變數，用來暫存列表資料
 let _allRegOverviewData = []; 
 
-// 🌟 2. 升級版 APP 註冊情形 (列表式 + 篩選器)
+// 🌟 新增：專屬的快速編輯過渡橋樑 (確保從總覽打開編輯時，能讀到舊資料)
+window.quickEditAppFromOverview = function(platId, simId) {
+  // 找出這個門號所有的 APP 狀態，塞入快取給 openAppDetail 使用
+  const simRegs = _allRegOverviewData
+     .filter(item => (item.sim.id || item.sim['編號'] || '') === simId)
+     .map(item => item.reg);
+  
+  STATE.currentAppRegs = simRegs.map(r => ({ ...r, id: r.platform_id || r['平台編號'] }));
+  openAppDetail(platId, simId);
+};
+
+// 🌟 2. 升級版 APP 註冊情形 (支援全部顯示/隱藏、進階排序、快速編輯)
 async function openAppRegOverview() {
   document.getElementById('broadcastModalTitle').textContent = '📊 APP 註冊詳細列表';
   document.getElementById('broadcastModalBody').innerHTML = '<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
@@ -3232,27 +3243,13 @@ async function openAppRegOverview() {
     if (res.success) bySimId = res.data || {};
   } catch(e) {}
 
-  // 將資料扁平化 (只抓取「已註冊」的項目)
+  // 🌟 將資料扁平化 (這次不預先過濾未註冊，全部都先抓進來)
   _allRegOverviewData = [];
   Object.entries(bySimId).forEach(([sid, regs]) => {
-    const sim = STATE.simCards.find(c => (c['編號']||c.id) === sid);
+    const sim = STATE.simCards.find(c => (c['編號']||c.id) === sid) || { id: sid, phone_number: '已刪除門號' };
     regs.forEach(reg => {
-      if (reg.is_registered === true || reg['是否已註冊'] === true) {
-         _allRegOverviewData.push({
-            sim: sim || { id: sid },
-            reg: reg
-         });
-      }
+       _allRegOverviewData.push({ sim, reg });
     });
-  });
-
-  // 預設排序：依「下次可用日」由近到遠
-  _allRegOverviewData.sort((a, b) => {
-    const dateA = a.reg.next_register_date || a.reg['下次可用日'] || '9999/12/31';
-    const dateB = b.reg.next_register_date || b.reg['下次可用日'] || '9999/12/31';
-    const timeA = new Date(dateA).getTime();
-    const timeB = new Date(dateB).getTime();
-    return (isNaN(timeA) ? 9e15 : timeA) - (isNaN(timeB) ? 9e15 : timeB);
   });
 
   // 提取所有不重複的平台，用來產生下拉選單
@@ -3269,26 +3266,45 @@ async function openAppRegOverview() {
   const el = document.getElementById('broadcastModalBody');
   el.innerHTML = '';
 
-  // 建立篩選器 UI
-  const filterDiv = document.createElement('div');
-  filterDiv.style.cssText = 'margin-bottom:12px;';
-  let optHtml = '<option value="ALL">📋 顯示所有已註冊的 APP</option>';
+  let optHtml = '<option value="ALL">📋 顯示所有 APP</option>';
   uniquePlats.forEach(p => {
      optHtml += `<option value="${p.id}">${p.icon} ${esc(p.name)}</option>`;
   });
+
+  // 🌟 建立超強大篩選器與排序 UI
+  const filterDiv = document.createElement('div');
   filterDiv.innerHTML = `
-    <label style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px;display:block">🔍 篩選特定平台</label>
-    <select id="regOverviewFilter" class="form-control" style="font-size:14px; font-weight:600" onchange="renderRegOverviewList()">${optHtml}</select>
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+      <div style="flex:1; min-width:130px;">
+        <label style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px;display:block">🔍 選擇 APP 平台</label>
+        <select id="regOverviewFilter" class="form-control" style="font-size:13px; padding:8px 10px;" onchange="renderRegOverviewList()">${optHtml}</select>
+      </div>
+      <div style="flex:1; min-width:130px;">
+        <label style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px;display:block">🔃 排序方式</label>
+        <select id="regOverviewSort" class="form-control" style="font-size:13px; padding:8px 10px;" onchange="renderRegOverviewList()">
+          <option value="sim_asc">依編號 (由小到大)</option>
+          <option value="phone_asc">依門號 (由小到大)</option>
+          <option value="next_asc">依下次可用 (近到遠)</option>
+          <option value="last_desc">依註冊日期 (新到舊)</option>
+          <option value="acc_asc">依帳號 (A-Z)</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;color:var(--text);font-weight:700; background:#f5f6fa; padding:10px; border-radius:10px; border:1px solid var(--border)">
+        <input type="checkbox" id="regOverviewHideUnreg" checked style="width:18px;height:18px;accent-color:var(--primary)" onchange="renderRegOverviewList()">
+        隱藏未註冊門號 (只顯示有資料的)
+      </label>
+    </div>
   `;
   el.appendChild(filterDiv);
 
   // 建立表格的容器
   const listContainer = document.createElement('div');
   listContainer.id = 'regOverviewListContainer';
-  listContainer.style.cssText = 'max-height:60vh;overflow-y:auto;border:1.5px solid var(--border);border-radius:10px;background:#fff';
+  listContainer.style.cssText = 'max-height:55vh;overflow-y:auto;border:1.5px solid var(--border);border-radius:12px;background:#fff';
   el.appendChild(listContainer);
 
-  // 關閉按鈕
   const closeBtn = document.createElement('button');
   closeBtn.className = 'btn btn-outline';
   closeBtn.style.cssText = 'width:100%;margin-top:12px';
@@ -3296,35 +3312,70 @@ async function openAppRegOverview() {
   closeBtn.onclick = () => closeModal('broadcastModal');
   el.appendChild(closeBtn);
 
-  // 初次渲染表格 (顯示全部)
+  // 初次渲染表格
   renderRegOverviewList();
 }
 
-// 🌟 3. 根據篩選條件渲染表格的專屬函式
+// 🌟 3. 根據篩選條件與排序，動態渲染表格
 function renderRegOverviewList() {
   const filterVal = document.getElementById('regOverviewFilter')?.value || 'ALL';
+  const sortVal = document.getElementById('regOverviewSort')?.value || 'sim_asc';
+  const hideUnreg = document.getElementById('regOverviewHideUnreg')?.checked;
   const container = document.getElementById('regOverviewListContainer');
   if (!container) return;
 
-  const filtered = filterVal === 'ALL'
-    ? _allRegOverviewData
-    : _allRegOverviewData.filter(item => (item.reg.platform_id || item.reg['平台編號']) === filterVal);
+  // 過濾邏輯
+  let filtered = _allRegOverviewData.filter(item => {
+    // 過濾平台
+    if (filterVal !== 'ALL' && (item.reg.platform_id || item.reg['平台編號']) !== filterVal) return false;
+    // 過濾未註冊
+    const isReg = item.reg.is_registered === true || item.reg['是否已註冊'] === true;
+    if (hideUnreg && !isReg) return false;
+    
+    return true;
+  });
+
+  // 排序邏輯
+  filtered.sort((a, b) => {
+    if (sortVal === 'next_asc') {
+       const da = new Date(a.reg.next_register_date || a.reg['下次可用日'] || '9999/12/31').getTime();
+       const db = new Date(b.reg.next_register_date || b.reg['下次可用日'] || '9999/12/31').getTime();
+       return (isNaN(da) ? 9e15 : da) - (isNaN(db) ? 9e15 : db);
+    } else if (sortVal === 'last_desc') {
+       const da = new Date(a.reg.last_register_date || a.reg['最後註冊日'] || '0001/01/01').getTime();
+       const db = new Date(b.reg.last_register_date || b.reg['最後註冊日'] || '0001/01/01').getTime();
+       return (isNaN(db) ? 0 : db) - (isNaN(da) ? 0 : da);
+    } else if (sortVal === 'phone_asc') {
+       const pa = String(a.sim['門號號碼'] || a.sim.phone_number || '').replace(/\D/g,'');
+       const pb = String(b.sim['門號號碼'] || b.sim.phone_number || '').replace(/\D/g,'');
+       return pa.localeCompare(pb, undefined, { numeric: true });
+    } else if (sortVal === 'sim_asc') {
+       const na = parseInt(String(a.sim['門號編號'] || a.sim.sim_number || '').replace(/\D/g,'')) || 99999;
+       const nb = parseInt(String(b.sim['門號編號'] || b.sim.sim_number || '').replace(/\D/g,'')) || 99999;
+       return na - nb;
+    } else if (sortVal === 'acc_asc') {
+       const aa = String(a.reg.app_account || a.reg['帳號'] || '');
+       const ab = String(b.reg.app_account || b.reg['帳號'] || '');
+       return aa.localeCompare(ab, 'zh-TW');
+    }
+    return 0;
+  });
 
   if (filtered.length === 0) {
-    container.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--text2);font-size:13px">目前沒有符合的註冊資料</div>';
+    container.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px"><span style="font-size:32px;display:block;margin-bottom:8px">📭</span>目前沒有符合的資料</div>';
     return;
   }
 
-  // 建立精美的資料表
+  // 建立資料表
   let html = '<table class="notify-table" style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap;text-align:left">';
-  html += '<thead style="position:sticky;top:0;background:#f8f9fa;z-index:10;box-shadow:0 1px 2px rgba(0,0,0,0.05)"><tr>';
+  html += '<thead style="position:sticky;top:0;background:#f8f9fa;z-index:10;box-shadow:0 1px 3px rgba(0,0,0,0.08)"><tr>';
   html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border)">APP 平台</th>';
   html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border)">門號資訊</th>';
   html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border)">帳號 / 備註</th>';
   html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border)">註冊日 / 下次可用</th>';
+  html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border);text-align:center">操作</th>'; // 🌟 新增操作欄位
   html += '</tr></thead><tbody>';
 
-  // 日期格式化小工具
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
     const dObj = safeParseDate(dateStr);
@@ -3335,13 +3386,16 @@ function renderRegOverviewList() {
     const sim = item.sim;
     const reg = item.reg;
 
+    const platId = reg.platform_id || reg['平台編號'] || '';
+    const simId = sim.id || sim['編號'] || '';
+    const isReg = reg.is_registered === true || reg['是否已註冊'] === true;
+
     const picon = reg.icon || '📱';
     const pname = reg.name || '';
     const phone = sim['門號號碼'] || sim.phone_number || '';
     const carrier = sim['電信業者'] || sim.carrier || '';
     const simNum = sim['門號編號'] || sim.sim_number || '';
     
-    // 支援最新加入的信箱與密碼欄位
     const account = reg.app_account || reg['帳號'] || '';
     const mail = reg.app_mail || reg['信箱'] || '';
     const pwd = reg.app_password || reg['APP密碼'] || '';
@@ -3350,15 +3404,21 @@ function renderRegOverviewList() {
     const lastD = formatDate(reg.last_register_date || reg['最後註冊日']);
     const nextD = formatDate(reg.next_register_date || reg['下次可用日']);
 
-    // 斑馬紋底色
     const bg = index % 2 === 0 ? '#ffffff' : '#fcfcfc';
+    // 若未註冊，文字顏色稍微變淡
+    const op = isReg ? '1' : '0.5';
 
-    html += `<tr style="background:${bg};border-bottom:1px solid #f0f0f0;">`;
+    html += `<tr style="background:${bg};border-bottom:1px solid #f0f0f0;opacity:${op}">`;
     
-    // [1] APP 平台
+    // [1] APP 平台 (加上是否已註冊標籤)
+    const regBadge = isReg 
+      ? '<span style="color:#1a7a44;background:#e8f8ef;padding:2px 6px;border-radius:6px;font-size:10px;font-weight:700">已註冊</span>' 
+      : '<span style="color:#666;background:#eee;padding:2px 6px;border-radius:6px;font-size:10px;font-weight:700">未註冊</span>';
+      
     html += `<td style="padding:10px 8px;vertical-align:top">
                <div style="font-size:18px;margin-bottom:2px">${picon}</div>
-               <div style="font-weight:700;color:var(--text)">${esc(pname)}</div>
+               <div style="font-weight:700;color:var(--text);margin-bottom:4px">${esc(pname)}</div>
+               ${regBadge}
              </td>`;
              
     // [2] 門號資訊
@@ -3367,7 +3427,7 @@ function renderRegOverviewList() {
                <div style="font-size:11px;color:var(--text2);margin-top:2px">${esc(carrier)}</div>
              </td>`;
              
-    // [3] 帳號資訊 (如果有密碼跟信箱，一併顯示)
+    // [3] 帳號資訊
     html += `<td style="padding:10px 8px;vertical-align:top">
                ${account ? `<div style="color:var(--primary);font-weight:700;margin-bottom:2px">👤 ${esc(account)}</div>` : ''}
                ${mail ? `<div style="color:var(--info);font-size:11px;margin-bottom:2px">📧 ${esc(mail)}</div>` : ''}
@@ -3380,6 +3440,14 @@ function renderRegOverviewList() {
     html += `<td style="padding:10px 8px;vertical-align:top;font-size:11px">
                <div style="color:var(--text2);margin-bottom:4px">註冊：${lastD}</div>
                <div style="color:var(--primary);font-weight:600">下次：${nextD}</div>
+             </td>`;
+
+    // 🌟 [5] 快速編輯按鈕
+    html += `<td style="padding:10px 8px;vertical-align:middle;text-align:center">
+               <button class="btn btn-xs btn-outline" style="padding:6px 10px;border-color:var(--info);color:var(--info)" 
+                 onclick="quickEditAppFromOverview('${esc(platId)}', '${esc(simId)}')">
+                 ✏️ 編輯
+               </button>
              </td>`;
              
     html += `</tr>`;
