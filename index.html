@@ -3220,14 +3220,20 @@ function openEditMyPlatById(platId) {
 // 🌟 1. 建立全域變數，用來暫存列表資料
 let _allRegOverviewData = []; 
 
-// 🌟 新增：專屬的快速編輯過渡橋樑 (確保從總覽打開編輯時，能讀到舊資料)
+// 🌟 修正版：點擊編輯時，強制將編輯視窗帶到最前方
 window.quickEditAppFromOverview = function(platId, simId) {
-  // 找出這個門號所有的 APP 狀態，塞入快取給 openAppDetail 使用
   const simRegs = _allRegOverviewData
      .filter(item => (item.sim.id || item.sim['編號'] || '') === simId)
      .map(item => item.reg);
   
   STATE.currentAppRegs = simRegs.map(r => ({ ...r, id: r.platform_id || r['平台編號'] }));
+  
+  // 🌟 核心修正：將編輯視窗的層級（z-index）拉高到 300，完美壓過總覽視窗（200）
+  const detailModal = document.getElementById('appDetailModal');
+  if (detailModal) {
+    detailModal.style.zIndex = '300';
+  }
+  
   openAppDetail(platId, simId);
 };
 
