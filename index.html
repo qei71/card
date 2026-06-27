@@ -3322,6 +3322,9 @@ function renderRegOverviewList() {
   const sortVal = document.getElementById('regOverviewSort')?.value || 'sim_asc';
   const hideUnreg = document.getElementById('regOverviewHideUnreg')?.checked;
   const container = document.getElementById('regOverviewListContainer');
+
+  // 🌟 加入這行記憶功能
+  localStorage.setItem('regOverview_hideUnreg', hideUnreg);
   if (!container) return;
 
   // 過濾邏輯
