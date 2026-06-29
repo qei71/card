@@ -3933,7 +3933,7 @@ async function quickToggleAppUI(platformId, simId, checked, days) {
   }
 }
 
-// 3. 修復 APP 詳細資訊讀取，並綁定通知參數
+// 3. 修復 APP 詳細資訊讀取，並綁定通知參數 (加入標題顯示門號功能)
 function openAppDetail(platformId, simId) {
   const p = (STATE.currentAppRegs || []).find(x => x.id === platformId) 
          || STATE.appPlatforms.find(x => (x['編號']||x.id) === platformId);
@@ -3944,7 +3944,7 @@ function openAppDetail(platformId, simId) {
   const canRepeat = p.can_repeat ?? p['可重複使用'];
   const canRepeatBool = (canRepeat === true || canRepeat === 'true' || canRepeat === 'TRUE');
 
-  // ── 新增邏輯：若沒設定過，預設為「已註冊」與「今天」 ──
+  // ── 邏輯：若沒設定過，預設為「已註冊」與「今天」 ──
   let isReg = p.is_registered;
   let lastDate = p.last_register_date;
   if (!isReg && !lastDate) {
@@ -3952,13 +3952,28 @@ function openAppDetail(platformId, simId) {
     lastDate = new Date().toISOString().split('T')[0]; // 預設今天
   }
 
-  document.getElementById('appDetailTitle').textContent  = icon + ' ' + name;
+  // 🌟 新增邏輯：抓取當前編輯的門號與編號，用來顯示在標題
+  const curSim = STATE.simCards.find(s => String(s['編號']||s.id) === String(simId));
+  let simDisplay = '';
+  if (curSim) {
+    const sNum = curSim['門號編號'] || curSim.sim_number || '';
+    let sPhone = curSim['門號號碼'] || curSim.phone_number || '';
+    if (sPhone && sPhone.length === 9 && sPhone.startsWith('9')) sPhone = '0' + sPhone; // 自動補 0
+    
+    // 組合出例如 (5-0912345678) 的字串
+    if (sNum && sPhone) simDisplay = ` (${sNum}-${sPhone})`;
+    else if (sPhone) simDisplay = ` (${sPhone})`;
+  }
+
+  // 🌟 將門號資訊加到標題後面
+  document.getElementById('appDetailTitle').textContent  = icon + ' ' + name + simDisplay;
+  
   document.getElementById('appDetailPlatId').value       = platformId;
   document.getElementById('appDetailSimId').value        = simId;
   document.getElementById('appIsRegistered').value       = isReg ? 'true' : 'false';
   document.getElementById('appLastRegDate').value        = toDateInput(lastDate);
   
-  // ── 新增邏輯：設定可重複 Radio Buttons 狀態 ──
+  // ── 邏輯：設定可重複 Radio Buttons 狀態 ──
   const radios = document.querySelectorAll('input[name="detailCanRepeat"]');
   radios.forEach(r => { r.checked = (r.value === String(canRepeatBool)); });
   if (typeof updateDetailRepeatLabel === 'function') updateDetailRepeatLabel(); // 更新邊框顏色
@@ -4007,13 +4022,14 @@ function openAppDetail(platformId, simId) {
 
   const sameChk = document.getElementById('appAccountSameAsPhone');
   if (sameChk) {
-    const curPhone = STATE.simCards.find(s => (s['編號']||s.id) === simId);
-    let phone = curPhone ? (curPhone['門號號碼']||curPhone.phone_number||'') : '';
+    // 這裡我們直接使用上面已經抓好的 curSim 變數，效能更好
+    let phone = curSim ? (curSim['門號號碼']||curSim.phone_number||'') : '';
     // 自動補 0
     if (phone && phone.length === 9 && phone.startsWith('9')) phone = '0' + phone;
     sameChk.checked = !!p.app_account && p.app_account === phone;
     sameChk.dataset.simId = simId;
   }
+  
   openModal('appDetailModal');
 }
 
