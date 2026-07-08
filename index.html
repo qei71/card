@@ -4143,7 +4143,7 @@ async function saveAppRegistration() {
       
       // 🌟 2. 核心修正：如果總覽清單視窗是開啟狀態，立刻觸發背景默默刷新！
       if (document.getElementById('broadcastModal')?.classList.contains('open')) {
-        silentRefreshRegOverview();
+        await silentRefreshRegOverview();
       }
     }
     else { showToast(r.error || '更新失敗', 'error'); }
