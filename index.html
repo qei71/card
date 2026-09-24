@@ -3237,17 +3237,20 @@ window.quickEditAppFromOverview = function(platId, simId) {
   openAppDetail(platId, simId);
 };
 
-// 🌟 2. 加入「極速快取」機制的 APP 註冊情形總覽
-async function openAppRegOverview(forceRefresh = false) {
+// 🌟 2. 終極防護版：加入「極速快取」機制的 APP 註冊情形總覽
+async function openAppRegOverview() {
+  // 1. 打開 Modal
   document.getElementById('broadcastModalTitle').textContent = '📊 APP 註冊詳細列表';
   openModal('broadcastModal');
 
-  // 🚀 核心優化：判斷是否需要轉圈圈去後端抓資料？
-  // 如果強制更新，或是快取變數 _allRegOverviewData 還是空的，才需要去後端要資料
-  if (forceRefresh || typeof _allRegOverviewData === 'undefined' || _allRegOverviewData.length === 0) {
+  // 🚀 核心優化：檢查記憶體裡面是不是已經有算好的矩陣了？
+  const hasCache = (typeof _allRegOverviewData !== 'undefined' && _allRegOverviewData.length > 0);
+
+  // 只有在「沒有快取」的時候，才需要去後端轉圈圈要資料
+  if (!hasCache) {
     document.getElementById('broadcastModalBody').innerHTML = '<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
     
-    // 1. 確保拿到最新的 APP 平台清單
+    // 確保抓到平台清單
     if (!STATE.appPlatforms || STATE.appPlatforms.length === 0) {
       try {
         const pRes = await api('getAppPlatforms', {});
@@ -3256,18 +3259,21 @@ async function openAppRegOverview(forceRefresh = false) {
     }
     
     const deletedArr = typeof _deletedPlats !== 'undefined' ? _deletedPlats : [];
-    const validPlats = STATE.appPlatforms.filter(p => !deletedArr.find(d => (d['編號']||d.id) === (p['編號']||p.id)));
+    // 🛡️ 防呆：確保 appPlatforms 存在才過濾，絕對不當機
+    const validPlats = (STATE.appPlatforms || []).filter(p => !deletedArr.find(d => (d['編號']||d.id) === (p['編號']||p.id)));
 
-    // 2. 取得所有註冊紀錄 (最花時間的步驟)
+    // 取得所有註冊紀錄
     let bySimId = {};
     try {
       const res = await api('getAllMyAppRegistrations', {});
       if (res.success) bySimId = res.data || {};
     } catch(e) {}
 
-    // 3. 完美矩陣生成，並存入全域變數快取
+    // 完美矩陣生成，並存入快取記憶體
     _allRegOverviewData = [];
-    STATE.simCards.forEach(sim => {
+    
+    // 🛡️ 防呆：確保 simCards 存在才執行
+    (STATE.simCards || []).forEach(sim => {
       const sid = sim['編號'] || sim.id;
       const regsForSim = bySimId[sid] || [];
       
@@ -3294,7 +3300,13 @@ async function openAppRegOverview(forceRefresh = false) {
     });
   }
 
-  // --- 🚀 下方開始重建畫面 (不管有沒有快取，都會瞬間執行這段畫出表格) ---
+  // 🛡️ 如果連門號都沒有，顯示提示並中斷 (防止畫出空表)
+  if (typeof _allRegOverviewData === 'undefined' || _allRegOverviewData.length === 0) {
+     document.getElementById('broadcastModalBody').innerHTML = '<p style="text-align:center;color:var(--text2);padding:20px">尚無門號資料，請先新增門號</p>';
+     return;
+  }
+
+  // --- 🚀 下方開始重建畫面 (因為有快取，第二次點擊會直接跳到這裡秒開！) ---
   const el = document.getElementById('broadcastModalBody');
   el.innerHTML = '';
 
@@ -3306,15 +3318,16 @@ async function openAppRegOverview(forceRefresh = false) {
      return;
   }
 
-  // 建立篩選器 UI 下拉選單
+  // 建立下拉選單
   let optHtml = '<option value="ALL">📋 顯示所有 APP</option>';
   validPlats2.forEach(p => {
-     // 相容名稱防呆
      const pName = p['名稱'] || p.name || '';
-     optHtml += `<option value="${p['編號']||p.id}">${p['圖標']||p.icon||'📱'} ${pName}</option>`;
+     // 🛡️ 貼心優化：把我們在資料庫加的單引號 ('7-11) 濾掉，畫面上看起來才會乾淨
+     const cleanName = String(pName).replace(/^'/, '');
+     optHtml += `<option value="${p['編號']||p.id}">${p['圖標']||p.icon||'📱'} ${cleanName}</option>`;
   });
 
-  // 🌟 建立超強大篩選器與排序 UI
+  // 建立篩選器 UI
   const filterDiv = document.createElement('div');
   filterDiv.innerHTML = `
     <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
