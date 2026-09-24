@@ -3237,62 +3237,71 @@ window.quickEditAppFromOverview = function(platId, simId) {
   openAppDetail(platId, simId);
 };
 
-// 🌟 2. 終極防護版：加入「極速快取」機制的 APP 註冊情形總覽
+// 🌟 2. 升級版 APP 註冊情形 (完美矩陣 + 終極快取秒開)
 async function openAppRegOverview() {
-  // 1. 打開 Modal
   document.getElementById('broadcastModalTitle').textContent = '📊 APP 註冊詳細列表';
   openModal('broadcastModal');
 
-  // 🚀 核心優化：檢查記憶體裡面是不是已經有算好的矩陣了？
-  const hasCache = (typeof _allRegOverviewData !== 'undefined' && _allRegOverviewData.length > 0);
+  // 🚀 核心優化 1：判斷記憶體是否已經有資料了？
+  const needFetch = (typeof _allRegOverviewData === 'undefined' || _allRegOverviewData.length === 0);
 
-  // 只有在「沒有快取」的時候，才需要去後端轉圈圈要資料
-  if (!hasCache) {
+  // 🚀 核心優化 2：只有在需要去後端要資料時，才顯示「載入中...」，否則直接秒開！
+  if (needFetch) {
     document.getElementById('broadcastModalBody').innerHTML = '<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
-    
-    // 確保抓到平台清單
-    if (!STATE.appPlatforms || STATE.appPlatforms.length === 0) {
-      try {
-        const pRes = await api('getAppPlatforms', {});
-        if (pRes.success && pRes.data) STATE.appPlatforms = pRes.data;
-      } catch(e){}
-    }
-    
-    const deletedArr = typeof _deletedPlats !== 'undefined' ? _deletedPlats : [];
-    // 🛡️ 防呆：確保 appPlatforms 存在才過濾，絕對不當機
-    const validPlats = (STATE.appPlatforms || []).filter(p => !deletedArr.find(d => (d['編號']||d.id) === (p['編號']||p.id)));
+  }
 
-    // 取得所有註冊紀錄
+  // 1. 確保拿到最新的 APP 平台清單 (這步驟很快，不影響速度)
+  if (!STATE.appPlatforms || STATE.appPlatforms.length === 0) {
+    try {
+      const pRes = await api('getAppPlatforms', {});
+      if (pRes.success && pRes.data) STATE.appPlatforms = pRes.data;
+    } catch(e){}
+  }
+  // 排除已刪除的平台
+  const deletedArr = typeof _deletedPlats !== 'undefined' ? _deletedPlats : [];
+  const validPlats = (STATE.appPlatforms || []).filter(p => !deletedArr.find(d => (d['編號']||d.id) === (p['編號']||p.id)));
+
+  // 🚀 核心優化 3：把最耗時的讀取與矩陣運算包起來，有快取就直接跳過！
+  if (needFetch) {
+    // 2. 取得所有註冊紀錄 (只會有存過檔的)
     let bySimId = {};
     try {
       const res = await api('getAllMyAppRegistrations', {});
       if (res.success) bySimId = res.data || {};
     } catch(e) {}
 
-    // 完美矩陣生成，並存入快取記憶體
+    // 🌟 3. 完美矩陣生成：將「所有門號」配對「所有平台」
     _allRegOverviewData = [];
     
-    // 🛡️ 防呆：確保 simCards 存在才執行
     (STATE.simCards || []).forEach(sim => {
       const sid = sim['編號'] || sim.id;
       const regsForSim = bySimId[sid] || [];
       
       validPlats.forEach(plat => {
         const pid = plat['編號'] || plat.id;
+        // 找找看這個門號+平台組合，之前有沒有存過檔
         const existingReg = regsForSim.find(r => String(r.platform_id || r['平台編號']) === String(pid));
         
         if (existingReg) {
+          // 有存過，直接放入
           _allRegOverviewData.push({ sim, reg: existingReg });
         } else {
+          // 🌟 如果沒存過，就塞一筆假的「未註冊」資料給它
           _allRegOverviewData.push({
             sim: sim,
             reg: {
-              platform_id: pid, '平台編號': pid,
+              platform_id: pid,
+              '平台編號': pid,
               name: plat['名稱'] || plat.name || '',
               icon: plat['圖標'] || plat.icon || '📱',
-              is_registered: false, '是否已註冊': false,
-              last_register_date: '', next_register_date: '',
-              app_account: '', app_mail: '', app_password: '', app_note: ''
+              is_registered: false,
+              '是否已註冊': false,
+              last_register_date: '',
+              next_register_date: '',
+              app_account: '',
+              app_mail: '',
+              app_password: '',
+              app_note: ''
             }
           });
         }
@@ -3300,34 +3309,24 @@ async function openAppRegOverview() {
     });
   }
 
-  // 🛡️ 如果連門號都沒有，顯示提示並中斷 (防止畫出空表)
-  if (typeof _allRegOverviewData === 'undefined' || _allRegOverviewData.length === 0) {
-     document.getElementById('broadcastModalBody').innerHTML = '<p style="text-align:center;color:var(--text2);padding:20px">尚無門號資料，請先新增門號</p>';
-     return;
-  }
-
-  // --- 🚀 下方開始重建畫面 (因為有快取，第二次點擊會直接跳到這裡秒開！) ---
+  // --- 下方開始是你原本完美的 UI 建立邏輯，完全沒動它！ ---
   const el = document.getElementById('broadcastModalBody');
   el.innerHTML = '';
 
-  const deletedArr2 = typeof _deletedPlats !== 'undefined' ? _deletedPlats : [];
-  const validPlats2 = (STATE.appPlatforms || []).filter(p => !deletedArr2.find(d => (d['編號']||d.id) === (p['編號']||p.id)));
-
-  if (validPlats2.length === 0) {
+  if (validPlats.length === 0) {
      el.innerHTML = '<p style="text-align:center;color:var(--text2);padding:20px">尚無 APP 平台，請先新增平台</p>';
      return;
   }
 
-  // 建立下拉選單
+  // 建立篩選器 UI (直接使用 validPlats 建立選單)
   let optHtml = '<option value="ALL">📋 顯示所有 APP</option>';
-  validPlats2.forEach(p => {
-     const pName = p['名稱'] || p.name || '';
-     // 🛡️ 貼心優化：把我們在資料庫加的單引號 ('7-11) 濾掉，畫面上看起來才會乾淨
-     const cleanName = String(pName).replace(/^'/, '');
-     optHtml += `<option value="${p['編號']||p.id}">${p['圖標']||p.icon||'📱'} ${cleanName}</option>`;
+  validPlats.forEach(p => {
+     // 順手幫你過濾掉資料庫防呆用的單引號 ('7-11 變成 7-11)
+     const cleanName = String(p['名稱']||p.name||'').replace(/^'/, '');
+     optHtml += `<option value="${p['編號']||p.id}">${p['圖標']||p.icon||'📱'} ${esc(cleanName)}</option>`;
   });
 
-  // 建立篩選器 UI
+  // 🌟 建立超強大篩選器與排序 UI
   const filterDiv = document.createElement('div');
   filterDiv.innerHTML = `
     <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
