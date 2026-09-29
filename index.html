@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
-<title>預付卡管理系統 v5.2.4</title>
+<title>預付卡管理系統 v5.2.5</title>
 <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
 <style>
 /* ── 美化版迷你日曆 ── */
@@ -272,7 +272,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
 <div id="loading">
   <div class="logo">📱</div>
   <p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:4px">預付卡儲值管理</p>
-  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.2.4</p>
+  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.2.5</p>
   <p id="loadingMsg" style="color:rgba(255,255,255,.85);font-size:14px">載入中...</p>
   <div style="width:200px;height:4px;background:rgba(255,255,255,.25);border-radius:4px;margin-top:20px;overflow:hidden">
     <div id="loadingBar" style="height:100%;background:#fff;border-radius:4px;width:0%;transition:width .35s ease"></div>
@@ -284,7 +284,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
   <div class="auth-card">
     <div class="auth-logo">
       <span class="icon">📱</span>
-      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.2.4</div>
+      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.2.5</div>
       <p>管理您的所有預付卡門號</p>
     </div>
 
@@ -1264,7 +1264,7 @@ async function initApp() {
       filterSims();
       updateAppSimSelect(STATE.simCards);
     }
-    // V5.2.4：首頁先顯示，再背景更新通知與行事曆，不阻塞會員進站。
+    // V5.2.5：首頁先顯示，再背景更新通知與行事曆，不阻塞會員進站。
     Promise.allSettled([loadDashboard(), loadCalendarData()]).catch(()=>{});
     setTimeout(checkTopUpPrompt, 800);
     setTimeout(checkUrgentSimAlert, 1200);
@@ -1744,7 +1744,7 @@ async function showApp() {
   } catch(e) { console.warn('bootstrap:',e.message); }
   setSplashMsg('完成！',100);
   showAppReady(); hideSplash();
-  // v5.2.4：通知統計/完整行事曆全部背景載入，不阻塞會員進站。
+  // v5.2.5：通知統計/完整行事曆全部背景載入，不阻塞會員進站。
   Promise.allSettled([loadDashboard(), loadCalendarData()]).catch(()=>{});
   setTimeout(checkTopUpPrompt,800); setTimeout(checkUrgentSimAlert,1200);
 }
@@ -1819,7 +1819,7 @@ function switchPage(name) {
 // ============================================================
 async function api(action, data = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 18000); // 30s timeout
+  const timer = setTimeout(() => controller.abort(), 30000); // 30s timeout
   try {
     const res = await fetch(GAS_URL, {
       method: 'POST',
@@ -3203,7 +3203,7 @@ window.quickEditAppFromOverview = function(platId, simId) {
 };
 
 // ============================================================
-// V5.2.4：APP 註冊詳細列表渲染器
+// V5.2.5：APP 註冊詳細列表渲染器
 // ============================================================
 function renderRegOverviewList() {
   const body=document.getElementById('broadcastModalBody'); if(!body)return;
@@ -3283,11 +3283,8 @@ async function loadAppRegistrations() {
     if (el) el.innerHTML = '<p style="color:var(--text2);font-size:14px;text-align:center;padding:20px">請先選擇門號</p>';
     return;
   }
-  // V5.2.1：同步平台清單，但不會清除任何 APP 註冊紀錄。
-  try {
-    const pRes = await api('getAppPlatforms', {});
-    if (pRes.success && Array.isArray(pRes.data)) STATE.appPlatforms = pRes.data;
-  } catch(e) {}
+  // V5.2.5：避免每次選門號又重複讀取 APP平台清單。
+  // 平台資料由會員進入 APP 模組時載入；這裡只取得指定門號的註冊狀態。
   const r = await api('getAppRegistrations', { sim_card_id: simId });
   if (!r.success || !r.data) return;
   STATE.currentAppRegs = r.data; // 儲存起來給 openAppDetail 使用
@@ -3861,7 +3858,7 @@ async function checkTopUpPrompt() {
   if (sessionStorage.getItem(promptKey)) return;
   sessionStorage.setItem(promptKey, '1');
 
-  // v5.2.4：bootstrap 已帶回最新會員資格，不再額外呼叫 getProfile
+  // v5.2.5：bootstrap 已帶回最新會員資格，不再額外呼叫 getProfile
   const mtype = STATE.session?.member_type || 'trial';
 
   // 先檢查：有沒有「今日到期」或「已到期」的門號（可能是收到通知後進系統）
@@ -6630,7 +6627,7 @@ async function openNotifyTimePanel() {
 
 // ── 管理員：會員訂閱管理 ────────────────────────────────────
 async function openMembershipPanel() {
-  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.2.4';
+  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.2.5';
   document.getElementById('broadcastModalBody').innerHTML='<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
   openModal('broadcastModal');
   const [mr,pr] = await Promise.all([api('adminGetMemberships'),api('adminGetMembershipPlans')]);
