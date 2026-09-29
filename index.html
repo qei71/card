@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
-<title>預付卡管理系統 v5.0</title>
+<title>預付卡管理系統 v5.2</title>
 <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
 <style>
 /* ── 美化版迷你日曆 ── */
@@ -272,7 +272,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
 <div id="loading">
   <div class="logo">📱</div>
   <p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:4px">預付卡儲值管理</p>
-  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.0</p>
+  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.1</p>
   <p id="loadingMsg" style="color:rgba(255,255,255,.85);font-size:14px">載入中...</p>
   <div style="width:200px;height:4px;background:rgba(255,255,255,.25);border-radius:4px;margin-top:20px;overflow:hidden">
     <div id="loadingBar" style="height:100%;background:#fff;border-radius:4px;width:0%;transition:width .35s ease"></div>
@@ -284,7 +284,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
   <div class="auth-card">
     <div class="auth-logo">
       <span class="icon">📱</span>
-      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.0</div>
+      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.1</div>
       <p>管理您的所有預付卡門號</p>
     </div>
 
@@ -1136,6 +1136,8 @@ let STATE = {
   lineProfile: JSON.parse(localStorage.getItem('line_profile') || 'null'),
   simCards: [],
   appPlatforms: [],
+  announcements: [],
+  calendarData: null,
 };
 const LOGIN_PREF = JSON.parse(localStorage.getItem('login_pref') || '{"saveAccount":false,"savedAccount":"","savePassword":false,"savedPassword":"","autoLogin":false}');
 // === 請在這裡加入以下這四行 ===
@@ -1208,65 +1210,65 @@ async function initLiff() {
 //  初始化 App
 // ============================================================
 async function initApp() {
-  // 有有效 token → 在 loading 中預先載入所有資料，完成後再切換畫面
   if (STATE.token && STATE.session) {
-    // 確保 session.id 是字串
     if (STATE.session.id !== undefined) {
       STATE.session.id = String(STATE.session.id);
       localStorage.setItem('session', JSON.stringify(STATE.session));
     }
-    // 設定 topBar（先設定好，切換畫面才不閃爍）
     const name = STATE.session?.nickname || STATE.session?.account || '用戶';
     document.getElementById('topBarTitle').textContent = name;
     if (STATE.session?.is_admin) document.getElementById('adminBtn').style.display = '';
 
-    // ── 第一階段：門號 + 行事曆 並行載入 ──
-    setSplashMsg('載入資料中...', 30);
+    setSplashMsg('⚡ 快速載入會員資料...', 35);
     try {
-      await Promise.race([
-        Promise.all([
-          loadSimCards(),       // 門號資料（最重要）
-          loadCalendarData(),   // 行事曆資料（並行，不浪費時間）
-        ]),
-        sleep(55000).then(() => { throw new Error('TIMEOUT'); }) // 管理員門號多，延長逾時
-      ]);
-    } catch(e) {
-      if (e.message === 'TIMEOUT') {
-        setSplashMsg('⚠️ 載入逾時，請檢查網路', 80);
-        await sleep(1200);
+      const r = await api('getMemberBootstrap', {});
+      if (r.success && r.data) {
+        const d = r.data;
+        STATE.simCards = d.simCards || [];
+        STATE.calendarData = d.calendarData || [];
+        STATE.announcements = d.announcements || [];
+
+        if (d.profile) {
+          const p=d.profile;
+          STATE.session = Object.assign({}, STATE.session, {
+            id:String(p.id||STATE.session.id), nickname:p.nickname||STATE.session.nickname,
+            member_type:p.member_type, paid_expire:p.paid_expire, trial_expire:p.trial_expire,
+            membership_allowed:p.membership_allowed, membership_label:p.membership_label,
+            membership_days_left:p.membership_days_left, tg_enabled:p.tg_enabled, tg_chat_id:p.tg_chat_id,
+            perms:p.perms
+          });
+          localStorage.setItem('session',JSON.stringify(STATE.session));
+          renderProfileFromData(p);
+        }
+        const st=d.dashboard||{};
+        const totalEl=document.getElementById('stat-total');
+        const expEl=document.getElementById('stat-expiring');
+        const expiredEl=document.getElementById('stat-expired');
+        if(totalEl) totalEl.textContent=st.total||0;
+        if(expEl) expEl.textContent=st.expiring||0;
+        if(expiredEl) expiredEl.textContent=st.expired||0;
+
+        filterSims();
+        updateAppSimSelect(STATE.simCards);
+        loadNotifySimSelect();
+        renderAnnouncementsFromData(STATE.announcements);
       }
+    } catch(e) {
+      console.warn('getMemberBootstrap:',e.message);
     }
 
-    // ── 第二階段：個人資料（快，不影響門號顯示）──
-    setSplashMsg('載入個人資料...', 85);
-    try {
-      await Promise.race([loadProfile(), sleep(8000)]);
-    } catch(e) {}
-
     setSplashMsg('完成！', 100);
-    await sleep(120);
-
-    // ── 切換畫面 + 渲染 ──
     showAppReady();
     hideSplash();
     if (STATE.simCards.length) {
       filterSims();
       updateAppSimSelect(STATE.simCards);
-      loadNotifySimSelect();
     }
-
-
-    // loadDashboard 在門號完成後再呼叫（確保 loadUpcoming 有資料）
-    loadDashboard();
-    // v3.0：登入後檢查是否需要詢問儲值
     setTimeout(checkTopUpPrompt, 800);
-    
-    // === 新增這行：進系統自動檢查門號提醒 ===
     setTimeout(checkUrgentSimAlert, 1200);
     return;
   }
 
-  // 無 token → 顯示登入頁
   if (LOGIN_PREF.saveAccount && LOGIN_PREF.savedAccount) {
     document.getElementById('loginAccount').value = LOGIN_PREF.savedAccount;
     document.getElementById('chkSaveAccount').checked = true;
@@ -1275,9 +1277,7 @@ async function initApp() {
     document.getElementById('loginPassword').value = LOGIN_PREF.savedPassword;
     document.getElementById('chkSavePassword').checked = true;
   }
-  if (LOGIN_PREF.autoLogin) {
-    document.getElementById('chkAutoLogin').checked = true;
-  }
+  if (LOGIN_PREF.autoLogin) document.getElementById('chkAutoLogin').checked = true;
   if (STATE.lineProfile) renderLineProfileOnAuth();
   hideSplash();
   showScreen('authScreen');
@@ -1285,6 +1285,44 @@ async function initApp() {
 
 
 // === v4.6 修改：進系統自動檢查門號到期提醒 (加入今天不再提醒功能) ===
+function renderProfileFromData(d) {
+  const accountEl=document.getElementById('profileAccount');
+  const nickEl=document.getElementById('profileNickname');
+  const lineEl=document.getElementById('profileLineId');
+  const loginEl=document.getElementById('profileLastLogin');
+  const createdEl=document.getElementById('profileCreatedAt');
+  if(accountEl) accountEl.value=d.account||STATE.session?.account||'';
+  if(nickEl) nickEl.value=d.nickname||'';
+  if(lineEl) lineEl.value=d.line_user_id?'✅ 已綁定 LINE':'❌ 未綁定';
+  if(loginEl) loginEl.value=d.last_login||'';
+  if(createdEl) createdEl.value=d.created_at||'';
+  if(STATE.session) {
+    STATE.session.tg_enabled=!!d.tg_enabled;
+    STATE.session.perms=d.perms;
+  }
+  renderMembershipStatus(d);
+}
+function renderMembershipStatus(d) {
+  const msEl=document.getElementById('membershipStatus');
+  if(!msEl) return;
+  if(STATE.session?.is_admin){ msEl.style.borderColor='var(--warning)'; msEl.innerHTML='👑 系統管理員（永久無限制）'; return; }
+  const type=d?.member_type||STATE.session?.member_type||'trial';
+  const exp=d?.paid_expire||d?.trial_expire||'';
+  const days=d?.membership_days_left;
+  const label=type==='paid'?'💰 付費會員':type==='free'?'🔓 免費會員':'🆓 試用會員';
+  const color=days==null?'#666':days>30?'var(--primary)':days>0?'var(--warning)':'var(--danger)';
+  msEl.style.borderColor=color;
+  if(type==='free') msEl.innerHTML=label+'（永久）';
+  else if(exp) msEl.innerHTML=`${label} <span style="font-size:12px;color:${color};font-weight:700">到期：${exp}（${days>=0?'剩 '+days+' 天':'已到期'}）</span>`;
+  else msEl.innerHTML=label;
+}
+function renderAnnouncementsFromData(items) {
+  const el=document.getElementById('announcementList');
+  if(!el) return;
+  if(!items||!items.length){ el.innerHTML=''; return; }
+  el.innerHTML=items.map(a=>`<div class="announce-item"><div class="announce-title">${esc(a.title||'')}</div><div class="announce-content">${esc(a.content||'')}</div><div class="announce-time">${esc(a.created_at||'')}</div></div>`).join('');
+}
+
 async function checkUrgentSimAlert() {
   // 1. 檢查是否勾選了「今天不再提醒」
   const todayStr = new Date().toDateString();
@@ -1686,31 +1724,27 @@ async function showApp() {
   document.getElementById('topBarTitle').textContent = name;
   if (STATE.session?.is_admin) document.getElementById('adminBtn').style.display = '';
 
-  setSplashMsg('載入資料中...', 30);
+  setSplashMsg('⚡ 快速載入會員資料...', 35);
   try {
-    await Promise.race([
-      Promise.all([loadSimCards(), loadCalendarData()]),
-      sleep(28000)
-    ]);
-  } catch(e) {}
-
-  setSplashMsg('載入個人資料...', 85);
-  try {
-    await Promise.race([loadProfile(), sleep(8000)]);
-  } catch(e) {}
-  loadDashboard();
-
-  setSplashMsg('完成！', 100);
-  await sleep(150);
-
-  showAppReady();
-  hideSplash();
-  if (STATE.simCards.length) {
-    filterSims();
-    updateAppSimSelect(STATE.simCards);
-    loadNotifySimSelect();
-  }
-  loadCalendarData().catch(()=>{}); // 背景預載行事曆
+    const r = await api('getMemberBootstrap', {});
+    if (r.success && r.data) {
+      const d=r.data;
+      STATE.simCards=d.simCards||[]; STATE.calendarData=d.calendarData||[]; STATE.announcements=d.announcements||[];
+      if(d.profile){ STATE.session=Object.assign({},STATE.session,d.profile); localStorage.setItem('session',JSON.stringify(STATE.session)); renderProfileFromData(d.profile); }
+      const st=d.dashboard||{};
+      document.getElementById('stat-total').textContent=st.total||0;
+      document.getElementById('stat-expiring').textContent=st.expiring||0;
+      document.getElementById('stat-expired').textContent=st.expired||0;
+      if(st.lineNotify!=null) document.getElementById('stat-notify-line').textContent=st.lineNotify;
+      if(st.tgNotify!=null) document.getElementById('stat-notify-tg').textContent=st.tgNotify;
+      filterSims(); updateAppSimSelect(STATE.simCards); loadNotifySimSelect(); renderAnnouncementsFromData(STATE.announcements);
+    }
+  } catch(e) { console.warn('bootstrap:',e.message); }
+  setSplashMsg('完成！',100);
+  showAppReady(); hideSplash();
+  // v5.2：通知統計/完整行事曆全部背景載入，不阻塞會員進站。
+  Promise.allSettled([loadDashboard(), loadCalendarData()]).catch(()=>{});
+  setTimeout(checkTopUpPrompt,800); setTimeout(checkUrgentSimAlert,1200);
 }
 
 function setProgress(pct) {
@@ -1829,105 +1863,18 @@ async function api(action, data = {}) {
 // 🌟 修復 2：修正首頁統計 0 的問題，並讓次數可點擊
 // 🌟 修復：把所有統計與公告的 API 請求都收攏回 loadDashboard 裡面
 async function loadDashboard() {
-  if (STATE.session?.id !== undefined) STATE.session.id = String(STATE.session.id);
-
-  // 門號統計
-  if (STATE.simCards.length > 0) {
-    const expired  = STATE.simCards.filter(c => c.days_left != null && c.days_left < 0).length;
-    const expiring = STATE.simCards.filter(c => c.days_left != null && c.days_left >= 0 && c.days_left <= 7).length;
-    document.getElementById('stat-total').textContent    = STATE.simCards.length;
-    document.getElementById('stat-expiring').textContent = expiring;
-    document.getElementById('stat-expired').textContent  = expired;
-  }
-
-  // 通知統計 (相容新舊欄位)
-  // 通知統計 (相容新舊欄位與終極防呆)
-  api('getNotifications').then(res => {
-    if (res.success && res.data) {
-      let line = 0, tg = 0;
-      res.data.forEach(n => {
-        const status = String(n['狀態'] || n.status || '').toLowerCase().trim();
-        if (status === 'sent') {
-          let isTg = false;
-          const ch = String(n['通道'] || n.channel || '').toLowerCase().trim();
-          
-          if (ch === 'tg') {
-            isTg = true;
-          } else {
-            // 🕵️‍♂️ 尋找目標 ID：不管標題有沒有空白或大小寫
-            let tid = '';
-            for (let key in n) {
-              let cleanKey = key.replace(/\s+/g, '').toUpperCase();
-              if (cleanKey === 'LINEID' || cleanKey.includes('目標') || cleanKey.includes('對象') || cleanKey === 'TARGETID') {
-                tid = String(n[key]).trim();
-                break;
-              }
-            }
-            
-            // 🛡️ 終極防呆：如果還是找不到，直接去掃描內容，只要是純數字(且不是09開頭的手機號)就是 TG ID
-            if (!tid) {
-              for (let key in n) {
-                let val = String(n[key]).trim();
-                if (/^\d{7,15}$/.test(val) && !val.startsWith('09')) {
-                  tid = val;
-                  break;
-                }
-              }
-            }
-
-            // 只要拿到的 ID 不是 U、C、R 開頭，就判定為 Telegram！
-            if (tid && !tid.toUpperCase().startsWith('U') && !tid.toUpperCase().startsWith('C') && !tid.toUpperCase().startsWith('R')) {
-              isTg = true;
-            }
-          }
-
-          if (isTg) tg++;
-          else line++;
-        }
-      });
-      document.getElementById('stat-notify-line').textContent = line;
-      document.getElementById('stat-notify-tg').textContent = tg;
-      if (STATE.session?.tg_enabled || tg > 0) {
-        const tgWrap = document.getElementById('stat-tg-wrap');
-        if (tgWrap) tgWrap.style.display = 'block';
-      }
-    }
-  }).catch(()=>{});
-
-  // 👇 把原本流浪在外面的這兩段，正確收編回 loadDashboard 裡面
-  api('getDashboard').then(dash => {
-    if (dash.success && dash.data) {
-      if (dash.data.total > 0 || !STATE.simCards.length) {
-        document.getElementById('stat-total').textContent    = dash.data.total    ?? 0;
-        document.getElementById('stat-expiring').textContent = dash.data.expiring ?? 0;
-        document.getElementById('stat-expired').textContent  = dash.data.expired  ?? 0;
-      }
-    }
-  }).catch(()=>{});
-
-  api('getAnnouncements').then(announce => {
-    if (announce.success && announce.data?.length) {
-      document.getElementById('announceArea').innerHTML = announce.data.map(a => {
-        const title   = a['標題']    || a.title      || '';
-        const content = a['內容']    || a.content    || '';
-        const time    = a['發布時間']|| a.created_at || '';
-        if (!title && !content) return '';
-        return `<div class="announce-item"><div class="announce-title">📢 ${esc(title)}</div><div class="announce-content">${esc(content)}</div><div class="announce-time">${time}</div></div>`;
-      }).filter(Boolean).join('');
-    }
-  }).catch(()=>{});
-
-  if (STATE.simCards.length > 0) {
-    loadUpcoming();
-  } else {
-    setTimeout(() => { if (STATE.simCards.length > 0) loadUpcoming(); }, 2000);
-    setTimeout(() => { if (STATE.simCards.length > 0) loadUpcoming(); }, 5000);
-  }
+  const cards=STATE.simCards||[];
+  const expired=cards.filter(c=>c.days_left!=null&&c.days_left<0).length;
+  const expiring=cards.filter(c=>c.days_left!=null&&c.days_left>=0&&c.days_left<=7).length;
+  const totalEl=document.getElementById('stat-total');
+  const expEl=document.getElementById('stat-expiring');
+  const expiredEl=document.getElementById('stat-expired');
+  if(totalEl) totalEl.textContent=cards.length;
+  if(expEl) expEl.textContent=expiring;
+  if(expiredEl) expiredEl.textContent=expired;
+  return {total:cards.length,expired,expiring};
 }
 
-// 🌟 新增功能：點擊次數查看通知內容 (保持為獨立函數，放在 loadDashboard 下面)
-// 🌟 新增功能：點擊次數查看通知內容 (保持為獨立函數，放在 loadDashboard 下面)
-// 🌟 新增功能：點擊次數查看通知內容
 async function openNotifyDetail(channel) {
   const title = channel === 'line' ? '💚 LINE 通知記錄' : '✈️ TG 通知記錄';
   document.getElementById('broadcastModalTitle').textContent = title;
@@ -4251,20 +4198,8 @@ async function checkTopUpPrompt() {
   if (sessionStorage.getItem(promptKey)) return;
   sessionStorage.setItem(promptKey, '1');
 
-  // 取得最新會員狀態
-  let mtype = STATE.session?.member_type || 'trial';
-  try {
-    const pr = await api('getProfile');
-    if (pr.success && pr.data) {
-      mtype = pr.data.member_type || mtype;
-      if (STATE.session) {
-        STATE.session.member_type = mtype;
-        STATE.session.paid_expire  = pr.data.paid_expire  || '';
-        STATE.session.trial_expire = pr.data.trial_expire || '';
-        localStorage.setItem('session', JSON.stringify(STATE.session));
-      }
-    }
-  } catch(e) {}
+  // v5.1：bootstrap 已帶回最新會員資格，不再額外呼叫 getProfile
+  const mtype = STATE.session?.member_type || 'trial';
 
   // 先檢查：有沒有「今日到期」或「已到期」的門號（可能是收到通知後進系統）
   const expiredSims = STATE.simCards.filter(c =>
@@ -7032,107 +6967,35 @@ async function openNotifyTimePanel() {
 
 // ── 管理員：會員訂閱管理 ────────────────────────────────────
 async function openMembershipPanel() {
-  document.getElementById('broadcastModalTitle').textContent = '💰 會員訂閱管理';
-  document.getElementById('broadcastModalBody').innerHTML = '<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
+  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.2';
+  document.getElementById('broadcastModalBody').innerHTML='<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
   openModal('broadcastModal');
-
-  const r = await api('adminGetMemberships');
-  const members = (r.success && r.data) ? r.data : [];
-  const el = document.getElementById('broadcastModalBody');
-  el.innerHTML = '';
-
-  // 統計
-  const paid    = members.filter(m => m.member_type === 'paid').length;
-  const trial   = members.filter(m => m.member_type === 'trial').length;
-  const expired = members.filter(m => m.status_color === 'red' || m.status_color === 'orange').length;
-
-  const stats = document.createElement('div');
-  stats.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px';
-  [['付費會員',paid,'var(--primary)'],['試用中',trial,'var(--info)'],['已到期',expired,'var(--danger)']].forEach(([label,val,color])=>{
-    const d = document.createElement('div');
-    d.style.cssText = 'background:#f9f9f9;border-radius:10px;padding:10px;text-align:center';
-    d.innerHTML = `<div style="font-size:22px;font-weight:700;color:${color}">${val}</div><div style="font-size:11px;color:var(--text2)">${label}</div>`;
-    stats.appendChild(d);
+  const [mr,pr] = await Promise.all([api('adminGetMemberships'),api('adminGetMembershipPlans')]);
+  const members=(mr.success&&mr.data)?mr.data:[], plans=(pr.success&&pr.data)?pr.data:{};
+  const el=document.getElementById('broadcastModalBody'); el.innerHTML='';
+  const paid=members.filter(m=>m.member_type==='paid').length, trial=members.filter(m=>m.member_type==='trial').length, expired=members.filter(m=>m.status_color==='red'||m.status_color==='orange').length;
+  el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px"><div class="stat-card green" style="padding:8px"><b>${paid}</b><small>付費</small></div><div class="stat-card blue" style="padding:8px"><b>${trial}</b><small>試用</small></div><div class="stat-card red" style="padding:8px"><b>${expired}</b><small>到期</small></div></div>`;
+  const planBar=document.createElement('div'); planBar.style.cssText='background:#f7f8fa;border-radius:10px;padding:10px;margin-bottom:12px;font-size:12px;line-height:1.7';
+  planBar.innerHTML='<b>方案設定</b>：'+Object.entries(plans).map(([k,p])=>`${esc(p.label||k)} ${p.months?`／${p.months}個月`:p.days?`／${p.days}天`:''} ${p.amount!=null?`／NT$${p.amount}`:''}`).join('　'); el.appendChild(planBar);
+  const list=document.createElement('div'); list.style.cssText='max-height:55vh;overflow-y:auto';
+  members.forEach(m=>{
+    const card=document.createElement('div'); card.style.cssText='padding:10px 12px;border-radius:10px;margin-bottom:8px;background:#fff;border:1px solid var(--border)';
+    const actions=Object.entries(plans).filter(([k])=>k!=='free').map(([k,p])=>`<button class="btn btn-xs btn-outline" data-plan="${esc(k)}">${esc(p.label||k)}${p.amount?` NT$${p.amount}`:''}</button>`).join('');
+    card.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px"><div><b>${esc(m.nickname||m.account)}</b> <span style="font-size:11px;color:var(--text2)">${esc(m.account)}</span></div><span style="font-size:11px">${esc(m.status_label)}</span></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">${actions}<button class="btn btn-xs btn-outline" data-plan="free">🔓 免費</button></div>`;
+    card.querySelectorAll('[data-plan]').forEach(btn=>btn.onclick=()=>{const k=btn.dataset.plan; const p=plans[k]||{}; setMembership(m.id,m.account,k,p.months||0,p.days||0);});
+    list.appendChild(card);
   });
-  el.appendChild(stats);
-
-  // 會員列表
-  const listDiv = document.createElement('div');
-  listDiv.style.cssText = 'max-height:55vh;overflow-y:auto';
-
-  members.forEach(m => {
-    const card = document.createElement('div');
-    const colorMap = {green:'#e8f8ef',blue:'#e8f4fb',orange:'#fff3cd',red:'#fde8e8',gray:'#f9f9f9'};
-    card.style.cssText = `padding:10px 12px;border-radius:10px;margin-bottom:8px;background:${colorMap[m.status_color]||'#f9f9f9'};border:1px solid var(--border)`;
-
-    const row1 = document.createElement('div');
-    row1.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:6px';
-    const nameEl = document.createElement('div');
-    nameEl.innerHTML = `<span style="font-size:14px;font-weight:700">${esc(m.nickname||m.account)}</span> <span style="font-size:11px;color:var(--text2)">${esc(m.account)}</span>`;
-    const badge = document.createElement('span');
-    const badgeColors = {green:'var(--primary)',blue:'var(--info)',orange:'var(--warning)',red:'var(--danger)',gray:'#aaa'};
-    badge.style.cssText = `font-size:11px;font-weight:700;color:${badgeColors[m.status_color]||'#aaa'};background:#fff;padding:2px 8px;border-radius:8px`;
-    badge.textContent = m.status_label;
-    row1.appendChild(nameEl); row1.appendChild(badge);
-
-    const row2 = document.createElement('div');
-    row2.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap';
-
-    // 升級付費按鈕
-    const paidBtn = document.createElement('button');
-    paidBtn.className = 'btn btn-xs btn-outline';
-    paidBtn.style.cssText = 'border-color:var(--primary);color:var(--primary)';
-    paidBtn.textContent = '💰 開通付費1年';
-    paidBtn.onclick = () => setMembership(m.id, m.account, 'paid', 12);
-
-    // 延長試用按鈕
-    const trialBtn = document.createElement('button');
-    trialBtn.className = 'btn btn-xs btn-outline';
-    trialBtn.textContent = '🔄 延長試用30天';
-    trialBtn.onclick = () => setMembership(m.id, m.account, 'trial', 0, 30);
-
-    // 設為免費按鈕
-    const freeBtn = document.createElement('button');
-    freeBtn.className = 'btn btn-xs btn-outline';
-    freeBtn.style.cssText = 'border-color:var(--warning);color:var(--warning)';
-    freeBtn.textContent = '🔓 改為免費';
-    freeBtn.onclick = () => setMembership(m.id, m.account, 'free', 0);
-
-    row2.appendChild(paidBtn); row2.appendChild(trialBtn); row2.appendChild(freeBtn);
-    card.appendChild(row1); card.appendChild(row2);
-    listDiv.appendChild(card);
-  });
-  el.appendChild(listDiv);
-
-  // 付費記錄連結
-  const recBtn = document.createElement('button');
-  recBtn.className = 'btn btn-outline';
-  recBtn.style.cssText = 'margin-top:10px;width:100%;font-size:13px';
-  recBtn.textContent = '📋 查看付費記錄';
-  recBtn.onclick = openPayRecords;
-  el.appendChild(recBtn);
+  el.appendChild(list);
+  const rec=document.createElement('button'); rec.className='btn btn-outline'; rec.style.cssText='margin-top:10px;width:100%'; rec.textContent='📋 查看付費記錄'; rec.onclick=openPayRecords; el.appendChild(rec);
 }
 
-async function setMembership(memberId, account, type, months, trialDays) {
-  const typeLabel = {paid:'付費1年(300元)',trial:'延長試用',free:'免費'}[type];
-  showConfirm(
-    `設定 ${account} 為${typeLabel}？`,
-    type==='paid' ? '付費期限：1年，年費 NT$300' : type==='trial' ? '延長30天試用' : '設為免費（無到期限制）',
-    '確定',
-    'btn-primary',
-    async () => {
-      const r = await api('adminSetMembership', {
-        member_id: memberId, member_type: type,
-        months: months||12, trial_days: trialDays||30
-      });
-      if (r.success) {
-        showToast('✅ 已更新會員資格', 'success');
-        openMembershipPanel(); // 重新載入
-      } else {
-        showToast(r.error||'更新失敗','error');
-      }
-    }
-  );
+async function setMembership(memberId, account, planId, months, trialDays) {
+  const labels={monthly:'月費會員',quarterly:'季費會員',yearly:'年費會員',trial:'試用會員',free:'免費會員'};
+  showConfirm(`設定 ${account} 為${labels[planId]||planId}？`, '系統會保留尚未到期的剩餘天數並往後續期。','確定','btn-primary',async()=>{
+    const type=planId==='free'?'free':planId==='trial'?'trial':'paid';
+    const r=await api('adminSetMembership',{member_id:memberId,member_type:type,plan_id:planId,months:months||0,trial_days:trialDays||0});
+    if(r.success){showToast('✅ 會員資格已更新','success');openMembershipPanel();}else showToast(r.error||'更新失敗','error');
+  });
 }
 
 async function openPayRecords() {
