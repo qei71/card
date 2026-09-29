@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
-<title>預付卡管理系統 v5.2.1</title>
+<title>預付卡管理系統 v5.2.3</title>
 <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
 <style>
 /* ── 美化版迷你日曆 ── */
@@ -272,7 +272,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
 <div id="loading">
   <div class="logo">📱</div>
   <p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:4px">預付卡儲值管理</p>
-  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.2.1</p>
+  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.2.3</p>
   <p id="loadingMsg" style="color:rgba(255,255,255,.85);font-size:14px">載入中...</p>
   <div style="width:200px;height:4px;background:rgba(255,255,255,.25);border-radius:4px;margin-top:20px;overflow:hidden">
     <div id="loadingBar" style="height:100%;background:#fff;border-radius:4px;width:0%;transition:width .35s ease"></div>
@@ -284,7 +284,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
   <div class="auth-card">
     <div class="auth-logo">
       <span class="icon">📱</span>
-      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.2.2</div>
+      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.2.3</div>
       <p>管理您的所有預付卡門號</p>
     </div>
 
@@ -1742,7 +1742,7 @@ async function showApp() {
   } catch(e) { console.warn('bootstrap:',e.message); }
   setSplashMsg('完成！',100);
   showAppReady(); hideSplash();
-  // v5.2：通知統計/完整行事曆全部背景載入，不阻塞會員進站。
+  // v5.2.3：通知統計/完整行事曆全部背景載入，不阻塞會員進站。
   Promise.allSettled([loadDashboard(), loadCalendarData()]).catch(()=>{});
   setTimeout(checkTopUpPrompt,800); setTimeout(checkUrgentSimAlert,1200);
 }
@@ -3206,41 +3206,30 @@ async function openAppRegOverview() {
   document.getElementById('broadcastModalTitle').textContent='📊 APP 註冊詳細列表';
   body.innerHTML='<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
   openModal('broadcastModal');
-
-  const withTimeout = (promise, ms=12000) => Promise.race([promise, new Promise((_,rej)=>setTimeout(()=>rej(new Error('載入逾時')),ms))]);
   try {
-    const [pRes, rRes] = await Promise.all([
-      withTimeout(api('getAppPlatforms', {})),
-      withTimeout(api('getAllMyAppRegistrations', {}))
-    ]);
-    const platforms = (pRes && pRes.success && Array.isArray(pRes.data)) ? pRes.data : [];
-    const bySimId = (rRes && rRes.success && rRes.data) ? rRes.data : {};
-    if (pRes && pRes.success) STATE.appPlatforms=platforms;
-
-    const platformMap={};
-    platforms.forEach(p=>platformMap[String(p['編號']||p.id||'')]=p);
-    Object.values(bySimId).flat().forEach(r=>{
-      const pid=String(r['平台編號']||r.platform_id||'').trim();
-      if(pid && !platformMap[pid]) platformMap[pid]={編號:pid,id:pid,名稱:r.name||('已儲存平台 '+pid),name:r.name||('已儲存平台 '+pid),圖標:r.icon||'📱',icon:r.icon||'📱',sort:9999};
-    });
-    const allPlatforms=Object.values(platformMap).sort((a,b)=>(Number(a['排序']||a.sort||9999)-Number(b['排序']||b.sort||9999)));
+    const res = await api('getAppOverviewBundle', {});
+    if (!res || !res.success) throw new Error(res?.error || 'APP 資料載入失敗');
+    const platforms = Array.isArray(res.data?.platforms) ? res.data.platforms : [];
+    const bySimId = res.data?.bySimId || {};
+    STATE.appPlatforms = platforms;
     _allRegOverviewData=[];
     STATE.simCards.forEach(sim=>{
       const sid=String(sim['編號']||sim.id||'');
       const regs=Array.isArray(bySimId[sid])?bySimId[sid]:[];
       const used=new Set();
-      allPlatforms.forEach(p=>{
+      platforms.forEach(p=>{
         const pid=String(p['編號']||p.id||'');
         const reg=regs.find(r=>String(r['平台編號']||r.platform_id||'').trim()===pid);
         if(reg) used.add(pid);
         _allRegOverviewData.push({sim,reg:reg?{...reg,name:reg.name||p['名稱']||p.name||'',icon:reg.icon||p['圖標']||p.icon||'📱'}:{platform_id:pid,'平台編號':pid,name:p['名稱']||p.name||'',icon:p['圖標']||p.icon||'📱',is_registered:false,'是否已註冊':false,last_register_date:'',next_register_date:'',app_account:'',app_mail:'',app_password:'',app_note:''}});
       });
+      // 保留已存在但目前平台清單沒有的歷史紀錄
       regs.forEach(reg=>{const pid=String(reg['平台編號']||reg.platform_id||'').trim();if(pid&&!used.has(pid))_allRegOverviewData.push({sim,reg});});
     });
     renderRegOverviewList();
   } catch(e) {
     console.error('APP 註冊情形載入失敗:',e);
-    body.innerHTML='<div style="text-align:center;padding:25px;color:var(--danger)">⚠️ APP 註冊資料載入逾時或失敗<br><button class="btn btn-outline" style="margin-top:10px" onclick="openAppRegOverview()">🔄 重新載入</button></div>';
+    body.innerHTML='<div style="text-align:center;padding:25px;color:var(--danger)">⚠️ APP 註冊資料載入失敗<br><span style="font-size:12px">'+esc(e.message||'未知錯誤')+'</span><br><button class="btn btn-outline" style="margin-top:10px" onclick="openAppRegOverview()">🔄 重新載入</button></div>';
   }
 }
 
@@ -3250,23 +3239,24 @@ async function openAppRegMatrix() {
   document.getElementById('broadcastModalTitle').textContent='📋 門號 APP 註冊總覽';
   body.innerHTML='<p style="text-align:center;color:var(--text2);padding:16px">表格載入中，請稍候...</p>';
   openModal('broadcastModal');
-  const withTimeout=(promise,ms=12000)=>Promise.race([promise,new Promise((_,rej)=>setTimeout(()=>rej(new Error('載入逾時')),ms))]);
   try {
-    const [pRes,rRes]=await Promise.all([withTimeout(api('getAppPlatforms',{})),withTimeout(api('getAllMyAppRegistrations',{}))]);
-    const bySimId=(rRes&&rRes.success&&rRes.data)?rRes.data:{};
+    const res=await api('getAppOverviewBundle',{});
+    if(!res||!res.success) throw new Error(res?.error||'APP 總覽載入失敗');
+    const bySimId=res.data?.bySimId||{};
     const map={};
-    ((pRes&&pRes.success&&Array.isArray(pRes.data))?pRes.data:[]).forEach(p=>map[String(p['編號']||p.id||'')]=p);
+    (Array.isArray(res.data?.platforms)?res.data.platforms:[]).forEach(p=>map[String(p['編號']||p.id||'')]=p);
     Object.values(bySimId).flat().forEach(r=>{const pid=String(r['平台編號']||r.platform_id||'').trim();if(pid&&!map[pid])map[pid]={編號:pid,id:pid,名稱:r.name||('已儲存平台 '+pid),name:r.name||('已儲存平台 '+pid),圖標:r.icon||'📱',icon:r.icon||'📱',sort:9999};});
     const platforms=Object.values(map).sort((a,b)=>(Number(a['排序']||a.sort||9999)-Number(b['排序']||b.sort||9999)));
-    if(!platforms.length){body.innerHTML='<p style="text-align:center;color:var(--text2);padding:20px">尚無 APP 平台</p>';return;}
+    STATE.appPlatforms=Array.isArray(res.data?.platforms)?res.data.platforms:STATE.appPlatforms;
+    if(!platforms.length){body.innerHTML='<p style="text-align:center;color:var(--text2);padding:20px">尚無 APP 平台或註冊資料</p>';return;}
     const sims=[...STATE.simCards].sort((a,b)=>(parseInt(String(a['門號編號']||a.sim_number||'').replace(/\D/g,''))||9999)-(parseInt(String(b['門號編號']||b.sim_number||'').replace(/\D/g,''))||9999));
     let html='<div style="overflow:auto;max-height:65vh;border:1.5px solid var(--border);border-radius:10px"><table style="width:100%;border-collapse:collapse;font-size:12px;text-align:center;white-space:nowrap"><thead style="position:sticky;top:0;background:#f8f9fa;z-index:10"><tr><th style="padding:10px 8px">編號</th><th style="padding:10px 8px">門號</th>';
-    platforms.forEach(p=>html+=`<th style="padding:8px 4px;min-width:45px"><div style="font-size:18px">${esc(p.icon||'📱')}</div><div style="font-size:10px">${esc(p.name||p['名稱']||'')}</div></th>`);
+    platforms.forEach(p=>html+=`<th style="padding:8px 4px;min-width:45px"><div style="font-size:18px">${esc(p.icon||p['圖標']||'📱')}</div><div style="font-size:10px">${esc(p.name||p['名稱']||'')}</div></th>`);
     html+='</tr></thead><tbody>';
-    sims.forEach((sim,i)=>{const sid=String(sim['編號']||sim.id||'');const regs=bySimId[sid]||[];html+=`<tr><td style="padding:10px 8px">${esc(sim['門號編號']||sim.sim_number||'-')}</td><td style="padding:10px 8px">${esc(sim['門號號碼']||sim.phone_number||'')}</td>`;platforms.forEach(p=>{const pid=String(p['編號']||p.id||'');const reg=regs.find(r=>String(r['平台編號']||r.platform_id||'').trim()===pid);const yes=reg&&(reg['是否已註冊']===true||reg.is_registered===true);html+=`<td style="padding:10px 8px">${yes?'🟢':'⚪'}</td>`});html+='</tr>';});
-    html+='</tbody></table></div><button class="btn btn-outline" style="width:100%;margin-top:12px" onclick="closeModal(&quot;broadcastModal&quot;)">關閉總覽</button>';
+    sims.forEach(sim=>{const sid=String(sim['編號']||sim.id||'');const regs=bySimId[sid]||[];html+=`<tr><td style="padding:10px 8px">${esc(sim['門號編號']||sim.sim_number||'-')}</td><td style="padding:10px 8px">${esc(sim['門號號碼']||sim.phone_number||'')}</td>`;platforms.forEach(p=>{const pid=String(p['編號']||p.id||'');const reg=regs.find(r=>String(r['平台編號']||r.platform_id||'').trim()===pid);const yes=reg&&(reg['是否已註冊']===true||reg.is_registered===true);html+=`<td style="padding:10px 8px">${yes?'🟢':'⚪'}</td>`});html+='</tr>';});
+    html+='</tbody></table></div><button class="btn btn-outline" style="width:100%;margin-top:12px" onclick="closeModal(\'broadcastModal\')">關閉總覽</button>';
     body.innerHTML=html;
-  } catch(e){console.error('APP 總覽載入失敗:',e);body.innerHTML='<div style="text-align:center;padding:25px;color:var(--danger)">⚠️ 總覽載入逾時或失敗<br><button class="btn btn-outline" style="margin-top:10px" onclick="openAppRegMatrix()">🔄 重新載入</button></div>';}
+  } catch(e){console.error('APP 總覽載入失敗:',e);body.innerHTML='<div style="text-align:center;padding:25px;color:var(--danger)">⚠️ APP 總覽載入失敗<br><span style="font-size:12px">'+esc(e.message||'未知錯誤')+'</span><br><button class="btn btn-outline" style="margin-top:10px" onclick="openAppRegMatrix()">🔄 重新載入</button></div>';}
 }
 
 // 2. 儲存 API 抓回來的 APP 狀態供 Modal 讀取
@@ -3855,7 +3845,7 @@ async function checkTopUpPrompt() {
   if (sessionStorage.getItem(promptKey)) return;
   sessionStorage.setItem(promptKey, '1');
 
-  // v5.1：bootstrap 已帶回最新會員資格，不再額外呼叫 getProfile
+  // v5.2.3：bootstrap 已帶回最新會員資格，不再額外呼叫 getProfile
   const mtype = STATE.session?.member_type || 'trial';
 
   // 先檢查：有沒有「今日到期」或「已到期」的門號（可能是收到通知後進系統）
@@ -6624,7 +6614,7 @@ async function openNotifyTimePanel() {
 
 // ── 管理員：會員訂閱管理 ────────────────────────────────────
 async function openMembershipPanel() {
-  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.2.1';
+  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.2.3';
   document.getElementById('broadcastModalBody').innerHTML='<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
   openModal('broadcastModal');
   const [mr,pr] = await Promise.all([api('adminGetMemberships'),api('adminGetMembershipPlans')]);
