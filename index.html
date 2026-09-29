@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
-<title>預付卡管理系統 v5.2.3</title>
+<title>預付卡管理系統 v5.2.4</title>
 <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
 <style>
 /* ── 美化版迷你日曆 ── */
@@ -272,7 +272,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
 <div id="loading">
   <div class="logo">📱</div>
   <p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:4px">預付卡儲值管理</p>
-  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.2.3</p>
+  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.2.4</p>
   <p id="loadingMsg" style="color:rgba(255,255,255,.85);font-size:14px">載入中...</p>
   <div style="width:200px;height:4px;background:rgba(255,255,255,.25);border-radius:4px;margin-top:20px;overflow:hidden">
     <div id="loadingBar" style="height:100%;background:#fff;border-radius:4px;width:0%;transition:width .35s ease"></div>
@@ -284,7 +284,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
   <div class="auth-card">
     <div class="auth-logo">
       <span class="icon">📱</span>
-      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.2.3</div>
+      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.2.4</div>
       <p>管理您的所有預付卡門號</p>
     </div>
 
@@ -1264,6 +1264,8 @@ async function initApp() {
       filterSims();
       updateAppSimSelect(STATE.simCards);
     }
+    // V5.2.4：首頁先顯示，再背景更新通知與行事曆，不阻塞會員進站。
+    Promise.allSettled([loadDashboard(), loadCalendarData()]).catch(()=>{});
     setTimeout(checkTopUpPrompt, 800);
     setTimeout(checkUrgentSimAlert, 1200);
     return;
@@ -1742,7 +1744,7 @@ async function showApp() {
   } catch(e) { console.warn('bootstrap:',e.message); }
   setSplashMsg('完成！',100);
   showAppReady(); hideSplash();
-  // v5.2.3：通知統計/完整行事曆全部背景載入，不阻塞會員進站。
+  // v5.2.4：通知統計/完整行事曆全部背景載入，不阻塞會員進站。
   Promise.allSettled([loadDashboard(), loadCalendarData()]).catch(()=>{});
   setTimeout(checkTopUpPrompt,800); setTimeout(checkUrgentSimAlert,1200);
 }
@@ -1817,7 +1819,7 @@ function switchPage(name) {
 // ============================================================
 async function api(action, data = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 30000); // 30s timeout
+  const timer = setTimeout(() => controller.abort(), 18000); // 30s timeout
   try {
     const res = await fetch(GAS_URL, {
       method: 'POST',
@@ -3200,6 +3202,20 @@ window.quickEditAppFromOverview = function(platId, simId) {
   openAppDetail(platId, simId);
 };
 
+// ============================================================
+// V5.2.4：APP 註冊詳細列表渲染器
+// ============================================================
+function renderRegOverviewList() {
+  const body=document.getElementById('broadcastModalBody'); if(!body)return;
+  const rows=Array.isArray(_allRegOverviewData)?_allRegOverviewData:[];
+  if(!rows.length){body.innerHTML='<div style="text-align:center;padding:28px;color:var(--text2)">尚無門號或 APP 註冊資料</div>';return;}
+  const grouped=new Map();
+  rows.forEach(item=>{const sid=String(item.sim?.['編號']||item.sim?.id||'');if(!grouped.has(sid))grouped.set(sid,{sim:item.sim,regs:[]});grouped.get(sid).regs.push(item.reg||{});});
+  let html='<div style="overflow:auto;max-height:68vh"><table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap"><thead style="position:sticky;top:0;background:var(--card,#fff);z-index:5"><tr><th style="padding:9px 7px">門號編號</th><th style="padding:9px 7px">門號</th><th style="padding:9px 7px">APP</th><th style="padding:9px 7px">狀態</th><th style="padding:9px 7px">最後註冊</th><th style="padding:9px 7px">下次可用</th></tr></thead><tbody>';
+  grouped.forEach(g=>{const sim=g.sim||{},no=sim['門號編號']||sim.sim_number||'-',phone=sim['門號號碼']||sim.phone_number||'-';g.regs.forEach((r,idx)=>{const name=r.name||r['名稱']||('APP '+(r.platform_id||r['平台編號']||'')),icon=r.icon||r['圖標']||'📱',yes=r.is_registered===true||r['是否已註冊']===true||String(r['是否已註冊']).toUpperCase()==='TRUE',last=r.last_register_date||r['最後註冊日']||r['最後註冊日期']||'-',next=r.next_register_date||r['下次可用日']||r['下次可用日期']||'-';html+=`<tr><td style="padding:8px 7px;border-bottom:1px solid var(--border)">${idx===0?esc(no):''}</td><td style="padding:8px 7px;border-bottom:1px solid var(--border)">${idx===0?esc(phone):''}</td><td style="padding:8px 7px;border-bottom:1px solid var(--border)">${esc(icon+' '+name)}</td><td style="padding:8px 7px;border-bottom:1px solid var(--border)">${yes?'🟢 已註冊':'⚪ 未註冊'}</td><td style="padding:8px 7px;border-bottom:1px solid var(--border)">${esc(String(last))}</td><td style="padding:8px 7px;border-bottom:1px solid var(--border)">${esc(String(next))}</td></tr>`;});});
+  html+='</tbody></table></div><button class="btn btn-outline" style="width:100%;margin-top:12px" onclick="closeModal(\'broadcastModal\')">關閉</button>';body.innerHTML=html;
+}
+
 // 🌟 2. 升級版 APP 註冊情形 (完美矩陣，保證顯示所有門號)
 async function openAppRegOverview() {
   const body=document.getElementById('broadcastModalBody');
@@ -3845,7 +3861,7 @@ async function checkTopUpPrompt() {
   if (sessionStorage.getItem(promptKey)) return;
   sessionStorage.setItem(promptKey, '1');
 
-  // v5.2.3：bootstrap 已帶回最新會員資格，不再額外呼叫 getProfile
+  // v5.2.4：bootstrap 已帶回最新會員資格，不再額外呼叫 getProfile
   const mtype = STATE.session?.member_type || 'trial';
 
   // 先檢查：有沒有「今日到期」或「已到期」的門號（可能是收到通知後進系統）
@@ -6614,7 +6630,7 @@ async function openNotifyTimePanel() {
 
 // ── 管理員：會員訂閱管理 ────────────────────────────────────
 async function openMembershipPanel() {
-  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.2.3';
+  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.2.4';
   document.getElementById('broadcastModalBody').innerHTML='<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
   openModal('broadcastModal');
   const [mr,pr] = await Promise.all([api('adminGetMemberships'),api('adminGetMembershipPlans')]);
