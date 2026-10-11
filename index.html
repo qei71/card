@@ -3479,7 +3479,48 @@ function renderRegOverviewList() {
   container.innerHTML = html;
 }
 
-// 🌟 新增：專屬總覽表背景默默重整函式 (不閃爍、不吃掉當前篩選條件)
+// 🌟 4. 從總覽表直接開啟編輯視窗
+function quickEditAppFromOverview(platId, simId) {
+  // 1. 從完美矩陣快取中找出這筆門號與 APP 的資料
+  const data = _allRegOverviewData.find(d => 
+    String(d.sim['編號'] || d.sim.id) === String(simId) && 
+    String(d.reg.platform_id || d.reg['平台編號']) === String(platId)
+  );
+  
+  if (!data) {
+    showToast('找不到該筆資料，請重新整理', 'error');
+    return;
+  }
+
+  const reg = data.reg;
+  const plat = STATE.appPlatforms.find(x => String(x['編號']||x.id) === String(platId)) || {};
+
+  // 2. 轉換格式，讓原本的 openAppDetail 編輯視窗看得懂
+  const mappedObj = {
+    id: platId,
+    name: plat['名稱'] || plat.name || reg.name || '',
+    icon: plat['圖標'] || plat.icon || reg.icon || '📱',
+    can_repeat: plat['可重複使用'] ?? plat.can_repeat ?? reg.can_repeat,
+    is_registered: reg.is_registered === true || reg['是否已註冊'] === true,
+    last_register_date: reg.last_register_date || reg['最後註冊日'] || '',
+    register_days: reg.register_days || 30,
+    next_register_date: reg.next_register_date || reg['下次可用日'] || '',
+    app_account: reg.app_account || reg['帳號'] || '',
+    app_mail: reg.app_mail || reg['信箱'] || '',
+    app_password: reg.app_password || reg['APP密碼'] || '',
+    app_note: reg.app_note || reg['備註'] || '',
+    notify_line: reg.notify_line !== undefined ? reg.notify_line : true,
+    notify_tg: reg.notify_tg !== undefined ? reg.notify_tg : true,
+    notify_date: reg.notify_date || '',
+    notify_time: reg.notify_time || ''
+  };
+
+  // 3. 暫存到全域變數中，欺騙系統這是剛從 API 抓回來的
+  STATE.currentAppRegs = [mappedObj];
+
+  // 4. 呼叫原本的編輯視窗
+  openAppDetail(platId, simId);
+}
 // 🌟 修復版：專屬總覽表背景默默重整函式 (加入重新獲取平台清單的防呆機制)
 async function silentRefreshRegOverview() {
   // 🌟 1. 核心修復：確保拿到最新的 APP 平台清單 (因為存檔時快取 STATE.appPlatforms 被清除了！)
