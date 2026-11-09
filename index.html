@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
-<title>預付卡管理系統 v5.2.6</title>
+<title>預付卡管理系統 v5.2.7</title>
 <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
 <style>
 /* ── 美化版迷你日曆 ── */
@@ -273,7 +273,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
 <div id="loading">
   <div class="logo">📱</div>
   <p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:4px">預付卡儲值管理</p>
-  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.2.6</p>
+  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.2.7</p>
   <p id="loadingMsg" style="color:rgba(255,255,255,.85);font-size:14px">載入中...</p>
   <div style="width:200px;height:4px;background:rgba(255,255,255,.25);border-radius:4px;margin-top:20px;overflow:hidden">
     <div id="loadingBar" style="height:100%;background:#fff;border-radius:4px;width:0%;transition:width .35s ease"></div>
@@ -285,7 +285,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
   <div class="auth-card">
     <div class="auth-logo">
       <span class="icon">📱</span>
-      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.2.6</div>
+      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.2.7</div>
       <p>管理您的所有預付卡門號</p>
     </div>
 
@@ -883,6 +883,14 @@ textarea.form-control { resize:vertical; min-height:80px; }
       <div class="form-group"><label>APP 密碼（選填）</label><input type="text" id="appPassword" class="form-control" placeholder="輸入此 APP 的密碼"></div>
       
       <div class="form-group"><label>備註（選填）</label><input type="text" id="appNote" class="form-control" placeholder="其他說明或備忘"></div>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+          <div style="font-size:13px;font-weight:700;color:var(--text)">🧩 自訂選填項目</div>
+          <button type="button" class="btn btn-xs btn-outline" style="border-color:var(--primary);color:var(--primary)" onclick="addAppCustomField()">＋ 增加選填項目</button>
+        </div>
+        <p style="font-size:11px;color:var(--text2);margin-bottom:10px">每個 APP 可設定自己的欄位名稱，例如：暱稱、會員編號、備用電話；不會套用到其他 APP。</p>
+        <div id="appCustomFieldsContainer"></div>
+      </div>
     </div>
     <button class="btn btn-primary" onclick="saveAppRegistration()">💾 儲存設定</button>
     <button class="btn btn-outline" style="margin-top:8px;border-color:var(--warning);color:var(--warning);font-size:13px" onclick="openEditMyPlatform()">✏️ 修改此平台名稱/圖標/排序</button>
@@ -1226,7 +1234,7 @@ async function initApp() {
       if (r.success && r.data) {
         const d = r.data;
         STATE.simCards = d.simCards || [];
-        // V5.2.6：Bootstrap 已帶回門號與 days_left，直接渲染近期到期門號，不再等第二次 API。
+        // V5.2.7：Bootstrap 已帶回門號與 days_left，直接渲染近期到期門號，不再等第二次 API。
         loadUpcoming();
         STATE.calendarData = d.calendarData || [];
         STATE.announcements = d.announcements || [];
@@ -1267,7 +1275,7 @@ async function initApp() {
       filterSims();
       updateAppSimSelect(STATE.simCards);
     }
-    // V5.2.6：首頁先顯示，再背景更新通知與行事曆，不阻塞會員進站。
+    // V5.2.7：首頁先顯示，再背景更新通知與行事曆，不阻塞會員進站。
     Promise.allSettled([loadDashboard(), loadCalendarData()]).catch(()=>{});
     setTimeout(checkTopUpPrompt, 800);
     setTimeout(checkUrgentSimAlert, 1200);
@@ -1747,7 +1755,7 @@ async function showApp() {
   } catch(e) { console.warn('bootstrap:',e.message); }
   setSplashMsg('完成！',100);
   showAppReady(); hideSplash();
-  // v5.2.6：通知統計/完整行事曆全部背景載入，不阻塞會員進站。
+  // v5.2.7：通知統計/完整行事曆全部背景載入，不阻塞會員進站。
   Promise.allSettled([loadDashboard(), loadCalendarData()]).catch(()=>{});
   setTimeout(checkTopUpPrompt,800); setTimeout(checkUrgentSimAlert,1200);
 }
@@ -3198,7 +3206,7 @@ async function openAppRegOverview() {
       if (pRes.success && pRes.data) STATE.appPlatforms = pRes.data;
     } catch(e){}
   }
-  // 2. 使用 V5.2.6 優化後的單次 Bundle API，避免重複掃描 Google Sheet
+  // 2. 使用 V5.2.7 優化後的單次 Bundle API，避免重複掃描 Google Sheet
   let bySimId = {};
   try {
     const res = await api('getAppOverviewBundle', {});
@@ -3245,7 +3253,9 @@ async function openAppRegOverview() {
             app_account: '',
             app_mail: '',
             app_password: '',
-            app_note: ''
+            app_note: '',
+            custom_fields: plat.custom_fields || [],
+            custom_values: {}
           }
         });
       }
@@ -3522,7 +3532,8 @@ async function silentRefreshRegOverview() {
             icon: plat['圖標'] || plat.icon || '📱',
             is_registered: false, '是否已註冊': false,
             last_register_date: '', next_register_date: '',
-            app_account: '', app_mail: '', app_password: '', app_note: ''
+            app_account: '', app_mail: '', app_password: '', app_note: '',
+            custom_fields: plat.custom_fields || [], custom_values: {}
           }
         });
       }
@@ -3601,7 +3612,11 @@ async function openAppRegMatrix() {
         const isReg = reg && (reg['是否已註冊'] === true || reg.is_registered === true);
         
         if (isReg) {
-          tableHtml += `<td style="padding:10px 8px; border-right:1px solid var(--border); color:#06C755; font-size:14px; font-weight:800;">○</td>`;
+          tableHtml += `<td style="padding:6px 8px; border-right:1px solid var(--border); text-align:center;">
+            <button type="button" class="matrix-app-edit" data-platform-id="${esc(pid)}" data-sim-id="${esc(sid)}"
+              title="點擊編輯此門號的 APP 註冊資料"
+              style="border:0;background:#e8f8ef;color:#16834a;border-radius:7px;padding:4px 9px;font-size:15px;font-weight:900;cursor:pointer">○</button>
+          </td>`;
         } else {
           tableHtml += `<td style="padding:10px 8px; border-right:1px solid var(--border); color:#dcdcdc; font-size:12px;">X</td>`;
         }
@@ -3622,6 +3637,23 @@ async function openAppRegMatrix() {
   const el = document.getElementById('broadcastModalBody');
   el.innerHTML = tableHtml;
   el.appendChild(closeBtn);
+  // 總覽中已註冊的 O 可直接開啟該門號、該 APP 的編輯視窗。
+  el.onclick = async function(event) {
+    const button = event.target.closest('.matrix-app-edit');
+    if (!button) return;
+    await openAppDetailFromMatrix(button.dataset.platformId, button.dataset.simId);
+  };
+}
+
+// 從「門號 APP 註冊總覽」O 按鈕開啟正確的門號/APP 編輯資料。
+async function openAppDetailFromMatrix(platformId, simId) {
+  const res = await api('getAppRegistrations', { sim_card_id: simId });
+  if (!res || !res.success || !Array.isArray(res.data)) {
+    showToast(res?.error || '讀取 APP 編輯資料失敗', 'error');
+    return;
+  }
+  STATE.currentAppRegs = res.data;
+  openAppDetail(String(platformId), String(simId));
 }
   
 // 2. 儲存 API 抓回來的 APP 狀態供 Modal 讀取
@@ -3632,7 +3664,7 @@ async function loadAppRegistrations() {
     if (el) el.innerHTML = '<p style="color:var(--text2);font-size:14px;text-align:center;padding:20px">請先選擇門號</p>';
     return;
   }
-  // V5.2.6：避免每次選門號又重複讀取 APP平台清單。
+  // V5.2.7：避免每次選門號又重複讀取 APP平台清單。
   // 平台資料由會員進入 APP 模組時載入；這裡只取得指定門號的註冊狀態。
   const r = await api('getAppRegistrations', { sim_card_id: simId });
   if (!r.success || !r.data) return;
@@ -3889,6 +3921,81 @@ async function quickToggleAppUI(platformId, simId, checked, days) {
   }
 }
 
+// ============================================================
+// V5.2.7：動態自訂選填欄位 UI
+// 名稱設定屬於此會員的此 APP；欄位內容屬於目前門號的此 APP。
+// ============================================================
+function makeAppCustomFieldId() {
+  return 'cf_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
+}
+
+function addAppCustomField(label, value, fieldId, shouldFocus = true) {
+  const container = document.getElementById('appCustomFieldsContainer');
+  if (!container) return;
+  const row = document.createElement('div');
+  row.className = 'app-custom-field-row';
+  row.dataset.fieldId = fieldId || makeAppCustomFieldId();
+  row.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) 34px;gap:6px;align-items:center;margin-bottom:8px;padding:8px;background:#f8faf9;border:1px solid var(--border);border-radius:10px';
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.className = 'form-control app-custom-field-name';
+  nameInput.placeholder = '自訂名稱，例如：暱稱';
+  nameInput.maxLength = 60;
+  nameInput.style.cssText = 'padding:9px 8px;font-size:12px;min-width:0';
+  nameInput.value = label || '';
+
+  const valueInput = document.createElement('input');
+  valueInput.type = 'text';
+  valueInput.className = 'form-control app-custom-field-value';
+  valueInput.placeholder = '輸入此門號的內容';
+  valueInput.style.cssText = 'padding:9px 8px;font-size:12px;min-width:0';
+  valueInput.value = value || '';
+
+  const removeButton = document.createElement('button');
+  removeButton.type = 'button';
+  removeButton.className = 'btn btn-xs btn-outline';
+  removeButton.textContent = '✕';
+  removeButton.title = '移除此選填項目';
+  removeButton.style.cssText = 'width:34px;height:34px;padding:0;color:var(--danger);border-color:#f2c7c7';
+  removeButton.addEventListener('click', () => row.remove());
+
+  row.appendChild(nameInput);
+  row.appendChild(valueInput);
+  row.appendChild(removeButton);
+  container.appendChild(row);
+  if (shouldFocus) nameInput.focus();
+}
+
+function renderAppCustomFields(fields, values) {
+  const container = document.getElementById('appCustomFieldsContainer');
+  if (!container) return;
+  container.innerHTML = '';
+  const list = Array.isArray(fields) ? fields : [];
+  const valueMap = values && typeof values === 'object' ? values : {};
+  list.forEach(field => {
+    if (!field) return;
+    const id = String(field.id || makeAppCustomFieldId());
+    addAppCustomField(String(field.label || field.name || ''), (valueMap[id] == null ? '' : String(valueMap[id])), id, false);
+  });
+}
+
+function collectAppCustomFields() {
+  const container = document.getElementById('appCustomFieldsContainer');
+  const fields = [];
+  const values = {};
+  if (!container) return { fields, values };
+  container.querySelectorAll('.app-custom-field-row').forEach(row => {
+    const id = String(row.dataset.fieldId || makeAppCustomFieldId());
+    const label = String(row.querySelector('.app-custom-field-name')?.value || '').trim().slice(0, 60);
+    const value = String(row.querySelector('.app-custom-field-value')?.value || '').trim();
+    if (!label) return;
+    fields.push({ id, label });
+    values[id] = value;
+  });
+  return { fields, values };
+}
+
 // 3. 修復 APP 詳細資訊讀取，並綁定通知參數 (加入標題顯示門號功能)
 function openAppDetail(platformId, simId) {
   const p = (STATE.currentAppRegs || []).find(x => x.id === platformId) 
@@ -3975,6 +4082,7 @@ function openAppDetail(platformId, simId) {
   if (mailEl) mailEl.value = p.app_mail || p['信箱'] || '';
   if (pwdEl)  pwdEl.value  = p.app_password || p['APP密碼'] || '';
   if (noteEl) noteEl.value = p.app_note || p['備註'] || '';
+  renderAppCustomFields(p.custom_fields || [], p.custom_values || {});
 
   const sameChk = document.getElementById('appAccountSameAsPhone');
   if (sameChk) {
@@ -4064,6 +4172,7 @@ async function saveAppRegistration() {
   const abtn = document.querySelector('#appDetailModal .btn-primary');
   await withLoading('saveApp', abtn, '⏳ 儲存中...', async () => {
     const platId = document.getElementById('appDetailPlatId').value;
+    const customData = collectAppCustomFields();
     
     const canRepeatStr = document.querySelector('input[name="detailCanRepeat"]:checked')?.value;
     if (canRepeatStr) {
@@ -4083,7 +4192,9 @@ async function saveAppRegistration() {
       notify_line:        document.getElementById('appNotifyLine')?.checked,
       notify_tg:          document.getElementById('appNotifyTg')?.checked,
       notify_date:        document.getElementById('appNotifyDate')?.value || '',
-      notify_time:        document.getElementById('appNotifyTime')?.value || ''
+      notify_time:        document.getElementById('appNotifyTime')?.value || '',
+      custom_fields:      customData.fields,
+      custom_values:      customData.values
     });
     
     if (r.success) { 
@@ -4099,7 +4210,12 @@ async function saveAppRegistration() {
       
       // 🌟 2. 核心修正：如果總覽清單視窗是開啟狀態，立刻觸發背景默默刷新！
       if (document.getElementById('broadcastModal')?.classList.contains('open')) {
-        await silentRefreshRegOverview();
+        const overviewTitle = document.getElementById('broadcastModalTitle')?.textContent || '';
+        if (overviewTitle.includes('門號 APP 註冊總覽')) {
+          await openAppRegMatrix();
+        } else {
+          await silentRefreshRegOverview();
+        }
       }
     }
     else { showToast(r.error || '更新失敗', 'error'); }
@@ -4207,7 +4323,7 @@ async function checkTopUpPrompt() {
   if (sessionStorage.getItem(promptKey)) return;
   sessionStorage.setItem(promptKey, '1');
 
-  // v5.2.6：bootstrap 已帶回最新會員資格，不再額外呼叫 getProfile
+  // v5.2.7：bootstrap 已帶回最新會員資格，不再額外呼叫 getProfile
   const mtype = STATE.session?.member_type || 'trial';
 
   // 先檢查：有沒有「今日到期」或「已到期」的門號（可能是收到通知後進系統）
@@ -4256,6 +4372,8 @@ function quickEditAppFromOverview(platId, simId) {
     app_mail: reg.app_mail || reg['信箱'] || '',
     app_password: reg.app_password || reg['APP密碼'] || '',
     app_note: reg.app_note || reg['備註'] || '',
+    custom_fields: reg.custom_fields || [],
+    custom_values: reg.custom_values || {},
     notify_line: reg.notify_line !== undefined ? reg.notify_line : true,
     notify_tg: reg.notify_tg !== undefined ? reg.notify_tg : true,
     notify_date: reg.notify_date || '',
@@ -7017,7 +7135,7 @@ async function openNotifyTimePanel() {
 
 // ── 管理員：會員訂閱管理 ────────────────────────────────────
 async function openMembershipPanel() {
-  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.2.6';
+  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.2.7';
   document.getElementById('broadcastModalBody').innerHTML='<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
   openModal('broadcastModal');
   const [mr,pr] = await Promise.all([api('adminGetMemberships'),api('adminGetMembershipPlans')]);
