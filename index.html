@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
-<title>預付卡管理系統 v5.2.7</title>
+<title>預付卡管理系統 v5.2.8</title>
 <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
 <style>
 /* ── 美化版迷你日曆 ── */
@@ -264,6 +264,22 @@ textarea.form-control { resize:vertical; min-height:80px; }
 /* ── 確認/輸入 overlay ── */
 #dialogOverlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:500; display:none; align-items:center; justify-content:center; padding:24px; animation:fadeIn .15s; }
 #dialogOverlay.open { display:flex; }
+
+/* V5.2.8 管理員分頁與可點擊統計卡 */
+.admin-tabbar{display:flex;gap:8px;position:sticky;top:0;z-index:20;background:#fff;padding:4px 0 12px;margin-bottom:12px}
+.admin-tab-btn{flex:1;border:1.5px solid var(--border);background:#f8f9fa;color:var(--text2);border-radius:10px;padding:11px 8px;font-size:14px;font-weight:700;cursor:pointer}
+.admin-tab-btn.active{background:#e8f8ef;border-color:var(--primary);color:#16834a}
+.admin-stat-card{border:0;width:100%;font:inherit;cursor:pointer;transition:transform .12s,box-shadow .12s}
+.admin-stat-card:active{transform:scale(.98)}
+.admin-stat-card:focus-visible{outline:3px solid rgba(6,199,85,.35);outline-offset:2px}
+.admin-stat-detail{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:12px;margin:0 0 14px;max-height:42vh;overflow:auto}
+.admin-detail-table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}
+.admin-detail-table th,.admin-detail-table td{padding:9px 8px;border-bottom:1px solid #edf0f2;text-align:left}
+.admin-detail-table th{background:#f8f9fa;color:var(--text2);position:sticky;top:0;z-index:1}
+.reg-overview-batchbar{display:none;align-items:center;gap:8px;flex-wrap:wrap;background:#f0fbf4;border:1px solid #bde8cf;border-radius:10px;padding:9px 10px;margin:0 0 10px}
+.reg-overview-batchbar .btn{width:auto}
+.reg-overview-select{width:17px;height:17px;accent-color:var(--primary);cursor:pointer}
+
 </style>
 </head>
 <body>
@@ -273,7 +289,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
 <div id="loading">
   <div class="logo">📱</div>
   <p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:4px">預付卡儲值管理</p>
-  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.2.7</p>
+  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.2.8</p>
   <p id="loadingMsg" style="color:rgba(255,255,255,.85);font-size:14px">載入中...</p>
   <div style="width:200px;height:4px;background:rgba(255,255,255,.25);border-radius:4px;margin-top:20px;overflow:hidden">
     <div id="loadingBar" style="height:100%;background:#fff;border-radius:4px;width:0%;transition:width .35s ease"></div>
@@ -285,7 +301,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
   <div class="auth-card">
     <div class="auth-logo">
       <span class="icon">📱</span>
-      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.2.7</div>
+      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.2.8</div>
       <p>管理您的所有預付卡門號</p>
     </div>
 
@@ -1234,7 +1250,7 @@ async function initApp() {
       if (r.success && r.data) {
         const d = r.data;
         STATE.simCards = d.simCards || [];
-        // V5.2.7：Bootstrap 已帶回門號與 days_left，直接渲染近期到期門號，不再等第二次 API。
+        // V5.2.8：Bootstrap 已帶回門號與 days_left，直接渲染近期到期門號，不再等第二次 API。
         loadUpcoming();
         STATE.calendarData = d.calendarData || [];
         STATE.announcements = d.announcements || [];
@@ -1275,7 +1291,7 @@ async function initApp() {
       filterSims();
       updateAppSimSelect(STATE.simCards);
     }
-    // V5.2.7：首頁先顯示，再背景更新通知與行事曆，不阻塞會員進站。
+    // V5.2.8：首頁先顯示，再背景更新通知與行事曆，不阻塞會員進站。
     Promise.allSettled([loadDashboard(), loadCalendarData()]).catch(()=>{});
     setTimeout(checkTopUpPrompt, 800);
     setTimeout(checkUrgentSimAlert, 1200);
@@ -1755,7 +1771,7 @@ async function showApp() {
   } catch(e) { console.warn('bootstrap:',e.message); }
   setSplashMsg('完成！',100);
   showAppReady(); hideSplash();
-  // v5.2.7：通知統計/完整行事曆全部背景載入，不阻塞會員進站。
+  // v5.2.8：通知統計/完整行事曆全部背景載入，不阻塞會員進站。
   Promise.allSettled([loadDashboard(), loadCalendarData()]).catch(()=>{});
   setTimeout(checkTopUpPrompt,800); setTimeout(checkUrgentSimAlert,1200);
 }
@@ -3206,7 +3222,7 @@ async function openAppRegOverview() {
       if (pRes.success && pRes.data) STATE.appPlatforms = pRes.data;
     } catch(e){}
   }
-  // 2. 使用 V5.2.7 優化後的單次 Bundle API，避免重複掃描 Google Sheet
+  // 2. 使用 V5.2.8 優化後的單次 Bundle API，避免重複掃描 Google Sheet
   let bySimId = {};
   try {
     const res = await api('getAppOverviewBundle', {});
@@ -3270,13 +3286,21 @@ async function openAppRegOverview() {
      return;
   }
 
-  // 建立篩選器 UI (直接使用 validPlats 建立選單)
+  // 建立平台、門號與排序篩選器。
   let optHtml = '<option value="ALL">📋 顯示所有 APP</option>';
   validPlats.forEach(p => {
-     optHtml += `<option value="${p['編號']||p.id}">${p['圖標']||p.icon||'📱'} ${esc(p['名稱']||p.name)}</option>`;
+     optHtml += `<option value="${esc(p['編號']||p.id)}">${p['圖標']||p.icon||'📱'} ${esc(p['名稱']||p.name)}</option>`;
+  });
+  let simOptHtml = '<option value="ALL">📱 所有門號</option>';
+  STATE.simCards.forEach(sim => {
+    const sid = String(sim['編號'] || sim.id || '');
+    if (!sid) return;
+    const simNo = sim['門號編號'] || sim.sim_number || '';
+    const phone = sim['門號號碼'] || sim.phone_number || '';
+    const carrier = sim['電信業者'] || sim.carrier || '';
+    simOptHtml += `<option value="${esc(sid)}">${esc((simNo ? '['+simNo+'] ' : '') + phone + (carrier ? ' · '+carrier : ''))}</option>`;
   });
 
-  // 🌟 建立超強大篩選器與排序 UI
   const filterDiv = document.createElement('div');
   filterDiv.innerHTML = `
     <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
@@ -3294,12 +3318,23 @@ async function openAppRegOverview() {
           <option value="acc_asc">依帳號 (A-Z)</option>
         </select>
       </div>
+      <div style="flex:1.2; min-width:170px;">
+        <label style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px;display:block">📱 門號篩選</label>
+        <select id="regOverviewSimFilter" class="form-control" style="font-size:13px; padding:8px 10px;" onchange="onRegOverviewSimFilterChange()">${simOptHtml}</select>
+      </div>
     </div>
-    <div style="margin-bottom:12px;">
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;color:var(--text);font-weight:700; background:#f5f6fa; padding:10px; border-radius:10px; border:1px solid var(--border)">
+    <div style="margin-bottom:10px;">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;color:var(--text);font-weight:700;background:#f5f6fa;padding:10px;border-radius:10px;border:1px solid var(--border)">
         <input type="checkbox" id="regOverviewHideUnreg" style="width:18px;height:18px;accent-color:var(--primary)" onchange="renderRegOverviewList()">
-        隱藏未註冊門號 (只顯示有資料的)
+        隱藏未註冊 APP（選擇單一門號時仍顯示全部 APP）
       </label>
+    </div>
+    <div id="regOverviewBatchBar" class="reg-overview-batchbar">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;cursor:pointer">
+        <input type="checkbox" id="regOverviewSelectAllApps" class="reg-overview-select" onchange="toggleRegOverviewSelectAll(this.checked)"> 全選目前顯示 APP
+      </label>
+      <span id="regOverviewSelectedCount" style="font-size:12px;color:var(--text2);flex:1">已選取 0 個 APP</span>
+      <button type="button" class="btn btn-primary btn-sm" onclick="openBatchEditSelectedSimApps()">🛠️ 批量編輯</button>
     </div>
   `;
   el.appendChild(filterDiv);
@@ -3330,164 +3365,256 @@ async function openAppRegOverview() {
 }
 
 // 🌟 3. 根據篩選條件與排序，動態渲染表格
+function onRegOverviewSimFilterChange() {
+  const simId = document.getElementById('regOverviewSimFilter')?.value || 'ALL';
+  const platformSelect = document.getElementById('regOverviewFilter');
+  // 選擇門號後預設回到「全部 APP」，避免沿用前一次平台篩選而漏看其他 APP。
+  if (simId !== 'ALL' && platformSelect) platformSelect.value = 'ALL';
+  window._regOverviewSelectedPlatforms = new Set();
+  renderRegOverviewList();
+}
+
+function updateRegOverviewBatchSelection() {
+  const selected = window._regOverviewSelectedPlatforms || new Set();
+  const countEl = document.getElementById('regOverviewSelectedCount');
+  const allEl = document.getElementById('regOverviewSelectAllApps');
+  const visible = Array.from(document.querySelectorAll('#regOverviewListContainer .reg-overview-select-app'));
+  if (countEl) countEl.textContent = `已選取 ${selected.size} 個 APP`;
+  if (allEl) allEl.checked = visible.length > 0 && visible.every(el => el.checked);
+}
+
+function toggleRegOverviewSelectAll(checked) {
+  window._regOverviewSelectedPlatforms = window._regOverviewSelectedPlatforms || new Set();
+  const boxes = Array.from(document.querySelectorAll('#regOverviewListContainer .reg-overview-select-app'));
+  boxes.forEach(box => {
+    box.checked = !!checked;
+    const pid = String(box.dataset.platformId || '');
+    if (checked) window._regOverviewSelectedPlatforms.add(pid);
+    else window._regOverviewSelectedPlatforms.delete(pid);
+  });
+  updateRegOverviewBatchSelection();
+}
+
+// 單一門號模式下，勾選多個 APP 後可一次修改註冊狀態、日期或間隔天數。
+let _pendingBatchSimAppEdit = null;
+function openBatchEditSelectedSimApps() {
+  const simId = document.getElementById('regOverviewSimFilter')?.value || 'ALL';
+  if (simId === 'ALL') return showToast('請先選擇一個門號', 'warn');
+  const platformIds = Array.from(window._regOverviewSelectedPlatforms || []);
+  if (!platformIds.length) return showToast('請先勾選要批量編輯的 APP', 'warn');
+  const sim = STATE.simCards.find(s => String(s['編號'] || s.id) === String(simId));
+  if (!sim) return showToast('找不到所選門號，請重新整理', 'error');
+  const simLabel = `${sim['門號編號'] || sim.sim_number || ''} ${sim['門號號碼'] || sim.phone_number || ''}`.trim();
+  const names = platformIds.map(pid => {
+    const p = STATE.appPlatforms.find(x => String(x['編號'] || x.id) === String(pid)) || {};
+    const item = _allRegOverviewData.find(d => String(d.sim['編號'] || d.sim.id) === String(simId) && String(d.reg.platform_id || d.reg['平台編號']) === String(pid));
+    return `<span style="display:inline-block;background:#f0fbf4;color:#16834a;border:1px solid #bde8cf;border-radius:8px;padding:5px 8px;margin:3px;font-size:12px">${p['圖標'] || p.icon || '📱'} ${esc(p['名稱'] || p.name || item?.reg?.name || 'APP')}</span>`;
+  }).join('');
+  _pendingBatchSimAppEdit = { simId, platformIds };
+
+  document.getElementById('broadcastModalTitle').textContent = '🛠️ 單一門號批量編輯 APP';
+  document.getElementById('broadcastModalBody').innerHTML = `
+    <div style="background:#f0fbf4;border:1px solid #bde8cf;border-radius:10px;padding:10px 12px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700">📱 ${esc(simLabel)}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:3px">已選取 ${platformIds.length} 個 APP；未勾選修改的欄位將保持原樣。</div>
+    </div>
+    <div style="margin-bottom:12px">${names}</div>
+    <div class="form-group" style="padding:12px;border:1px solid var(--border);border-radius:10px">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:700;color:var(--text)">
+        <input type="checkbox" id="batchSimUpdateStatus" checked style="width:17px;height:17px;accent-color:var(--primary)"> 修改註冊狀態
+      </label>
+      <select id="batchSimStatus" class="form-control" style="margin-top:8px">
+        <option value="true">✅ 設為已註冊</option>
+        <option value="false">❌ 設為未註冊</option>
+      </select>
+    </div>
+    <div class="form-group" style="padding:12px;border:1px solid var(--border);border-radius:10px">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:700;color:var(--text)">
+        <input type="checkbox" id="batchSimUpdateDate" checked style="width:17px;height:17px;accent-color:var(--primary)"> 統一修改最後註冊日期
+      </label>
+      <input type="date" id="batchSimLastDate" class="form-control" style="margin-top:8px" value="${new Date().toISOString().split('T')[0]}">
+    </div>
+    <div class="form-group" style="padding:12px;border:1px solid var(--border);border-radius:10px">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:700;color:var(--text)">
+        <input type="checkbox" id="batchSimUpdateDays" style="width:17px;height:17px;accent-color:var(--primary)"> 統一修改重新註冊間隔天數
+      </label>
+      <input type="number" id="batchSimRegisterDays" class="form-control" min="1" max="3650" value="30" style="margin-top:8px">
+    </div>
+    <div style="font-size:11px;color:var(--text2);line-height:1.6;margin:8px 0 14px">提醒：批量操作只會修改上方已選取 APP 的註冊狀態／註冊日期／間隔天數，不會覆蓋各 APP 原有的帳號、信箱、密碼、備註、自訂欄位與通知設定。</div>
+    <div style="display:flex;gap:8px">
+      <button type="button" class="btn btn-outline" onclick="returnToRegOverview()">返回列表</button>
+      <button type="button" class="btn btn-primary" onclick="applyBatchEditSelectedSimApps()">✅ 儲存批量修改</button>
+    </div>`;
+}
+
+async function returnToRegOverview() {
+  const state = _pendingBatchSimAppEdit;
+  await openAppRegOverview();
+  if (state) {
+    const simSel = document.getElementById('regOverviewSimFilter');
+    if (simSel) simSel.value = state.simId;
+    onRegOverviewSimFilterChange();
+  }
+}
+
+async function applyBatchEditSelectedSimApps() {
+  if (!_pendingBatchSimAppEdit) return;
+  const updateStatus = !!document.getElementById('batchSimUpdateStatus')?.checked;
+  const updateLastDate = !!document.getElementById('batchSimUpdateDate')?.checked;
+  const updateDays = !!document.getElementById('batchSimUpdateDays')?.checked;
+  if (!updateStatus && !updateLastDate && !updateDays) return showToast('請至少勾選一項要修改的欄位', 'warn');
+  const days = Number(document.getElementById('batchSimRegisterDays')?.value || 0);
+  if (updateDays && (!Number.isInteger(days) || days < 1 || days > 3650)) return showToast('註冊間隔天數須為 1 至 3650 的整數', 'error');
+  const btn = document.querySelector('#broadcastModal .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 儲存中...'; }
+  const state = { ..._pendingBatchSimAppEdit };
+  try {
+    const res = await api('batchUpdateSimAppRegistrations', {
+      sim_card_id: state.simId,
+      platform_ids: state.platformIds,
+      update_status: updateStatus,
+      is_registered: document.getElementById('batchSimStatus')?.value === 'true',
+      update_last_date: updateLastDate,
+      last_register_date: document.getElementById('batchSimLastDate')?.value || '',
+      update_register_days: updateDays,
+      register_days: days
+    });
+    if (!res || !res.success) {
+      if (btn) { btn.disabled = false; btn.textContent = '✅ 儲存批量修改'; }
+      return showToast(res?.error || '批量修改失敗', 'error');
+    }
+    showToast(`✅ 已更新 ${res.count || state.platformIds.length} 個 APP`, 'success');
+    _pendingBatchSimAppEdit = null;
+    // 重新載入總覽並回到原本選取的門號。
+    await openAppRegOverview();
+    const simSel = document.getElementById('regOverviewSimFilter');
+    if (simSel) simSel.value = state.simId;
+    onRegOverviewSimFilterChange();
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = '✅ 儲存批量修改'; }
+    showToast(e.message || '批量修改失敗', 'error');
+  }
+}
+
+// 根據篩選條件與排序，動態渲染註冊詳細列表。
 function renderRegOverviewList() {
   const filterVal = document.getElementById('regOverviewFilter')?.value || 'ALL';
   const sortVal = document.getElementById('regOverviewSort')?.value || 'sim_asc';
+  const simFilterVal = document.getElementById('regOverviewSimFilter')?.value || 'ALL';
+  const singleSimMode = simFilterVal !== 'ALL';
   const hideUnreg = document.getElementById('regOverviewHideUnreg')?.checked;
   const container = document.getElementById('regOverviewListContainer');
-  
+  const batchBar = document.getElementById('regOverviewBatchBar');
   if (!container) return;
 
-  // 記錄狀態到記憶體
-  localStorage.setItem('regOverview_hideUnreg', hideUnreg);
+  if (batchBar) batchBar.style.display = singleSimMode ? 'flex' : 'none';
+  localStorage.setItem('regOverview_hideUnreg', String(!!hideUnreg));
+  window._regOverviewSelectedPlatforms = window._regOverviewSelectedPlatforms || new Set();
 
-  // 🌟 除錯：看看總資料長度是多少
-  console.log('總資料筆數:', _allRegOverviewData.length);
-
-  // 過濾邏輯
   let filtered = _allRegOverviewData.filter(item => {
-    // 取得平台 ID
     const itemPlatId = String(item.reg.platform_id || item.reg['平台編號'] || '').trim();
-    
-    // 1. 平台篩選
-    const matchPlatform = (filterVal === 'ALL') || (itemPlatId === String(filterVal).trim());
-    
-    // 2. 註冊狀態篩選
-    const isReg = (item.reg.is_registered === true || item.reg['是否已註冊'] === true);
-    const matchRegStatus = hideUnreg ? isReg : true; 
-    
-    return matchPlatform && matchRegStatus;
+    const itemSimId = String(item.sim['編號'] || item.sim.id || '').trim();
+    const matchPlatform = filterVal === 'ALL' || itemPlatId === String(filterVal).trim();
+    const matchSim = !singleSimMode || itemSimId === String(simFilterVal).trim();
+    const isReg = item.reg.is_registered === true || item.reg['是否已註冊'] === true || item.reg.is_registered === 'TRUE';
+    // 單一門號模式必須完整呈現此門號所有 APP（包含未註冊），方便批量選取。
+    const matchRegStatus = singleSimMode ? true : (hideUnreg ? isReg : true);
+    return matchPlatform && matchSim && matchRegStatus;
   });
 
-  // 🌟 除錯：看看過濾後剩幾筆
-  console.log('篩選後剩餘筆數:', filtered.length, '篩選器:', filterVal, '隱藏未註冊:', hideUnreg);
-
-  if (filtered.length === 0) {
-    container.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--text2);font-size:13px">沒有符合條件的資料</div>';
-    return;
-  }
-
-  
-  // 排序邏輯
   filtered.sort((a, b) => {
     if (sortVal === 'next_asc') {
-       const da = new Date(a.reg.next_register_date || a.reg['下次可用日'] || '9999/12/31').getTime();
-       const db = new Date(b.reg.next_register_date || b.reg['下次可用日'] || '9999/12/31').getTime();
-       return (isNaN(da) ? 9e15 : da) - (isNaN(db) ? 9e15 : db);
+      const da = new Date(a.reg.next_register_date || a.reg['下次可用日'] || '9999/12/31').getTime();
+      const db = new Date(b.reg.next_register_date || b.reg['下次可用日'] || '9999/12/31').getTime();
+      return (isNaN(da) ? 9e15 : da) - (isNaN(db) ? 9e15 : db);
     } else if (sortVal === 'last_desc') {
-       const da = new Date(a.reg.last_register_date || a.reg['最後註冊日'] || '0001/01/01').getTime();
-       const db = new Date(b.reg.last_register_date || b.reg['最後註冊日'] || '0001/01/01').getTime();
-       return (isNaN(db) ? 0 : db) - (isNaN(da) ? 0 : da);
+      const da = new Date(a.reg.last_register_date || a.reg['最後註冊日'] || '0001/01/01').getTime();
+      const db = new Date(b.reg.last_register_date || b.reg['最後註冊日'] || '0001/01/01').getTime();
+      return (isNaN(db) ? 0 : db) - (isNaN(da) ? 0 : da);
     } else if (sortVal === 'phone_asc') {
-       const pa = String(a.sim['門號號碼'] || a.sim.phone_number || '').replace(/\D/g,'');
-       const pb = String(b.sim['門號號碼'] || b.sim.phone_number || '').replace(/\D/g,'');
-       return pa.localeCompare(pb, undefined, { numeric: true });
+      const pa = String(a.sim['門號號碼'] || a.sim.phone_number || '').replace(/\D/g, '');
+      const pb = String(b.sim['門號號碼'] || b.sim.phone_number || '').replace(/\D/g, '');
+      return pa.localeCompare(pb, undefined, { numeric: true });
     } else if (sortVal === 'sim_asc') {
-       const na = parseInt(String(a.sim['門號編號'] || a.sim.sim_number || '').replace(/\D/g,'')) || 99999;
-       const nb = parseInt(String(b.sim['門號編號'] || b.sim.sim_number || '').replace(/\D/g,'')) || 99999;
-       return na - nb;
+      const na = parseInt(String(a.sim['門號編號'] || a.sim.sim_number || '').replace(/\D/g, '')) || 99999;
+      const nb = parseInt(String(b.sim['門號編號'] || b.sim.sim_number || '').replace(/\D/g, '')) || 99999;
+      return na - nb;
     } else if (sortVal === 'acc_asc') {
-       const aa = String(a.reg.app_account || a.reg['帳號'] || '');
-       const ab = String(b.reg.app_account || b.reg['帳號'] || '');
-       return aa.localeCompare(ab, 'zh-TW');
+      const aa = String(a.reg.app_account || a.reg['帳號'] || '');
+      const ab = String(b.reg.app_account || b.reg['帳號'] || '');
+      return aa.localeCompare(ab, 'zh-TW');
     }
     return 0;
   });
 
-  if (filtered.length === 0) {
-    container.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px"><span style="font-size:32px;display:block;margin-bottom:8px">📭</span>目前沒有符合的資料</div>';
+  const visibleIds = new Set(filtered.map(item => String(item.reg.platform_id || item.reg['平台編號'] || '')));
+  window._regOverviewSelectedPlatforms = new Set([...window._regOverviewSelectedPlatforms].filter(pid => visibleIds.has(String(pid))));
+
+  if (!filtered.length) {
+    container.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--text2);font-size:13px">沒有符合條件的資料</div>';
+    updateRegOverviewBatchSelection();
     return;
   }
 
-  // 建立資料表
-  let html = '<table class="notify-table" style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap;text-align:left">';
-  html += '<thead style="position:sticky;top:0;background:#f8f9fa;z-index:10;box-shadow:0 1px 3px rgba(0,0,0,0.08)"><tr>';
-  html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border)">APP 平台</th>';
-  html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border)">門號資訊</th>';
-  html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border)">帳號 / 備註</th>';
-  html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border)">註冊日 / 下次可用</th>';
-  html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border);text-align:center">操作</th>'; // 🌟 新增操作欄位
-  html += '</tr></thead><tbody>';
-
-  const formatDate = (dateStr) => {
+  const formatDate = dateStr => {
     if (!dateStr) return '-';
     const dObj = safeParseDate(dateStr);
     return dObj ? `${dObj.getFullYear()}/${String(dObj.getMonth()+1).padStart(2,'0')}/${String(dObj.getDate()).padStart(2,'0')}` : dateStr;
   };
+  const showSelect = singleSimMode;
+  let html = '<table class="notify-table" style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap;text-align:left">';
+  html += '<thead style="position:sticky;top:0;background:#f8f9fa;z-index:10;box-shadow:0 1px 3px rgba(0,0,0,0.08)"><tr>';
+  if (showSelect) html += '<th style="padding:10px 8px;text-align:center">選取</th>';
+  html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border)">APP 平台</th>';
+  html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border)">門號資訊</th>';
+  html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border)">帳號 / 備註</th>';
+  html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border)">註冊日 / 下次可用</th>';
+  html += '<th style="padding:10px 8px;border-bottom:1.5px solid var(--border);text-align:center">操作</th></tr></thead><tbody>';
 
   filtered.forEach((item, index) => {
-    const sim = item.sim;
-    const reg = item.reg;
-
-    const platId = reg.platform_id || reg['平台編號'] || '';
-    const simId = sim.id || sim['編號'] || '';
-    const isReg = reg.is_registered === true || reg['是否已註冊'] === true;
-
-    const picon = reg.icon || '📱';
-    const pname = reg.name || '';
+    const sim = item.sim, reg = item.reg;
+    const platId = String(reg.platform_id || reg['平台編號'] || '');
+    const simId = String(sim.id || sim['編號'] || '');
+    const isReg = reg.is_registered === true || reg['是否已註冊'] === true || reg.is_registered === 'TRUE';
+    const picon = reg.icon || '📱', pname = reg.name || '';
     const phone = sim['門號號碼'] || sim.phone_number || '';
     const carrier = sim['電信業者'] || sim.carrier || '';
     const simNum = sim['門號編號'] || sim.sim_number || '';
-    
     const account = reg.app_account || reg['帳號'] || '';
     const mail = reg.app_mail || reg['信箱'] || '';
     const pwd = reg.app_password || reg['APP密碼'] || '';
     const note = reg.app_note || reg['備註'] || '';
-    
     const lastD = formatDate(reg.last_register_date || reg['最後註冊日']);
     const nextD = formatDate(reg.next_register_date || reg['下次可用日']);
-
     const bg = index % 2 === 0 ? '#ffffff' : '#fcfcfc';
-    // 若未註冊，文字顏色稍微變淡
-    const op = isReg ? '1' : '0.5';
-
-    html += `<tr style="background:${bg};border-bottom:1px solid #f0f0f0;opacity:${op}">`;
-    
-    // [1] APP 平台 (加上是否已註冊標籤)
-    const regBadge = isReg 
-      ? '<span style="color:#1a7a44;background:#e8f8ef;padding:2px 6px;border-radius:6px;font-size:10px;font-weight:700">已註冊</span>' 
+    const opacity = isReg ? '1' : '0.72';
+    html += `<tr style="background:${bg};border-bottom:1px solid #f0f0f0;opacity:${opacity}">`;
+    if (showSelect) {
+      const checked = window._regOverviewSelectedPlatforms.has(platId) ? 'checked' : '';
+      html += `<td style="padding:10px 8px;text-align:center"><input type="checkbox" class="reg-overview-select-app" data-platform-id="${esc(platId)}" ${checked} aria-label="選取 ${esc(pname)}"></td>`;
+    }
+    const regBadge = isReg
+      ? '<span style="color:#1a7a44;background:#e8f8ef;padding:2px 6px;border-radius:6px;font-size:10px;font-weight:700">已註冊</span>'
       : '<span style="color:#666;background:#eee;padding:2px 6px;border-radius:6px;font-size:10px;font-weight:700">未註冊</span>';
-      
-    html += `<td style="padding:10px 8px;vertical-align:top">
-               <div style="font-size:18px;margin-bottom:2px">${picon}</div>
-               <div style="font-weight:700;color:var(--text);margin-bottom:4px">${esc(pname)}</div>
-               ${regBadge}
-             </td>`;
-             
-    // [2] 門號資訊
-    html += `<td style="padding:10px 8px;vertical-align:top">
-               <div style="font-weight:700;font-size:13px">${simNum ? `<span style="color:var(--warning)">[${esc(simNum)}]</span> ` : ''}${esc(phone)}</div>
-               <div style="font-size:11px;color:var(--text2);margin-top:2px">${esc(carrier)}</div>
-             </td>`;
-             
-    // [3] 帳號資訊
-    html += `<td style="padding:10px 8px;vertical-align:top">
-               ${account ? `<div style="color:var(--primary);font-weight:700;margin-bottom:2px">👤 ${esc(account)}</div>` : ''}
-               ${mail ? `<div style="color:var(--info);font-size:11px;margin-bottom:2px">📧 ${esc(mail)}</div>` : ''}
-               ${pwd ? `<div style="color:var(--danger);font-size:11px;margin-bottom:2px">🔑 ${esc(pwd)}</div>` : ''}
-               ${(!account && !mail && !pwd) ? '<div style="color:#ccc;font-size:11px;margin-bottom:2px">無帳號資料</div>' : ''}
-               ${note ? `<div style="font-size:10px;color:var(--text2);margin-top:4px;padding-top:4px;border-top:1px solid #eee">📝 ${esc(note)}</div>` : ''}
-             </td>`;
-             
-    // [4] 註冊時間
-    html += `<td style="padding:10px 8px;vertical-align:top;font-size:11px">
-               <div style="color:var(--text2);margin-bottom:4px">註冊：${lastD}</div>
-               <div style="color:var(--primary);font-weight:600">下次：${nextD}</div>
-             </td>`;
-
-    // 🌟 [5] 快速編輯按鈕
-    html += `<td style="padding:10px 8px;vertical-align:middle;text-align:center">
-               <button class="btn btn-xs btn-outline" style="padding:6px 10px;border-color:var(--info);color:var(--info)" 
-                 onclick="quickEditAppFromOverview('${esc(platId)}', '${esc(simId)}')">
-                 ✏️ 編輯
-               </button>
-             </td>`;
-             
-    html += `</tr>`;
+    html += `<td style="padding:10px 8px;vertical-align:top"><div style="font-size:18px;margin-bottom:2px">${picon}</div><div style="font-weight:700;color:var(--text);margin-bottom:4px">${esc(pname)}</div>${regBadge}</td>`;
+    html += `<td style="padding:10px 8px;vertical-align:top"><div style="font-weight:700;font-size:13px">${simNum ? `<span style="color:var(--warning)">[${esc(simNum)}]</span> ` : ''}${esc(phone)}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${esc(carrier)}</div></td>`;
+    html += `<td style="padding:10px 8px;vertical-align:top">${account ? `<div style="color:var(--primary);font-weight:700;margin-bottom:2px">👤 ${esc(account)}</div>` : ''}${mail ? `<div style="color:var(--info);font-size:11px;margin-bottom:2px">📧 ${esc(mail)}</div>` : ''}${pwd ? `<div style="color:var(--danger);font-size:11px;margin-bottom:2px">🔑 ${esc(pwd)}</div>` : ''}${(!account && !mail && !pwd) ? '<div style="color:#ccc;font-size:11px;margin-bottom:2px">無帳號資料</div>' : ''}${note ? `<div style="font-size:10px;color:var(--text2);margin-top:4px;padding-top:4px;border-top:1px solid #eee">📝 ${esc(note)}</div>` : ''}</td>`;
+    html += `<td style="padding:10px 8px;vertical-align:top;font-size:11px"><div style="color:var(--text2);margin-bottom:4px">註冊：${lastD}</div><div style="color:var(--primary);font-weight:600">下次：${nextD}</div></td>`;
+    html += `<td style="padding:10px 8px;vertical-align:middle;text-align:center"><button class="btn btn-xs btn-outline" style="padding:6px 10px;border-color:var(--info);color:var(--info)" onclick="quickEditAppFromOverview('${esc(platId)}','${esc(simId)}')">✏️ 編輯</button></td>`;
+    html += '</tr>';
   });
-
   html += '</tbody></table>';
   container.innerHTML = html;
+  container.onchange = function(event) {
+    const box = event.target.closest('.reg-overview-select-app');
+    if (!box) return;
+    const pid = String(box.dataset.platformId || '');
+    window._regOverviewSelectedPlatforms = window._regOverviewSelectedPlatforms || new Set();
+    if (box.checked) window._regOverviewSelectedPlatforms.add(pid);
+    else window._regOverviewSelectedPlatforms.delete(pid);
+    updateRegOverviewBatchSelection();
+  };
+  updateRegOverviewBatchSelection();
 }
 
 
@@ -3664,7 +3791,7 @@ async function loadAppRegistrations() {
     if (el) el.innerHTML = '<p style="color:var(--text2);font-size:14px;text-align:center;padding:20px">請先選擇門號</p>';
     return;
   }
-  // V5.2.7：避免每次選門號又重複讀取 APP平台清單。
+  // V5.2.8：避免每次選門號又重複讀取 APP平台清單。
   // 平台資料由會員進入 APP 模組時載入；這裡只取得指定門號的註冊狀態。
   const r = await api('getAppRegistrations', { sim_card_id: simId });
   if (!r.success || !r.data) return;
@@ -3922,7 +4049,7 @@ async function quickToggleAppUI(platformId, simId, checked, days) {
 }
 
 // ============================================================
-// V5.2.7：動態自訂選填欄位 UI
+// V5.2.8：動態自訂選填欄位 UI
 // 名稱設定屬於此會員的此 APP；欄位內容屬於目前門號的此 APP。
 // ============================================================
 function makeAppCustomFieldId() {
@@ -4323,7 +4450,7 @@ async function checkTopUpPrompt() {
   if (sessionStorage.getItem(promptKey)) return;
   sessionStorage.setItem(promptKey, '1');
 
-  // v5.2.7：bootstrap 已帶回最新會員資格，不再額外呼叫 getProfile
+  // v5.2.8：bootstrap 已帶回最新會員資格，不再額外呼叫 getProfile
   const mtype = STATE.session?.member_type || 'trial';
 
   // 先檢查：有沒有「今日到期」或「已到期」的門號（可能是收到通知後進系統）
@@ -5647,97 +5774,170 @@ async function batchNotifyTarget(target, days, enabled) {
 //  管理員
 // ============================================================
 async function showAdminPanel() {
-  document.getElementById('adminContent').innerHTML = '<div class="empty-state"><span class="icon" style="font-size:36px">⏳</span><p>載入中...</p></div>';
+  const root = document.getElementById('adminContent');
+  root.innerHTML = '<div class="empty-state"><span class="icon" style="font-size:36px">⏳</span><p>載入中...</p></div>';
   openModal('adminModal');
 
   const [stats, members] = await Promise.all([api('adminGetStats'), api('adminGetAllMembers')]);
-  let html = '';
-  if (stats.success && stats.data) {
-    const d = stats.data;
-    html += `<div class="stats-grid" style="margin-bottom:16px">
-      <div class="stat-card blue"><div class="stat-num">${d.totalMembers??0}</div><div class="stat-label">總會員數</div></div>
-      <div class="stat-card green"><div class="stat-num">${d.totalSim??0}</div><div class="stat-label">總門號數</div></div>
-      <div class="stat-card orange"><div class="stat-num">${d.expiringSoon??0}</div><div class="stat-label">7天到期</div></div>
-      <div class="stat-card red"><div class="stat-num">${d.expired??0}</div><div class="stat-label">已到期</div></div>
+  const memberRows = members?.success && Array.isArray(members.data) ? members.data : [];
+  window._adminStatsCache = { stats: stats?.data || {}, members: memberRows, sims: null };
+  const d = stats?.success && stats.data ? stats.data : {};
+
+  const memberHtml = memberRows.length ? memberRows.map(m => {
+    const id = m['編號'] || m.id || '';
+    const account = m['帳號'] || m.account || '';
+    const nick = m['暱稱'] || m.nickname || account;
+    const status = m['狀態'] || m.status || 'active';
+    const isAdmin = m['是否管理員'] === true || m['是否管理員'] === 'TRUE' || m.is_admin === true;
+    const lineId = m['LINE用戶ID'] || m.line_user_id || '';
+    const pic = STATE.lineProfile?.userId === lineId && STATE.lineProfile?.pictureUrl ? STATE.lineProfile.pictureUrl : '';
+    return `<div class="member-row">
+      <div class="member-avatar">${pic ? `<img src="${esc(pic)}" style="width:38px;height:38px;border-radius:50%;object-fit:cover">` : (isAdmin?'👑':'👤')}</div>
+      <div class="member-info"><div class="mname">${esc(nick)} ${isAdmin?'<span style="color:var(--warning)">管理員</span>':''}</div><div class="mmeta">${esc(account)} · ${status==='active'?'✅正常':'⛔停用'} · LINE:${lineId?'✅':'❌'}</div></div>
+      <div class="member-actions">
+        ${!isAdmin?`<button class="btn btn-xs btn-outline" style="border-color:var(--info);color:var(--info)" onclick="openMemberPerms('${esc(id)}','${esc(account)}',${m.perms?.sim_line !== false},${m.perms?.sim_tg !== false},${m.perms?.app_line !== false},${m.perms?.app_tg !== false})">🛡️ 權限</button>`:''}
+        ${!isAdmin?`<button class="btn btn-xs btn-outline" onclick="toggleMember('${esc(id)}','${status==='active'?'inactive':'active'}')">${status==='active'?'停用':'啟用'}</button>`:''}
+        ${lineId?`<button class="btn btn-xs btn-outline" onclick="openSendNotify('${esc(id)}','${esc(nick)}')">📨</button>`:''}
+        ${!isAdmin?`<button class="btn btn-xs btn-outline" style="border-color:var(--danger);color:var(--danger)" onclick="deleteMember('${esc(id)}','${esc(account)}')">🗑️</button>`:''}
+      </div>
+    </div>`;
+  }).join('') : '<p style="color:var(--text2);font-size:14px;padding:10px 0">暫無會員資料</p>';
+
+  const html = `
+    <div class="admin-tabbar" role="tablist" aria-label="管理員功能分頁">
+      <button type="button" class="admin-tab-btn active" id="adminTabBtnSystem" role="tab" aria-selected="true" onclick="switchAdminTab('system')">🛠️ 系統操作</button>
+      <button type="button" class="admin-tab-btn" id="adminTabBtnMembers" role="tab" aria-selected="false" onclick="switchAdminTab('members')">👥 會員管理</button>
     </div>
-    <div id="paidMemberStats" style="background:#f0fbf4;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:13px;color:var(--text2)">載入付費統計...</div>`;
-  // 非同步載入付費會員統計
+
+    <div class="stats-grid" style="margin-bottom:12px">
+      <button type="button" class="stat-card blue admin-stat-card" onclick="showAdminStatDetail('members')" aria-label="查看總會員數詳細資料"><div class="stat-num">${d.totalMembers??0}</div><div class="stat-label">總會員數　↗</div></button>
+      <button type="button" class="stat-card green admin-stat-card" onclick="showAdminStatDetail('sims')" aria-label="查看總門號數詳細資料"><div class="stat-num">${d.totalSim??0}</div><div class="stat-label">總門號數　↗</div></button>
+      <button type="button" class="stat-card orange admin-stat-card" onclick="showAdminStatDetail('expiring')" aria-label="查看七天內到期門號"><div class="stat-num">${d.expiringSoon??0}</div><div class="stat-label">7天到期　↗</div></button>
+      <button type="button" class="stat-card red admin-stat-card" onclick="showAdminStatDetail('expired')" aria-label="查看已到期門號"><div class="stat-num">${d.expired??0}</div><div class="stat-label">已到期　↗</div></button>
+    </div>
+    <div id="paidMemberStats" style="background:#f0fbf4;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:13px;color:var(--text2)">載入會員統計...</div>
+    <div id="adminStatsDetail" class="admin-stat-detail" style="display:none"><div style="font-size:13px;color:var(--text2)">點擊上方統計數字，即可查看詳細資料。</div></div>
+
+    <section id="adminTabSystem" class="admin-tab-panel">
+      <div class="admin-section" style="margin-top:4px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap">
+          <div style="font-size:14px;font-weight:700;color:var(--text)">🛠️ 系統操作</div>
+          <div id="adminNotifySummary" style="font-size:11px;color:var(--text2);background:#f0f2f5;padding:3px 9px;border-radius:8px">載入通知設定...</div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <button class="btn btn-sm btn-outline" onclick="openBroadcastModal()">📢 全員廣播</button>
+          <button class="btn btn-sm btn-outline" onclick="openAnnouncementPanel()">📌 公告管理</button>
+          <button class="btn btn-sm btn-outline" onclick="adminViewAllSims()">📱 查看全部門號</button>
+          <button class="btn btn-sm btn-outline" onclick="adminExport()">📥 匯出全部資料</button>
+          <button class="btn btn-sm btn-outline" onclick="openAdminStats()">📊 統計分析</button>
+          <button class="btn btn-sm btn-outline" onclick="openNotifyTimePanel()">⏰ 通知時間設定</button>
+          <button class="btn btn-sm btn-outline" onclick="openAdminNotifyTest()" style="border-color:var(--primary);color:var(--primary)">🧪 通知發送測試</button>
+          <button class="btn btn-sm btn-outline" id="appRenewNotifyLineBtn" onclick="toggleAppRenewNotify('line')">📲 APP通知(LINE)：載入中</button>
+          <button class="btn btn-sm btn-outline" id="appRenewNotifyTgBtn" onclick="toggleAppRenewNotify('tg')" style="border-color:#229ED9;color:#229ED9">📲 APP通知(TG)：載入中</button>
+          <button class="btn btn-sm btn-outline" onclick="openAdminNotifyStats()">📊 通知次數管理</button>
+          <button class="btn btn-sm btn-outline" onclick="openTelegramAdmin()" style="border-color:#229ED9;color:#229ED9">✈️ Telegram 管理</button>
+          <button class="btn btn-sm btn-outline" onclick="openNotifyRulePanel()">🔔 通知天數設定</button>
+          <button class="btn btn-sm btn-outline" onclick="openMembershipPanel()">💰 會員訂閱管理</button>
+          <button class="btn btn-sm btn-outline" onclick="openPlatformMgrPanel()">🛠️ 平台資料管理</button>
+          <button class="btn btn-sm btn-outline" onclick="openSheetToggle()">🗂️ 試算表管理</button>
+          <button class="btn btn-sm btn-outline" onclick="runBackupSheets()" style="border-color:#6c757d;color:#6c757d">💾 備份試算表</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="adminTabMembers" class="admin-tab-panel" style="display:none">
+      <div class="admin-section" style="margin-top:4px">
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px">👥 會員管理</div>
+        ${memberHtml}
+      </div>
+    </section>`;
+  root.innerHTML = html;
+
   api('adminGetMemberships').then(mr => {
     const el = document.getElementById('paidMemberStats');
-    if (!el || !mr.success) return;
+    if (!el || !mr?.success) return;
     const mlist = mr.data || [];
-    const paid  = mlist.filter(m => m.member_type === 'paid' && m.status_color === 'green').length;
+    const paid = mlist.filter(m => m.member_type === 'paid' && m.status_color === 'green').length;
     const trial = mlist.filter(m => m.member_type === 'trial' && m.status_color === 'blue').length;
-    const expd  = mlist.filter(m => m.status_color === 'red' || m.status_color === 'orange').length;
+    const expd = mlist.filter(m => m.status_color === 'red' || m.status_color === 'orange').length;
     el.innerHTML = `💰 付費會員：<strong style="color:var(--primary)">${paid}</strong> &nbsp;|&nbsp; 🆓 試用中：<strong style="color:var(--info)">${trial}</strong> &nbsp;|&nbsp; ⚠️ 已到期：<strong style="color:var(--danger)">${expd}</strong>`;
   }).catch(()=>{});
-  }
-  html += `<div class="admin-section"><div class="admin-section-title" style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">會員管理</div>`;
-  if (members.success && members.data?.length) {
-    html += members.data.map(m => {
-      const id      = m['編號']||m.id||'';
-      const account = m['帳號']||m.account||'';
-      const nick    = m['暱稱']||m.nickname||account;
-      const status  = m['狀態']||m.status||'active';
-      const isAdmin = m['是否管理員']||m.is_admin;
-      const lineId  = m['LINE用戶ID']||m.line_user_id||'';
-      const pic     = STATE.lineProfile?.userId === lineId && STATE.lineProfile?.pictureUrl ? STATE.lineProfile.pictureUrl : '';
-      return `<div class="member-row">
-        <div class="member-avatar">${pic ? `<img src="${pic}" style="width:38px;height:38px;border-radius:50%;object-fit:cover">` : (isAdmin?'👑':'👤')}</div>
-        <div class="member-info">
-          <div class="mname">${esc(nick)} ${isAdmin?'<span style="color:var(--warning)">管理員</span>':''}</div>
-          <div class="mmeta">${esc(account)} · ${status==='active'?'✅正常':'⛔停用'} · LINE:${lineId?'✅':'❌'}</div>
-        </div>
-        <div class="member-actions">
-          ${!isAdmin?`<button class="btn btn-xs btn-outline" style="border-color:var(--info);color:var(--info)" onclick="openMemberPerms('${id}', '${esc(account)}', ${m.perms.sim_line}, ${m.perms.sim_tg}, ${m.perms.app_line}, ${m.perms.app_tg})">🛡️ 權限</button>`:''}
-          ${!isAdmin?`<button class="btn btn-xs btn-outline" onclick="toggleMember('${id}','${status==='active'?'inactive':'active'}')">${status==='active'?'停用':'啟用'}</button>`:''}
-          ${lineId?`<button class="btn btn-xs btn-outline" onclick="openSendNotify('${id}','${esc(nick)}')">📨</button>`:''}
-          ${!isAdmin?`<button class="btn btn-xs btn-outline" style="border-color:var(--danger);color:var(--danger)" onclick="deleteMember('${id}','${esc(account)}')">🗑️</button>`:''}
-        </div>
-      </div>`;
-    }).join('');
-  } else {
-    html += '<p style="color:var(--text2);font-size:14px;padding:10px 0">暫無會員資料</p>';
-  }
-  // 非同步載入通知設定摘要
+
   api('adminGetNotifyRule').then(nr => {
     if (nr.success && nr.data?.notify_days) {
-      const days = nr.data.notify_days;
-      const labels = days.map(d => d===0?'當日':d+'天前').join('、');
+      const labels = nr.data.notify_days.map(d => d===0?'當日':d+'天前').join('、');
       const summaryEl = document.getElementById('adminNotifySummary');
       if (summaryEl) summaryEl.innerHTML = `<span style="color:var(--primary);font-weight:600">目前設定：</span>${labels}`;
     }
   }).catch(()=>{});
-
-  html += `</div>
-  <div class="admin-section" style="margin-top:8px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div style="font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">系統操作</div>
-      <div id="adminNotifySummary" style="font-size:11px;color:var(--text2);background:#f0f2f5;padding:3px 9px;border-radius:8px">載入通知設定...</div>
-    </div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px">
-      <button class="btn btn-sm btn-outline" onclick="openBroadcastModal()">📢 全員廣播</button>
-      <button class="btn btn-sm btn-outline" onclick="openAnnouncementPanel()">📌 公告管理</button>
-      <button class="btn btn-sm btn-outline" onclick="adminViewAllSims()">📱 查看全部門號</button>
-      <button class="btn btn-sm btn-outline" onclick="adminExport()">📥 匯出全部資料</button>
-      <button class="btn btn-sm btn-outline" onclick="openAdminStats()">📊 統計分析</button>
-      <button class="btn btn-sm btn-outline" onclick="openNotifyTimePanel()">⏰ 通知時間設定</button>
-      <button class="btn btn-sm btn-outline" onclick="openAdminNotifyTest()" style="border-color:var(--primary);color:var(--primary)">🧪 通知發送測試</button>
-      <button class="btn btn-sm btn-outline" id="appRenewNotifyLineBtn" onclick="toggleAppRenewNotify('line')">📲 APP通知(LINE)：載入中</button>
-      <button class="btn btn-sm btn-outline" id="appRenewNotifyTgBtn" onclick="toggleAppRenewNotify('tg')" style="border-color:#229ED9;color:#229ED9">📲 APP通知(TG)：載入中</button>
-      <button class="btn btn-sm btn-outline" onclick="openAdminNotifyStats()">📊 通知次數管理</button>
-      <button class="btn btn-sm btn-outline" onclick="openTelegramAdmin()" style="border-color:#229ED9;color:#229ED9">✈️ Telegram 管理</button>
-      <button class="btn btn-sm btn-outline" onclick="openNotifyRulePanel()">🔔 通知天數設定</button>
-      <button class="btn btn-sm btn-outline" onclick="openMembershipPanel()">💰 會員訂閱管理</button>
-
-      <button class="btn btn-sm btn-outline" onclick="openPlatformMgrPanel()">🛠️ 平台資料管理</button>
-      <button class="btn btn-sm btn-outline" onclick="openSheetToggle()">🗂️ 試算表管理</button>
-      <button class="btn btn-sm btn-outline" onclick="runBackupSheets()" style="border-color:#6c757d;color:#6c757d">💾 備份試算表</button>
-    </div>
-  </div>`;
-  document.getElementById('adminContent').innerHTML = html;
-  // 在 HTML 渲染完成後才呼叫，確保按鈕已存在
   initAppRenewNotifyBtn();
+}
+
+function switchAdminTab(tab) {
+  const isSystem = tab === 'system';
+  const systemPanel = document.getElementById('adminTabSystem');
+  const memberPanel = document.getElementById('adminTabMembers');
+  const systemBtn = document.getElementById('adminTabBtnSystem');
+  const memberBtn = document.getElementById('adminTabBtnMembers');
+  if (systemPanel) systemPanel.style.display = isSystem ? 'block' : 'none';
+  if (memberPanel) memberPanel.style.display = isSystem ? 'none' : 'block';
+  if (systemBtn) { systemBtn.classList.toggle('active', isSystem); systemBtn.setAttribute('aria-selected', String(isSystem)); }
+  if (memberBtn) { memberBtn.classList.toggle('active', !isSystem); memberBtn.setAttribute('aria-selected', String(!isSystem)); }
+}
+
+async function showAdminStatDetail(type) {
+  const target = document.getElementById('adminStatsDetail');
+  if (!target) return;
+  target.style.display = 'block';
+  target.innerHTML = '<div style="text-align:center;color:var(--text2);padding:12px">⏳ 正在載入詳細資料...</div>';
+  const cache = window._adminStatsCache || { members: [], sims: null };
+  const makeTable = (headers, rows) => {
+    if (!rows.length) return '<div style="text-align:center;color:var(--text2);padding:18px">目前沒有符合的資料</div>';
+    return `<div style="overflow:auto;max-height:34vh"><table class="admin-detail-table"><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
+  };
+
+  if (type === 'members') {
+    const rows = (cache.members || []).filter(m => !(m['是否管理員'] === true || m['是否管理員'] === 'TRUE' || m.is_admin === true));
+    const body = rows.map(m => {
+      const account = m['帳號'] || m.account || '';
+      const nick = m['暱稱'] || m.nickname || account;
+      const status = m['狀態'] || m.status || 'active';
+      const typeName = m['會員類型'] || m.member_type || 'trial';
+      const line = m['LINE用戶ID'] || m.line_user_id || '';
+      return `<tr><td>${esc(nick)}</td><td>${esc(account)}</td><td>${status==='active'?'正常':'停用'}</td><td>${esc(typeName)}</td><td>${line?'已綁定':'未綁定'}</td></tr>`;
+    });
+    target.innerHTML = `<div style="font-size:14px;font-weight:700;margin-bottom:8px">👥 會員詳細資料（${rows.length} 位，不含管理員）</div>${makeTable(['暱稱','帳號','狀態','會員類型','LINE'], body)}`;
+    return;
+  }
+
+  if (!Array.isArray(cache.sims)) {
+    const r = await api('adminGetAllSimCards');
+    if (!r?.success || !Array.isArray(r.data)) {
+      target.innerHTML = '<div style="color:var(--danger);padding:12px">門號詳細資料載入失敗，請稍後再試。</div>';
+      return;
+    }
+    cache.sims = r.data;
+    window._adminStatsCache = cache;
+  }
+  let rows = cache.sims;
+  let title = '📱 全部門號';
+  if (type === 'expiring') {
+    rows = rows.filter(s => Number(s.days_left) >= 0 && Number(s.days_left) <= 7);
+    title = '⏰ 7 天內到期門號';
+  } else if (type === 'expired') {
+    rows = rows.filter(s => s.status === 'expired' || Number(s.days_left) < 0);
+    title = '🔴 已到期門號';
+  }
+  const body = rows.map(s => {
+    const simNo = s['門號編號'] || s.sim_number || '';
+    const phone = s['門號號碼'] || s.phone_number || '';
+    const owner = s.account || '';
+    const carrier = s['電信業者'] || s.carrier || '';
+    const expire = s['到期日'] || s.expire_date || '未設定';
+    const days = s.days_left === null || s.days_left === undefined ? '-' : (Number(s.days_left) < 0 ? `逾期 ${Math.abs(Number(s.days_left))} 天` : `${s.days_left} 天`);
+    return `<tr><td>${esc(simNo)}</td><td>${esc(phone)}</td><td>${esc(carrier)}</td><td>${esc(owner)}</td><td>${esc(expire)}</td><td>${esc(days)}</td></tr>`;
+  });
+  target.innerHTML = `<div style="font-size:14px;font-weight:700;margin-bottom:8px">${title}（${rows.length} 筆）</div>${makeTable(['門號編號','門號','業者','會員帳號','到期日','剩餘天數'], body)}`;
 }
 
 async function runBackupSheets() {
@@ -7135,7 +7335,7 @@ async function openNotifyTimePanel() {
 
 // ── 管理員：會員訂閱管理 ────────────────────────────────────
 async function openMembershipPanel() {
-  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.2.7';
+  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.2.8';
   document.getElementById('broadcastModalBody').innerHTML='<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
   openModal('broadcastModal');
   const [mr,pr] = await Promise.all([api('adminGetMemberships'),api('adminGetMembershipPlans')]);
