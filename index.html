@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
-<title>預付卡管理系統 v5.3.0</title>
+<title>預付卡管理系統 v5.3.1</title>
 <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
 <style>
 /* ── 美化版迷你日曆 ── */
@@ -139,7 +139,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
 .sim-card { background:#fff; border-radius:14px; padding:14px; margin-bottom:10px; box-shadow:var(--shadow); border-left:4px solid var(--primary); }
 .sim-card.warning { border-left-color:var(--warning); }
 .sim-card.expired { border-left-color:var(--danger); }
-/* V5.3.0：門號卡片改為每列三張，快速瀏覽 */
+/* V5.3.1：門號卡片改為每列三張，快速瀏覽 */
 #simCardsList { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; align-items:stretch; }
 #simCardsList .empty-state { grid-column:1 / -1; }
 #simCardsList .sim-card { margin-bottom:0; min-width:0; padding:10px !important; }
@@ -275,7 +275,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
 #dialogOverlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:500; display:none; align-items:center; justify-content:center; padding:24px; animation:fadeIn .15s; }
 #dialogOverlay.open { display:flex; }
 
-/* V5.3.0 管理員分頁與可點擊統計卡 */
+/* V5.3.1 管理員分頁與可點擊統計卡 */
 .admin-tabbar{display:flex;gap:8px;position:sticky;top:0;z-index:20;background:#fff;padding:4px 0 12px;margin-bottom:12px}
 .admin-tab-btn{flex:1;border:1.5px solid var(--border);background:#f8f9fa;color:var(--text2);border-radius:10px;padding:11px 8px;font-size:14px;font-weight:700;cursor:pointer}
 .admin-tab-btn.active{background:#e8f8ef;border-color:var(--primary);color:#16834a}
@@ -290,6 +290,50 @@ textarea.form-control { resize:vertical; min-height:80px; }
 .reg-overview-batchbar .btn{width:auto}
 .reg-overview-select{width:17px;height:17px;accent-color:var(--primary);cursor:pointer}
 
+
+/* ── V5.3.1 可自訂主題與門號卡片文字縮放 ── */
+:root { --sim-card-scale: 1; --primary-soft: #eaf8f0; }
+body { background:var(--bg); color:var(--text); }
+#loading { background:var(--primary); }
+#authScreen { background:linear-gradient(160deg,var(--primary) 0%,var(--primary-dark) 100%); }
+.top-bar, .bottom-nav, .card, .stat-card, .sim-card, .app-item, .modal, .auth-card {
+  background-color:var(--card) !important; color:var(--text);
+}
+.top-bar, .bottom-nav { border-color:var(--border); }
+.top-bar-left h2, .card-title, .modal-title { color:var(--text); }
+.page { color:var(--text); }
+.form-control { background:var(--card); color:var(--text); border-color:var(--border); }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-outline { border-color:var(--border); color:var(--text); }
+.nav-item { color:var(--text2); }
+.nav-item.active { color:var(--primary); }
+.app-item.checked { background:var(--primary-soft) !important; }
+.calendar-wrapper { background-color:var(--card); border-color:var(--border); }
+.notify-table-wrap { background:var(--card); border-color:var(--border); }
+.notify-table th { background:var(--primary-soft); color:var(--text); }
+.notify-table td { color:var(--text); }
+#simCardsList .sim-card-phone { font-size:calc(14px * var(--sim-card-scale, 1)) !important; }
+#simCardsList .sim-card-meta { font-size:calc(11px * var(--sim-card-scale, 1)) !important; }
+#simCardsList .sim-card-meta span { font-size:inherit !important; }
+#simCardsList .sim-card-badge { font-size:calc(10px * var(--sim-card-scale, 1)) !important; }
+#simCardsList .sim-card > div:first-child > div:first-child { font-size:calc(12px * var(--sim-card-scale, 1)) !important; }
+#simCardsList .sim-card > div:nth-child(2) { font-size:calc(10px * var(--sim-card-scale, 1)) !important; }
+#simCardsList .sim-card .sim-actions .btn { font-size:calc(10px * var(--sim-card-scale, 1)) !important; }
+.ui-theme-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.ui-theme-choice { border:2px solid var(--border); border-radius:12px; padding:10px; text-align:left; cursor:pointer; min-width:0; background:var(--card); color:var(--text); }
+.ui-theme-choice.active { border-color:var(--primary); box-shadow:0 0 0 2px var(--primary-soft); }
+.ui-theme-choice .theme-swatches { display:flex; gap:5px; margin-bottom:7px; }
+.ui-theme-choice .theme-swatches i { width:18px; height:18px; border-radius:50%; display:block; border:1px solid rgba(0,0,0,.06); }
+.ui-theme-choice .theme-name { font-size:13px; font-weight:700; }
+.ui-theme-choice .theme-desc { font-size:10px; opacity:.72; margin-top:2px; }
+.ui-scale-preview { border:1px solid var(--border); background:var(--primary-soft); border-radius:12px; padding:12px; margin-top:8px; color:var(--text); }
+.ui-scale-preview-title { font-size:calc(14px * var(--sim-card-scale,1)); font-weight:800; margin-bottom:5px; }
+.ui-scale-preview-meta { font-size:calc(11px * var(--sim-card-scale,1)); margin-top:3px; color:var(--text2); }
+@media (max-width:420px) {
+  .ui-theme-grid { gap:7px; }
+  .ui-theme-choice { padding:8px; }
+}
+
 </style>
 </head>
 <body>
@@ -299,7 +343,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
 <div id="loading">
   <div class="logo">📱</div>
   <p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:4px">預付卡儲值管理</p>
-  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.3.0</p>
+  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.3.1</p>
   <p id="loadingMsg" style="color:rgba(255,255,255,.85);font-size:14px">載入中...</p>
   <div style="width:200px;height:4px;background:rgba(255,255,255,.25);border-radius:4px;margin-top:20px;overflow:hidden">
     <div id="loadingBar" style="height:100%;background:#fff;border-radius:4px;width:0%;transition:width .35s ease"></div>
@@ -311,7 +355,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
   <div class="auth-card">
     <div class="auth-logo">
       <span class="icon">📱</span>
-      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.3.0</div>
+      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.3.1</div>
       <p>管理您的所有預付卡門號</p>
     </div>
 
@@ -377,6 +421,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
     </div>
     <div class="top-bar-right">
       <button class="btn btn-sm btn-outline btn-icon" id="refreshBtn" onclick="doRefresh()" title="刷新" style="font-size:16px">🔄</button>
+      <button class="btn btn-sm btn-outline btn-icon" id="uiSettingsBtn" onclick="openUiSettings()" title="版面與文字大小設定" aria-label="版面設定">🎨</button>
       <button class="btn btn-sm btn-outline btn-icon" id="adminBtn" style="display:none" onclick="showAdminPanel()">⚙️</button>
       <button class="btn btn-sm btn-outline btn-icon" onclick="doLogout()" title="登出">🚪</button>
     </div>
@@ -1100,6 +1145,39 @@ textarea.form-control { resize:vertical; min-height:80px; }
   </div>
 </div>
 
+<!-- V5.3.1 版面與卡片文字設定 -->
+<div class="modal-overlay" id="uiSettingsModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">🎨 版面與顯示設定</span>
+      <button class="modal-close" onclick="cancelUiSettings()">✕</button>
+    </div>
+    <div class="form-group">
+      <label>選擇系統版面（10 種主題）</label>
+      <div id="uiThemeGrid" class="ui-theme-grid"></div>
+    </div>
+    <div class="form-group" style="margin-top:18px">
+      <label style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span>📱 門號卡片文字大小</span>
+        <strong id="simCardScaleLabel" style="color:var(--primary)">100%</strong>
+      </label>
+      <input type="range" id="simCardScaleRange" min="0.9" max="1.4" step="0.1" value="1" oninput="previewSimCardScale(this.value)" style="width:100%;accent-color:var(--primary);margin:10px 0">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2)"><span>較小</span><span>標準</span><span>較大</span></div>
+      <div id="simCardScalePreview" class="ui-scale-preview">
+        <div class="ui-scale-preview-title">📱 門號 0988-123-456</div>
+        <div class="ui-scale-preview-meta">📅 到期日 2027/12/31　💰 餘額 300</div>
+        <div class="ui-scale-preview-meta">📍 卡片位置：抽屜第 1 格</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:9px;margin-top:18px">
+      <button class="btn btn-outline" onclick="cancelUiSettings()">取消</button>
+      <button class="btn btn-primary" onclick="saveUiSettings()">💾 保存設定</button>
+    </div>
+    <p style="font-size:11px;color:var(--text2);margin-top:10px;text-align:center">設定會依目前登入會員保存在此裝置，下次開啟自動套用。</p>
+  </div>
+</div>
+
 <!-- 確認/輸入 Dialog -->
 <div id="dialogOverlay">
   <div id="dialogContent"></div>
@@ -1192,6 +1270,109 @@ let STATE = {
   calendarData: null,
 };
 const LOGIN_PREF = JSON.parse(localStorage.getItem('login_pref') || '{"saveAccount":false,"savedAccount":"","savePassword":false,"savedPassword":"","autoLogin":false}');
+
+// ============================================================
+// V5.3.1 會員版面偏好：10 種主題 + 門號卡片字級，依會員在本裝置保存。
+// ============================================================
+const UI_THEME_PRESETS = {
+  line:      {name:'經典綠', desc:'清新 LINE 綠', primary:'#06C755', dark:'#05A847', bg:'#F0F2F5', card:'#FFFFFF', text:'#1A1A1A', text2:'#666666', border:'#E5E7EB', soft:'#EAF8F0'},
+  lavender:  {name:'淡紫薰衣草', desc:'柔和優雅紫', primary:'#9276C8', dark:'#7658B2', bg:'#F5F1FB', card:'#FFFFFF', text:'#302943', text2:'#756B86', border:'#E6DDF2', soft:'#F0EAF9'},
+  macaron:   {name:'馬卡龍', desc:'粉嫩繽紛色系', primary:'#E995AA', dark:'#D87994', bg:'#FFF6F4', card:'#FFFFFF', text:'#49343B', text2:'#907781', border:'#F4DDE3', soft:'#FDEBF0'},
+  sakura:    {name:'櫻花粉', desc:'清甜櫻花色', primary:'#D982A0', dark:'#BF6686', bg:'#FFF2F6', card:'#FFFFFF', text:'#492D39', text2:'#906D7D', border:'#F1D9E2', soft:'#FCE8EF'},
+  ocean:     {name:'海洋藍', desc:'沉穩清爽藍', primary:'#4A90D9', dark:'#3478BF', bg:'#EEF6FF', card:'#FFFFFF', text:'#24384D', text2:'#61788F', border:'#D7E6F5', soft:'#E2F0FF'},
+  mint:      {name:'薄荷綠', desc:'自然薄荷清新', primary:'#45AE91', dark:'#318D73', bg:'#EFF9F5', card:'#FFFFFF', text:'#244239', text2:'#647F76', border:'#D7ECE4', soft:'#E0F4EC'},
+  cream:     {name:'奶油杏', desc:'溫暖奶茶米色', primary:'#C08A55', dark:'#A96E3A', bg:'#FBF5EC', card:'#FFFEFB', text:'#45382B', text2:'#847461', border:'#EDE2D2', soft:'#F6EBDD'},
+  sunset:    {name:'暖陽橘', desc:'活力柔暖橘', primary:'#E58A55', dark:'#C96F3E', bg:'#FFF4EA', card:'#FFFFFF', text:'#49352A', text2:'#907666', border:'#F1DFD2', soft:'#FCEBDD'},
+  sky:       {name:'天空藍', desc:'明亮天空色', primary:'#39A6C9', dark:'#2788A9', bg:'#EFF8FB', card:'#FFFFFF', text:'#263D46', text2:'#68818A', border:'#D9EAF0', soft:'#E2F4F8'},
+  night:     {name:'星夜深藍', desc:'舒適深色模式', primary:'#86A9E8', dark:'#668BCF', bg:'#172234', card:'#223149', text:'#F0F4FA', text2:'#B9C6D9', border:'#394A63', soft:'#2B405D'}
+};
+let UI_PREFS = { theme:'line', simCardScale:1 };
+let UI_PREFS_DRAFT = null;
+function uiPrefsStorageKey() {
+  const member = STATE.session?.id || STATE.session?.account || 'guest';
+  return 'ui_preferences_v531_' + String(member);
+}
+function normalizeUiPrefs(raw) {
+  const p = raw && typeof raw === 'object' ? raw : {};
+  const theme = UI_THEME_PRESETS[p.theme] ? p.theme : 'line';
+  let scale = Number(p.simCardScale);
+  if (!Number.isFinite(scale)) scale = 1;
+  scale = Math.min(1.4, Math.max(0.9, Math.round(scale * 10) / 10));
+  return {theme, simCardScale:scale};
+}
+function loadUiPreferences() {
+  try { UI_PREFS = normalizeUiPrefs(JSON.parse(localStorage.getItem(uiPrefsStorageKey()) || '{}')); }
+  catch(e) { UI_PREFS = normalizeUiPrefs({}); }
+  applyUiPreferences(UI_PREFS);
+}
+function applyUiPreferences(prefs) {
+  const p = normalizeUiPrefs(prefs || UI_PREFS);
+  const theme = UI_THEME_PRESETS[p.theme] || UI_THEME_PRESETS.line;
+  const root = document.documentElement;
+  root.dataset.uiTheme = p.theme;
+  root.style.setProperty('--primary', theme.primary);
+  root.style.setProperty('--primary-dark', theme.dark);
+  root.style.setProperty('--bg', theme.bg);
+  root.style.setProperty('--card', theme.card);
+  root.style.setProperty('--text', theme.text);
+  root.style.setProperty('--text2', theme.text2);
+  root.style.setProperty('--border', theme.border);
+  root.style.setProperty('--primary-soft', theme.soft);
+  root.style.setProperty('--sim-card-scale', String(p.simCardScale));
+  root.style.setProperty('--shadow', p.theme === 'night' ? '0 2px 10px rgba(0,0,0,.22)' : '0 2px 8px rgba(0,0,0,.07)');
+}
+function renderUiThemeChoices() {
+  const grid = document.getElementById('uiThemeGrid');
+  if (!grid) return;
+  const current = (UI_PREFS_DRAFT || UI_PREFS).theme;
+  grid.innerHTML = Object.entries(UI_THEME_PRESETS).map(([id,t]) => `
+    <button type="button" class="ui-theme-choice ${current===id?'active':''}" onclick="selectUiTheme('${id}')" aria-pressed="${current===id}">
+      <span class="theme-swatches"><i style="background:${t.primary}"></i><i style="background:${t.bg}"></i><i style="background:${t.text}"></i></span>
+      <div class="theme-name">${t.name}</div><div class="theme-desc">${t.desc}</div>
+    </button>`).join('');
+}
+function openUiSettings() {
+  if (!UI_PREFS || !UI_PREFS.theme) loadUiPreferences();
+  UI_PREFS_DRAFT = {...UI_PREFS};
+  const slider = document.getElementById('simCardScaleRange');
+  if (slider) slider.value = String(UI_PREFS_DRAFT.simCardScale);
+  updateUiScaleLabel(UI_PREFS_DRAFT.simCardScale);
+  renderUiThemeChoices();
+  applyUiPreferences(UI_PREFS_DRAFT);
+  openModal('uiSettingsModal');
+}
+function selectUiTheme(themeId) {
+  if (!UI_THEME_PRESETS[themeId]) return;
+  if (!UI_PREFS_DRAFT) UI_PREFS_DRAFT = {...UI_PREFS};
+  UI_PREFS_DRAFT.theme = themeId;
+  applyUiPreferences(UI_PREFS_DRAFT);
+  renderUiThemeChoices();
+}
+function updateUiScaleLabel(value) {
+  const label = document.getElementById('simCardScaleLabel');
+  if (label) label.textContent = Math.round(Number(value) * 100) + '%';
+}
+function previewSimCardScale(value) {
+  if (!UI_PREFS_DRAFT) UI_PREFS_DRAFT = {...UI_PREFS};
+  UI_PREFS_DRAFT.simCardScale = Number(value);
+  updateUiScaleLabel(value);
+  applyUiPreferences(UI_PREFS_DRAFT);
+}
+function cancelUiSettings() {
+  applyUiPreferences(UI_PREFS);
+  UI_PREFS_DRAFT = null;
+  closeModal('uiSettingsModal');
+}
+function saveUiSettings() {
+  UI_PREFS = normalizeUiPrefs(UI_PREFS_DRAFT || UI_PREFS);
+  try { localStorage.setItem(uiPrefsStorageKey(), JSON.stringify(UI_PREFS)); }
+  catch(e) { showToast('裝置儲存空間不足，設定未能保存', 'error'); return; }
+  applyUiPreferences(UI_PREFS);
+  UI_PREFS_DRAFT = null;
+  closeModal('uiSettingsModal');
+  showToast('✅ 版面與門號文字大小已保存', 'success');
+}
+
 // === 請在這裡加入以下這四行 ===
 let _selectedPlats = new Set();
 let _deletedPlats = [];
@@ -1262,6 +1443,7 @@ async function initLiff() {
 //  初始化 App
 // ============================================================
 async function initApp() {
+  loadUiPreferences();
   if (STATE.token && STATE.session) {
     if (STATE.session.id !== undefined) {
       STATE.session.id = String(STATE.session.id);
@@ -1277,7 +1459,7 @@ async function initApp() {
       if (r.success && r.data) {
         const d = r.data;
         STATE.simCards = d.simCards || [];
-        // V5.3.0：Bootstrap 已帶回門號與 days_left，直接渲染近期到期門號，不再等第二次 API。
+        // V5.3.1：Bootstrap 已帶回門號與 days_left，直接渲染近期到期門號，不再等第二次 API。
         loadUpcoming();
         STATE.calendarData = d.calendarData || [];
         STATE.announcements = d.announcements || [];
@@ -1318,7 +1500,7 @@ async function initApp() {
       filterSims();
       updateAppSimSelect(STATE.simCards);
     }
-    // V5.3.0：首頁先顯示，再背景更新通知與行事曆，不阻塞會員進站。
+    // V5.3.1：首頁先顯示，再背景更新通知與行事曆，不阻塞會員進站。
     Promise.allSettled([loadDashboard(), loadCalendarData()]).catch(()=>{});
     setTimeout(checkTopUpPrompt, 800);
     setTimeout(checkUrgentSimAlert, 1200);
@@ -1770,6 +1952,7 @@ function doLogout() {
 //  主畫面
 // ============================================================
 async function showApp() {
+  loadUiPreferences();
   // 帳密登入後呼叫：顯示 loading → 預載資料 → 切換畫面
   const loadEl = document.getElementById('loading');
   if (loadEl) {
@@ -1799,7 +1982,7 @@ async function showApp() {
   } catch(e) { console.warn('bootstrap:',e.message); }
   setSplashMsg('完成！',100);
   showAppReady(); hideSplash();
-  // v5.3.0：通知統計/完整行事曆全部背景載入，不阻塞會員進站。
+  // v5.3.1：通知統計/完整行事曆全部背景載入，不阻塞會員進站。
   Promise.allSettled([loadDashboard(), loadCalendarData()]).catch(()=>{});
   setTimeout(checkTopUpPrompt,800); setTimeout(checkUrgentSimAlert,1200);
 }
@@ -2835,13 +3018,23 @@ function toDateInput(s) {
 }
 
 async function openEditSim(id) {
-  // 每次開啟都直接向 GAS 讀取 Google 試算表的最新單筆資料，避免使用舊的 STATE 快取。
-  const freshRes = await api('getSimCardDetail', { id });
-  if (!freshRes || !freshRes.success || !freshRes.data) {
-    showToast(freshRes?.error || '無法從試算表讀取門號資料', 'error');
+  // V5.3.1 相容修正：使用所有舊版均已支援的 getSimCards 動作，
+  // 並以 id 查詢試算表最新資料，避免舊部署缺少 getSimCardDetail 時出現「未知命令」。
+  let freshRes = await api('getSimCards', { id });
+  let freshData = (freshRes && freshRes.success && Array.isArray(freshRes.data)) ? freshRes.data : [];
+  let freshCard = freshData.find(x => String(x['編號'] || x.id || '').trim() === String(id).trim());
+  // 舊版 getSimCards 可能不支援 id 篩選，或管理員查詢其他會員門號時回傳範圍不同；
+  // 若第一輪沒找到，一律再讀完整清單比對，確保不因 API 版本差異誤判門號不存在。
+  if (!freshCard) {
+    freshRes = await api('getSimCards', {});
+    freshData = (freshRes && freshRes.success && Array.isArray(freshRes.data)) ? freshRes.data : [];
+    freshCard = freshData.find(x => String(x['編號'] || x.id || '').trim() === String(id).trim());
+  }
+  if (!freshCard) {
+    showToast(freshRes?.error || '無法從試算表讀取門號資料，請確認門號是否存在及目前部署版本', 'error');
     return;
   }
-  const c = freshRes.data;
+  const c = freshCard;
   const cacheIndex = STATE.simCards.findIndex(s => String(s['編號'] || s.id) === String(id));
   if (cacheIndex >= 0) STATE.simCards[cacheIndex] = { ...STATE.simCards[cacheIndex], ...c };
   document.getElementById('editSimId').value = id;
@@ -3311,7 +3504,7 @@ async function openAppRegOverview() {
       if (pRes.success && pRes.data) STATE.appPlatforms = pRes.data;
     } catch(e){}
   }
-  // 2. 使用 V5.3.0 優化後的單次 Bundle API，避免重複掃描 Google Sheet
+  // 2. 使用 V5.3.1 優化後的單次 Bundle API，避免重複掃描 Google Sheet
   let bySimId = {};
   try {
     const res = await api('getAppOverviewBundle', {});
@@ -3897,7 +4090,7 @@ async function loadAppRegistrations() {
     if (el) el.innerHTML = '<p style="color:var(--text2);font-size:14px;text-align:center;padding:20px">請先選擇門號</p>';
     return;
   }
-  // V5.3.0：避免每次選門號又重複讀取 APP平台清單。
+  // V5.3.1：避免每次選門號又重複讀取 APP平台清單。
   // 平台資料由會員進入 APP 模組時載入；這裡只取得指定門號的註冊狀態。
   const r = await api('getAppRegistrations', { sim_card_id: simId });
   if (!r.success || !r.data) return;
@@ -4155,7 +4348,7 @@ async function quickToggleAppUI(platformId, simId, checked, days) {
 }
 
 // ============================================================
-// V5.3.0：動態自訂選填欄位 UI
+// V5.3.1：動態自訂選填欄位 UI
 // 名稱設定屬於此會員的此 APP；欄位內容屬於目前門號的此 APP。
 // ============================================================
 function makeAppCustomFieldId() {
@@ -4574,7 +4767,7 @@ async function checkTopUpPrompt() {
   if (sessionStorage.getItem(promptKey)) return;
   sessionStorage.setItem(promptKey, '1');
 
-  // v5.3.0：bootstrap 已帶回最新會員資格，不再額外呼叫 getProfile
+  // v5.3.1：bootstrap 已帶回最新會員資格，不再額外呼叫 getProfile
   const mtype = STATE.session?.member_type || 'trial';
 
   // 先檢查：有沒有「今日到期」或「已到期」的門號（可能是收到通知後進系統）
@@ -7459,7 +7652,7 @@ async function openNotifyTimePanel() {
 
 // ── 管理員：會員訂閱管理 ────────────────────────────────────
 async function openMembershipPanel() {
-  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.3.0';
+  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.3.1';
   document.getElementById('broadcastModalBody').innerHTML='<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
   openModal('broadcastModal');
   const [mr,pr] = await Promise.all([api('adminGetMemberships'),api('adminGetMembershipPlans')]);
