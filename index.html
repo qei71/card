@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
-<title>預付卡管理系統 v5.3.1</title>
+<title>預付卡管理系統 v5.3.2</title>
 <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
 <style>
 /* ── 美化版迷你日曆 ── */
@@ -139,7 +139,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
 .sim-card { background:#fff; border-radius:14px; padding:14px; margin-bottom:10px; box-shadow:var(--shadow); border-left:4px solid var(--primary); }
 .sim-card.warning { border-left-color:var(--warning); }
 .sim-card.expired { border-left-color:var(--danger); }
-/* V5.3.1：門號卡片改為每列三張，快速瀏覽 */
+/* V5.3.2：門號卡片改為每列三張，快速瀏覽 */
 #simCardsList { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; align-items:stretch; }
 #simCardsList .empty-state { grid-column:1 / -1; }
 #simCardsList .sim-card { margin-bottom:0; min-width:0; padding:10px !important; }
@@ -275,7 +275,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
 #dialogOverlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:500; display:none; align-items:center; justify-content:center; padding:24px; animation:fadeIn .15s; }
 #dialogOverlay.open { display:flex; }
 
-/* V5.3.1 管理員分頁與可點擊統計卡 */
+/* V5.3.2 管理員分頁與可點擊統計卡 */
 .admin-tabbar{display:flex;gap:8px;position:sticky;top:0;z-index:20;background:#fff;padding:4px 0 12px;margin-bottom:12px}
 .admin-tab-btn{flex:1;border:1.5px solid var(--border);background:#f8f9fa;color:var(--text2);border-radius:10px;padding:11px 8px;font-size:14px;font-weight:700;cursor:pointer}
 .admin-tab-btn.active{background:#e8f8ef;border-color:var(--primary);color:#16834a}
@@ -291,7 +291,7 @@ textarea.form-control { resize:vertical; min-height:80px; }
 .reg-overview-select{width:17px;height:17px;accent-color:var(--primary);cursor:pointer}
 
 
-/* ── V5.3.1 可自訂主題與門號卡片文字縮放 ── */
+/* ── V5.3.2 可自訂主題與門號卡片文字縮放 ── */
 :root { --sim-card-scale: 1; --primary-soft: #eaf8f0; }
 body { background:var(--bg); color:var(--text); }
 #loading { background:var(--primary); }
@@ -334,6 +334,34 @@ body { background:var(--bg); color:var(--text); }
   .ui-theme-choice { padding:8px; }
 }
 
+
+/* V5.3.2 實體手機管理版面 */
+.phone-devices-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.phone-device-card { border:1px solid var(--border); background:var(--card); border-radius:16px; padding:12px; box-shadow:var(--shadow); min-width:0; cursor:pointer; }
+.phone-device-image { width:72px; height:88px; object-fit:contain; display:block; margin:0 auto 8px; border-radius:12px; background:var(--primary-soft); }
+.phone-device-fallback { width:72px; height:88px; display:flex; align-items:center; justify-content:center; margin:0 auto 8px; border-radius:12px; background:var(--primary-soft); font-size:38px; }
+.phone-device-name { font-size:14px; font-weight:800; text-align:center; overflow-wrap:anywhere; }
+.phone-device-meta { color:var(--text2); font-size:11px; text-align:center; margin-top:4px; }
+.phone-device-counts { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:8px; }
+.phone-device-count { font-size:10px; padding:4px 7px; border-radius:20px; background:var(--primary-soft); color:var(--primary); font-weight:700; }
+.phone-image-preview { min-height:76px; border:1px dashed var(--border); border-radius:12px; display:flex; align-items:center; justify-content:center; padding:8px; margin-top:8px; color:var(--text2); background:var(--bg); font-size:13px; }
+.phone-image-preview img { max-width:100%; max-height:150px; object-fit:contain; border-radius:8px; }
+.phone-relation-section { border:1px solid var(--border); border-radius:12px; padding:12px; margin-top:12px; }
+.phone-relation-hint { font-size:11px; color:var(--text2); line-height:1.5; margin-top:4px; }
+.phone-check-list { max-height:230px; overflow:auto; display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+.phone-check-item { display:flex; align-items:flex-start; gap:8px; padding:8px; border:1px solid var(--border); border-radius:9px; font-size:12px; background:var(--card); }
+.phone-check-item input { margin-top:2px; accent-color:var(--primary); flex-shrink:0; }
+.phone-check-main { min-width:0; flex:1; overflow-wrap:anywhere; }
+.phone-check-sub { color:var(--text2); font-size:10px; margin-top:2px; }
+.phone-detail-block { border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:10px; background:var(--card); }
+.phone-detail-title { font-weight:800; font-size:13px; margin-bottom:8px; }
+.phone-detail-line { font-size:12px; color:var(--text2); margin:4px 0; overflow-wrap:anywhere; }
+@media (min-width:700px) { .phone-devices-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media (max-width:380px) { .phone-devices-grid { gap:7px; } .phone-device-card { padding:9px; } .phone-device-image,.phone-device-fallback { width:60px;height:76px; } }
+.bottom-nav .nav-item { padding-top:8px; padding-bottom:6px; }
+.bottom-nav .nav-item .ni { font-size:22px; }
+.bottom-nav .nav-item span:not(.ni) { font-size:10px; }
+
 </style>
 </head>
 <body>
@@ -343,7 +371,7 @@ body { background:var(--bg); color:var(--text); }
 <div id="loading">
   <div class="logo">📱</div>
   <p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:4px">預付卡儲值管理</p>
-  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.3.1</p>
+  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.3.2</p>
   <p id="loadingMsg" style="color:rgba(255,255,255,.85);font-size:14px">載入中...</p>
   <div style="width:200px;height:4px;background:rgba(255,255,255,.25);border-radius:4px;margin-top:20px;overflow:hidden">
     <div id="loadingBar" style="height:100%;background:#fff;border-radius:4px;width:0%;transition:width .35s ease"></div>
@@ -355,7 +383,7 @@ body { background:var(--bg); color:var(--text); }
   <div class="auth-card">
     <div class="auth-logo">
       <span class="icon">📱</span>
-      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.3.1</div>
+      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.3.2</div>
       <p>管理您的所有預付卡門號</p>
     </div>
 
@@ -498,6 +526,18 @@ body { background:var(--bg); color:var(--text); }
     </div>
     <div id="duplicateAlert" style="display:none"></div>
     <div id="simCardsList"></div>
+  </div>
+
+  <!-- 實體手機管理 -->
+  <div id="pageDevices" class="page">
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-header">
+        <span class="card-title">📱 我的實體手機</span>
+        <button class="btn btn-sm btn-primary" onclick="openPhoneDeviceEditor()">＋ 新增手機</button>
+      </div>
+      <p style="font-size:12px;color:var(--text2);line-height:1.6">一台手機可關聯多個門號，也可指定不同門號下的 APP 帳號安裝在哪台手機。APP 安裝位置與 SIM 卡實際插槽分開管理。</p>
+    </div>
+    <div id="phoneDevicesGrid" class="phone-devices-grid"></div>
   </div>
 
   <!-- APP 平台 -->
@@ -716,11 +756,12 @@ body { background:var(--bg); color:var(--text); }
   </div>
 </div>
 
-<!-- 底部導航（5個按鈕，移除日誌） -->
+<!-- 底部導航（6個按鈕，新增實體手機管理） -->
 <nav class="bottom-nav" id="bottomNav">
   <button class="nav-item active" onclick="switchPage('Dashboard')"><span class="ni">🏠</span><span>首頁</span></button>
   <button class="nav-item" onclick="switchPage('SimCards')"><span class="ni">📱</span><span>門號</span></button>
-  <button class="nav-item" onclick="switchPage('Apps')"><span class="ni">📲</span><span>APP</span></button>
+  <button class="nav-item" onclick="switchPage('Devices')"><span class="ni">📲</span><span>手機</span></button>
+  <button class="nav-item" onclick="switchPage('Apps')"><span class="ni">🧩</span><span>APP</span></button>
   <button class="nav-item" onclick="switchPage('Calendar')"><span class="ni" id="calNavIcon">🔔</span><span>通知</span></button>
   <button class="nav-item" onclick="switchPage('Profile')"><span class="ni">👤</span><span>我的</span></button>
 </nav>
@@ -835,6 +876,7 @@ body { background:var(--bg); color:var(--text); }
       <div class="form-group" id="editBalanceGroup"><label>💰 餘額（預付卡）</label><input type="text" id="editBalance" class="form-control" placeholder="例如：100 或 $100"></div>
       <div class="form-group"><label>卡片位置</label><input type="text" id="editCardLocation" class="form-control" placeholder="例如：抽屜第1格"></div>
     </div>
+    <div class="form-group"><label>📱 此門號目前放在哪台手機（選填）</label><select id="editSimDevice" class="form-control"><option value="">不指定手機</option></select></div>
     <div class="form-group"><label>備註</label><textarea id="editNotes" class="form-control" rows="2"></textarea></div>
     <button class="btn btn-primary" onclick="submitEditSim()">💾 儲存</button>
   </div>
@@ -959,8 +1001,9 @@ body { background:var(--bg); color:var(--text); }
             與門號相同
           </label>
         </div>
-        <input type="text" id="appAccount" class="form-control" placeholder="在此 APP 使用的帳號">
+        <input type="text" id="appAccount" class="form-control" placeholder="在此 APP 使用的帳號" autocomplete="off" inputmode="text">
       </div>
+      <div class="form-group"><label>📱 此 APP 帳號安裝在哪台手機（選填）</label><select id="appPhoneDevice" class="form-control"><option value="">未指定安裝手機</option></select><div style="font-size:10px;color:var(--text2);margin-top:4px">此設定與上方門號插在哪台手機互相獨立。</div></div>
       <div class="form-group"><label>信箱 (MAIL)（選填）</label><input type="email" id="appMail" class="form-control" placeholder="輸入綁定的信箱"></div>
       <div class="form-group"><label>APP 密碼（選填）</label><input type="text" id="appPassword" class="form-control" placeholder="輸入此 APP 的密碼"></div>
       
@@ -1145,7 +1188,64 @@ body { background:var(--bg); color:var(--text); }
   </div>
 </div>
 
-<!-- V5.3.1 版面與卡片文字設定 -->
+<!-- V5.3.2 新增／編輯實體手機 -->
+<div class="modal-overlay" id="phoneDeviceEditModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title" id="phoneDeviceEditTitle">📱 新增實體手機</span>
+      <button class="modal-close" onclick="closeModal('phoneDeviceEditModal')">✕</button>
+    </div>
+    <input type="hidden" id="phoneDeviceId">
+    <input type="hidden" id="phoneDeviceImageData">
+    <div class="form-row">
+      <div class="form-group"><label>手機品牌</label>
+        <select id="phoneDeviceBrand" class="form-control">
+          <option>Apple</option><option>Samsung</option><option>Xiaomi</option><option>Google</option><option>OPPO</option><option>vivo</option><option>ASUS</option><option>Sony</option><option>HTC</option><option>Motorola</option><option>其他</option>
+        </select>
+      </div>
+      <div class="form-group"><label>外觀顏色</label><input type="text" id="phoneDeviceColor" class="form-control" placeholder="例如：星光色、黑色、淡紫色"></div>
+    </div>
+    <div class="form-group"><label>手機名稱（列表顯示名稱）</label><input type="text" id="phoneDeviceName" class="form-control" placeholder="例如：工作機、蝦皮專用機、iPhone 15 Pro"></div>
+    <div class="form-group"><label>型號</label><input type="text" id="phoneDeviceModel" class="form-control" placeholder="例如：iPhone 15 Pro、Xiaomi 14 Ultra、Galaxy S24"></div>
+    <div class="form-group">
+      <label>手機圖片／圖標（可自行上傳）</label>
+      <input type="file" id="phoneDeviceImageFile" class="form-control" accept="image/*" onchange="handlePhoneDeviceImageUpload(this)">
+      <div id="phoneDeviceImagePreview" class="phone-image-preview">📱 尚未選擇圖片</div>
+      <button type="button" class="btn btn-xs btn-outline" style="margin-top:6px" onclick="clearPhoneDeviceImage()">移除圖片，使用品牌圖標</button>
+      <div style="font-size:10px;color:var(--text2);margin-top:5px">圖片會自動縮小及壓縮後儲存在此會員的手機資料中。</div>
+    </div>
+    <div class="phone-relation-section">
+      <div class="card-title">📞 關聯門號（可複選）</div>
+      <p class="phone-relation-hint">勾選實際放在這台手機內的 SIM 卡。一張門號同一時間只會指定一台手機。</p>
+      <div id="phoneDeviceSimAssignments" class="phone-check-list"></div>
+    </div>
+    <div class="phone-relation-section">
+      <div class="card-title">🧩 關聯已儲存的 APP 帳號（可複選）</div>
+      <p class="phone-relation-hint">不要求 APP 所屬門號一定插在這台手機；請依實際安裝位置自行指定。</p>
+      <input type="search" id="phoneDeviceAppSearch" class="form-control" placeholder="搜尋 APP 名稱、帳號或門號..." oninput="renderPhoneDeviceAppAssignments()" style="margin:8px 0">
+      <div id="phoneDeviceAppAssignments" class="phone-check-list"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-outline" onclick="closeModal('phoneDeviceEditModal')">取消</button>
+      <button class="btn btn-primary" onclick="savePhoneDeviceEditor()">💾 儲存手機及關聯</button>
+    </div>
+  </div>
+</div>
+
+<!-- V5.3.2 手機詳細內容 -->
+<div class="modal-overlay" id="phoneDeviceDetailModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title" id="phoneDeviceDetailTitle">📱 手機內容</span>
+      <button class="modal-close" onclick="closeModal('phoneDeviceDetailModal')">✕</button>
+    </div>
+    <div id="phoneDeviceDetailBody"></div>
+  </div>
+</div>
+
+<!-- V5.3.2 版面與卡片文字設定 -->
 <div class="modal-overlay" id="uiSettingsModal">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -1257,6 +1357,207 @@ function safeParseDate(dStr) {
   }
   return null;
 }
+
+// ============================================================
+// V5.3.2 實體手機管理前端
+// ============================================================
+async function loadPhoneManagementData(force) {
+  if (!force && STATE.phoneManagementData) return STATE.phoneManagementData;
+  const res = await api('getPhoneManagementData', {});
+  if (!res || !res.success) {
+    if (document.getElementById('pageDevices')?.classList.contains('active')) showToast(res?.error || '手機資料讀取失敗', 'error');
+    return STATE.phoneManagementData;
+  }
+  STATE.phoneManagementData = res.data || {devices:[],sims:[],apps:[]};
+  renderPhoneDevices();
+  return STATE.phoneManagementData;
+}
+
+function phoneBrandEmoji(brand) {
+  const b = String(brand || '').toLowerCase();
+  if (b.includes('apple') || b.includes('iphone')) return '📱';
+  if (b.includes('samsung')) return '📲';
+  if (b.includes('xiaomi')) return '🔴';
+  if (b.includes('google')) return '🌐';
+  if (b.includes('oppo') || b.includes('vivo')) return '📱';
+  return '📱';
+}
+
+function renderPhoneDevices() {
+  const grid = document.getElementById('phoneDevicesGrid');
+  if (!grid) return;
+  const devices = STATE.phoneManagementData?.devices || [];
+  if (!devices.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><span class="icon">📱</span><p>還沒有實體手機<br>點擊「新增手機」建立第一台裝置</p></div>';
+    return;
+  }
+  grid.innerHTML = devices.map(d => {
+    const image = d.image_data ? `<img class="phone-device-image" src="${esc(d.image_data)}" alt="${esc(d.name)}">` : `<div class="phone-device-fallback">${phoneBrandEmoji(d.brand)}</div>`;
+    return `<div class="phone-device-card" onclick="openPhoneDeviceDetail('${esc(d.id)}')">
+      ${image}
+      <div class="phone-device-name">${esc(d.name || d.model || '未命名手機')}</div>
+      <div class="phone-device-meta">${esc([d.brand,d.model,d.color].filter(Boolean).join(' · '))}</div>
+      <div class="phone-device-counts"><span class="phone-device-count">📞 ${d.sims?.length || 0} 門號</span><span class="phone-device-count">🧩 ${d.apps?.length || 0} APP</span></div>
+      <div style="display:flex;gap:6px;margin-top:10px"><button class="btn btn-xs btn-outline" style="flex:1" onclick="event.stopPropagation();openPhoneDeviceEditor('${esc(d.id)}')">✏️ 編輯</button><button class="btn btn-xs btn-outline" style="flex:1" onclick="event.stopPropagation();deletePhoneDeviceConfirm('${esc(d.id)}')">🗑️ 刪除</button></div>
+    </div>`;
+  }).join('');
+}
+
+function populatePhoneDeviceSelect(selectId, selectedId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const data = STATE.phoneManagementData || {devices:[]};
+  const keep = String(selectedId || '');
+  sel.innerHTML = '<option value="">未指定手機</option>' + (data.devices || []).map(d => `<option value="${esc(d.id)}">${esc(d.name || d.model || '手機')}（${esc([d.brand,d.model].filter(Boolean).join(' '))}）</option>`).join('');
+  sel.value = keep;
+}
+
+function openPhoneDeviceEditor(deviceId) {
+  STATE.currentPhoneDeviceEditingId = String(deviceId || '');
+  const d = (STATE.phoneManagementData?.devices || []).find(x => String(x.id) === String(deviceId)) || null;
+  document.getElementById('phoneDeviceId').value = d?.id || '';
+  document.getElementById('phoneDeviceName').value = d?.name || '';
+  document.getElementById('phoneDeviceBrand').value = d?.brand || 'Apple';
+  document.getElementById('phoneDeviceModel').value = d?.model || '';
+  document.getElementById('phoneDeviceColor').value = d?.color || '';
+  document.getElementById('phoneDeviceImageData').value = d?.image_data || '';
+  document.getElementById('phoneDeviceImageFile').value = '';
+  document.getElementById('phoneDeviceEditTitle').textContent = d ? '✏️ 編輯實體手機' : '📱 新增實體手機';
+  renderPhoneDeviceImagePreview(d?.image_data || '');
+  document.getElementById('phoneDeviceSimAssignments').innerHTML = '';
+  document.getElementById('phoneDeviceAppAssignments').innerHTML = '';
+  document.getElementById('phoneDeviceAppSearch').value = '';
+  renderPhoneDeviceSimAssignments(d);
+  renderPhoneDeviceAppAssignments(d);
+  openModal('phoneDeviceEditModal');
+}
+
+function renderPhoneDeviceSimAssignments(device) {
+  if (!device && STATE.currentPhoneDeviceEditingId) device = (STATE.phoneManagementData?.devices || []).find(x => x.id === STATE.currentPhoneDeviceEditingId) || null;
+  const box = document.getElementById('phoneDeviceSimAssignments');
+  if (!box) return;
+  const sims = STATE.phoneManagementData?.sims || [];
+  const selected = new Set((device?.sims || []).map(s => String(s.id)));
+  if (!sims.length) { box.innerHTML = '<div class="empty-state" style="padding:15px">目前沒有可關聯的門號</div>'; return; }
+  box.innerHTML = sims.map(s => {
+    const assigned = s.phone_device_id && s.phone_device_id !== device?.id;
+    const assignedDevice = (STATE.phoneManagementData?.devices || []).find(d => d.id === s.phone_device_id);
+    return `<label class="phone-check-item"><input type="checkbox" class="phone-device-sim-check" value="${esc(s.id)}" ${selected.has(String(s.id))?'checked':''}><span class="phone-check-main"><b>${esc(s.sim_number ? '['+s.sim_number+'] ' : '')}${esc(s.phone_number)}</b>　${esc(s.carrier)}<div class="phone-check-sub">${esc(s.sim_type)} · 到期：${esc(s.expire_date || '未設定')}${assigned ? ' · 目前在：'+esc(assignedDevice?.name || '其他手機')+'（勾選可移到此手機）' : ''}</div></span></label>`;
+  }).join('');
+}
+
+function renderPhoneDeviceAppAssignments(device) {
+  if (!device && STATE.currentPhoneDeviceEditingId) device = (STATE.phoneManagementData?.devices || []).find(x => x.id === STATE.currentPhoneDeviceEditingId) || null;
+  const box = document.getElementById('phoneDeviceAppAssignments');
+  if (!box) return;
+  const q = String(document.getElementById('phoneDeviceAppSearch')?.value || '').trim().toLowerCase();
+  const apps = STATE.phoneManagementData?.apps || [];
+  const selected = new Set((device?.apps || []).map(a => String(a.key)));
+  const filtered = apps.filter(a => !q || [a.name,a.app_account,a.sim_phone,a.sim_number,a.carrier].join(' ').toLowerCase().includes(q));
+  if (!filtered.length) { box.innerHTML = '<div class="empty-state" style="padding:15px">沒有符合的 APP 註冊資料，請先到 APP 頁儲存該 APP 帳號</div>'; return; }
+  box.innerHTML = filtered.map(a => {
+    const assigned = a.phone_device_id && a.phone_device_id !== device?.id;
+    const assignedDevice = (STATE.phoneManagementData?.devices || []).find(d => d.id === a.phone_device_id);
+    return `<label class="phone-check-item"><input type="checkbox" class="phone-device-app-check" value="${esc(a.key)}" ${selected.has(String(a.key))?'checked':''}><span class="phone-check-main"><b>${esc(a.icon || '📱')} ${esc(a.name)}</b><div class="phone-check-sub">來源門號：${esc(a.sim_number ? '['+a.sim_number+'] ' : '')}${esc(a.sim_phone)} · 帳號：${esc(a.app_account || '未填寫')}${assigned ? ' · 目前安裝於：'+esc(assignedDevice?.name || '其他手機')+'（勾選可移動）' : ''}</div></span></label>`;
+  }).join('');
+}
+
+function renderPhoneDeviceImagePreview(data) {
+  const el = document.getElementById('phoneDeviceImagePreview');
+  if (!el) return;
+  el.innerHTML = data ? `<img src="${esc(data)}" alt="手機圖標預覽">` : `${phoneBrandEmoji(document.getElementById('phoneDeviceBrand')?.value)} 尚未設定圖片`;
+}
+
+async function handlePhoneDeviceImageUpload(input) {
+  const file = input?.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('請選擇圖片檔案', 'error'); input.value=''; return; }
+  if (file.size > 12 * 1024 * 1024) { showToast('圖片請小於 12MB', 'error'); input.value=''; return; }
+  try {
+    const dataUrl = await new Promise((resolve,reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const max = 320, ratio = Math.min(1,max/Math.max(img.width,img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1,Math.round(img.width*ratio));
+          canvas.height = Math.max(1,Math.round(img.height*ratio));
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+          ctx.drawImage(img,0,0,canvas.width,canvas.height);
+          let q = 0.72, result = canvas.toDataURL('image/jpeg',q);
+          while (result.length > 45000 && q > 0.35) { q -= 0.08; result = canvas.toDataURL('image/jpeg',q); }
+          if (result.length > 48000) reject(new Error('圖片壓縮後仍太大，請換一張圖片'));
+          else resolve(result);
+        };
+        img.onerror = () => reject(new Error('圖片讀取失敗'));
+        img.src = reader.result;
+      };
+      reader.onerror = () => reject(new Error('檔案讀取失敗'));
+      reader.readAsDataURL(file);
+    });
+    document.getElementById('phoneDeviceImageData').value = dataUrl;
+    renderPhoneDeviceImagePreview(dataUrl);
+    showToast('手機圖片已載入', 'success');
+  } catch (e) { showToast(e.message || '圖片處理失敗', 'error'); }
+}
+
+function clearPhoneDeviceImage() {
+  document.getElementById('phoneDeviceImageData').value = '';
+  document.getElementById('phoneDeviceImageFile').value = '';
+  renderPhoneDeviceImagePreview('');
+}
+
+async function savePhoneDeviceEditor() {
+  const id = document.getElementById('phoneDeviceId').value;
+  const payload = {
+    id,
+    name:document.getElementById('phoneDeviceName').value.trim(),
+    brand:document.getElementById('phoneDeviceBrand').value,
+    model:document.getElementById('phoneDeviceModel').value.trim(),
+    color:document.getElementById('phoneDeviceColor').value.trim(),
+    image_data:document.getElementById('phoneDeviceImageData').value || ''
+  };
+  if (!payload.name) return showToast('請填寫手機名稱', 'error');
+  const simIds = [...document.querySelectorAll('.phone-device-sim-check:checked')].map(x => x.value);
+  const appRelations = [...document.querySelectorAll('.phone-device-app-check:checked')].map(x => {
+    const parts = x.value.split('::'); return {sim_card_id:parts[0],platform_id:parts.slice(1).join('::')};
+  });
+  const saved = await api('savePhoneDevice', payload);
+  if (!saved.success) return showToast(saved.error || '手機儲存失敗', 'error');
+  const rel = await api('savePhoneDeviceRelations', {device_id:saved.id, sim_ids:simIds, app_relations:appRelations});
+  if (!rel.success) return showToast('手機基本資料已保存，但關聯未完成：' + (rel.error || '未知錯誤'), 'error');
+  closeModal('phoneDeviceEditModal');
+  await loadPhoneManagementData(true);
+  showToast('✅ 手機及門號／APP 關聯已保存', 'success');
+}
+
+function openPhoneDeviceDetail(deviceId) {
+  const d = (STATE.phoneManagementData?.devices || []).find(x => String(x.id) === String(deviceId));
+  if (!d) return showToast('找不到手機資料，請重新整理', 'error');
+  document.getElementById('phoneDeviceDetailTitle').textContent = '📱 ' + (d.name || d.model || '手機詳情');
+  const body = document.getElementById('phoneDeviceDetailBody');
+  const image = d.image_data ? `<img src="${esc(d.image_data)}" style="width:76px;height:92px;object-fit:contain;float:right;margin-left:10px;border-radius:10px;background:var(--primary-soft)" alt="手機圖片">` : `<span style="font-size:46px;float:right;margin-left:10px">${phoneBrandEmoji(d.brand)}</span>`;
+  const simsHtml = (d.sims || []).length ? d.sims.map(s => `<div class="phone-detail-block"><div class="phone-detail-title">📞 ${esc(s.sim_number ? '['+s.sim_number+'] ' : '')}${esc(s.phone_number)}</div><div class="phone-detail-line">${esc(s.carrier)} · ${esc(s.sim_type)}</div><div class="phone-detail-line">到期日：${esc(s.expire_date || '未設定')}${s.sim_type==='預付卡門號' ? ' · 餘額：'+esc(s.balance || '未填') : ''}</div><div class="phone-detail-line">卡片位置：${esc(s.card_location || '未設定')}</div></div>`).join('') : '<p class="phone-relation-hint">尚未關聯門號</p>';
+  const appsHtml = (d.apps || []).length ? d.apps.map(a => {
+    const custom = (a.custom_fields || []).filter(f => f && f.label).map(f => `<div class="phone-detail-line">${esc(f.label)}：${esc(a.custom_values?.[f.id] || '')}</div>`).join('');
+    return `<div class="phone-detail-block"><div class="phone-detail-title">${esc(a.icon || '📱')} ${esc(a.name)}</div><div class="phone-detail-line">APP 所屬門號：${esc(a.sim_number ? '['+a.sim_number+'] ' : '')}${esc(a.sim_phone)} (${esc(a.carrier)})</div><div class="phone-detail-line">帳號：${esc(a.app_account || '未填寫')}</div>${a.app_mail ? `<div class="phone-detail-line">信箱：${esc(a.app_mail)}</div>` : ''}${a.app_password ? `<details class="phone-detail-line"><summary>查看 APP 密碼</summary><div>${esc(a.app_password)}</div></details>` : ''}${a.app_note ? `<div class="phone-detail-line">備註：${esc(a.app_note)}</div>` : ''}${custom}</div>`;
+  }).join('') : '<p class="phone-relation-hint">尚未指定安裝於這台手機的 APP</p>';
+  body.innerHTML = `<div class="phone-detail-block" style="min-height:100px">${image}<div style="font-size:15px;font-weight:800">${esc(d.name)}</div><div class="phone-detail-line">${esc([d.brand,d.model,d.color].filter(Boolean).join(' · '))}</div><div style="clear:both"></div><button class="btn btn-sm btn-outline" style="margin-top:8px" onclick="closeModal('phoneDeviceDetailModal');openPhoneDeviceEditor('${esc(d.id)}')">✏️ 編輯手機與關聯</button></div><div class="phone-detail-title">📞 此手機內的門號（${(d.sims||[]).length}）</div>${simsHtml}<div class="phone-detail-title" style="margin-top:14px">🧩 安裝在此手機的 APP（${(d.apps||[]).length}）</div>${appsHtml}`;
+  openModal('phoneDeviceDetailModal');
+}
+
+function deletePhoneDeviceConfirm(deviceId) {
+  const d = (STATE.phoneManagementData?.devices || []).find(x => String(x.id) === String(deviceId));
+  showConfirm('確定刪除「'+(d?.name || '這台手機')+'」？','只會刪除手機卡片及它的關聯，不會刪除門號或 APP 註冊資料。','確定刪除','btn-danger',async () => {
+    const r = await api('deletePhoneDevice',{id:deviceId});
+    if (r.success) { await loadPhoneManagementData(true); showToast('手機已刪除，門號及 APP 資料保留','success'); }
+    else showToast(r.error || '刪除失敗','error');
+  });
+}
+
+
 // ============================================================
 //  全域狀態
 // ============================================================
@@ -1266,13 +1567,15 @@ let STATE = {
   lineProfile: JSON.parse(localStorage.getItem('line_profile') || 'null'),
   simCards: [],
   appPlatforms: [],
+  phoneManagementData: null,
+  currentPhoneDeviceEditingId: '',
   announcements: [],
   calendarData: null,
 };
 const LOGIN_PREF = JSON.parse(localStorage.getItem('login_pref') || '{"saveAccount":false,"savedAccount":"","savePassword":false,"savedPassword":"","autoLogin":false}');
 
 // ============================================================
-// V5.3.1 會員版面偏好：10 種主題 + 門號卡片字級，依會員在本裝置保存。
+// V5.3.2 會員版面偏好：10 種主題 + 門號卡片字級，依會員在本裝置保存。
 // ============================================================
 const UI_THEME_PRESETS = {
   line:      {name:'經典綠', desc:'清新 LINE 綠', primary:'#06C755', dark:'#05A847', bg:'#F0F2F5', card:'#FFFFFF', text:'#1A1A1A', text2:'#666666', border:'#E5E7EB', soft:'#EAF8F0'},
@@ -1459,7 +1762,7 @@ async function initApp() {
       if (r.success && r.data) {
         const d = r.data;
         STATE.simCards = d.simCards || [];
-        // V5.3.1：Bootstrap 已帶回門號與 days_left，直接渲染近期到期門號，不再等第二次 API。
+        // V5.3.2：Bootstrap 已帶回門號與 days_left，直接渲染近期到期門號，不再等第二次 API。
         loadUpcoming();
         STATE.calendarData = d.calendarData || [];
         STATE.announcements = d.announcements || [];
@@ -1500,7 +1803,7 @@ async function initApp() {
       filterSims();
       updateAppSimSelect(STATE.simCards);
     }
-    // V5.3.1：首頁先顯示，再背景更新通知與行事曆，不阻塞會員進站。
+    // V5.3.2：首頁先顯示，再背景更新通知與行事曆，不阻塞會員進站。
     Promise.allSettled([loadDashboard(), loadCalendarData()]).catch(()=>{});
     setTimeout(checkTopUpPrompt, 800);
     setTimeout(checkUrgentSimAlert, 1200);
@@ -1982,7 +2285,7 @@ async function showApp() {
   } catch(e) { console.warn('bootstrap:',e.message); }
   setSplashMsg('完成！',100);
   showAppReady(); hideSplash();
-  // v5.3.1：通知統計/完整行事曆全部背景載入，不阻塞會員進站。
+  // v5.3.2：通知統計/完整行事曆全部背景載入，不阻塞會員進站。
   Promise.allSettled([loadDashboard(), loadCalendarData()]).catch(()=>{});
   setTimeout(checkTopUpPrompt,800); setTimeout(checkUrgentSimAlert,1200);
 }
@@ -2004,7 +2307,7 @@ function setProgress(pct) {
 }
 
 function switchPage(name) {
-  const pages = ['Dashboard','SimCards','Apps','Calendar','Profile'];
+  const pages = ['Dashboard','SimCards','Devices','Apps','Calendar','Profile'];
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const el = document.getElementById('page' + name);
@@ -2013,6 +2316,9 @@ function switchPage(name) {
   const navItems = document.querySelectorAll('.nav-item');
   if (idx >= 0 && navItems[idx]) navItems[idx].classList.add('active');
 
+  if (name === 'Devices') {
+    loadPhoneManagementData(true);
+  }
   if (name === 'SimCards') {
     if (STATE.simCards.length) {
       // 確保依目前的排序/篩選重新 render
@@ -2028,7 +2334,7 @@ function switchPage(name) {
     const tgBtn = document.getElementById('ovCh_tg');
     if (tgBtn && (STATE.session?.tg_enabled)) tgBtn.style.display = '';
   }
-  if (name === 'Apps') { loadPlatMgrGrid(); }
+  if (name === 'Apps') { loadPlatMgrGrid(); loadPhoneManagementData(false); }
   if (name === 'Profile')  { loadProfile(); loadNotifications(); loadAuditLogs(); }
   if (name === 'Apps')     {
     loadAppSimSelect();
@@ -2940,10 +3246,19 @@ function renderSimForms() {
         <div class="form-group sf-balance-group"><label>💰 餘額（預付卡）</label><input type="text" class="form-control sf-balance" placeholder="例如：100 或 $100"></div>
         <div class="form-group"><label>📍 卡片位置</label><input type="text" class="form-control sf-location" placeholder="例如：抽屜第1格"></div>
       </div>
+      <div class="form-group"><label>📱 放在哪台手機（選填）</label><select class="form-control sf-device"><option value="">未指定手機</option></select></div>
       <div class="form-group"><label>備註</label><input type="text" class="form-control sf-notes"></div>
     </div>`;
   }
   document.getElementById('simFormsContainer').innerHTML = html;
+  loadPhoneManagementData(false).then(data => {
+    const devices = data?.devices || [];
+    document.querySelectorAll('.sf-device').forEach(sel => {
+      const current = sel.value;
+      sel.innerHTML = '<option value="">未指定手機</option>' + devices.map(d => `<option value="${esc(d.id)}">${esc(d.name || d.model || '手機')}</option>`).join('');
+      sel.value = current;
+    });
+  });
 }
 
 function toggleNewBalanceFields(selectEl) {
@@ -2990,7 +3305,8 @@ async function submitSimCards() {
       notes:b.querySelector('.sf-notes').value.trim(),
       sim_type:simType,
       balance:simType === '預付卡門號' ? (b.querySelector('.sf-balance')?.value.trim() || '') : '',
-      card_location:b.querySelector('.sf-location')?.value.trim() || ''
+      card_location:b.querySelector('.sf-location')?.value.trim() || '',
+      phone_device_id:b.querySelector('.sf-device')?.value || ''
     };
   });
   if (cards.some(c => !c.phone_number)) return showToast('請填入所有門號號碼', 'error');
@@ -3000,6 +3316,7 @@ async function submitSimCards() {
       showToast(`✅ 成功新增 ${r.count || cards.length} 個門號`, 'success');
       closeModal('addSimModal');
       await loadSimCards();
+      await loadPhoneManagementData(true);
       loadDashboard();
     } else { showToast(r.error || '新增失敗', 'error'); }
   });
@@ -3018,7 +3335,7 @@ function toDateInput(s) {
 }
 
 async function openEditSim(id) {
-  // V5.3.1 相容修正：使用所有舊版均已支援的 getSimCards 動作，
+  // V5.3.2 相容修正：使用所有舊版均已支援的 getSimCards 動作，
   // 並以 id 查詢試算表最新資料，避免舊部署缺少 getSimCardDetail 時出現「未知命令」。
   let freshRes = await api('getSimCards', { id });
   let freshData = (freshRes && freshRes.success && Array.isArray(freshRes.data)) ? freshRes.data : [];
@@ -3059,6 +3376,8 @@ async function openEditSim(id) {
   document.getElementById('editApplicant').value = c['辦理人'] || c.applicant || '';
   document.getElementById('editApplicantId').value = c['辦理人證號'] || c.applicant_id || '';
   document.getElementById('editNotes').value = c['備註'] || c.notes || '';
+  await loadPhoneManagementData(true);
+  populatePhoneDeviceSelect('editSimDevice', (STATE.phoneManagementData?.sims || []).find(s => s.id === String(id))?.phone_device_id || '');
   const balanceValue = c['餘額'] !== undefined && c['餘額'] !== null ? c['餘額'] : (c.balance ?? '');
   document.getElementById('editBalance').value = String(balanceValue);
   document.getElementById('editCardLocation').value = String(c['卡片位置'] ?? c.card_location ?? '');
@@ -3085,7 +3404,8 @@ async function submitEditSim() {
     applicant:document.getElementById('editApplicant').value.trim(),
     applicant_id:document.getElementById('editApplicantId').value.trim(),
     notes:document.getElementById('editNotes').value.trim(),
-    card_location:document.getElementById('editCardLocation').value.trim()
+    card_location:document.getElementById('editCardLocation').value.trim(),
+    phone_device_id:document.getElementById('editSimDevice')?.value || ''
   };
   // 月租費門號不送出餘額欄位，避免清空既有預付卡餘額資料。
   if (simType === '預付卡門號') payload.balance = document.getElementById('editBalance').value.trim();
@@ -3101,6 +3421,7 @@ async function submitEditSim() {
       showToast('✅ 門號資料已更新，餘額已從試算表回讀驗證', 'success');
       closeModal('editSimModal');
       await loadSimCards();
+      await loadPhoneManagementData(true);
       loadDashboard();
     } else { showToast(r.error || '更新失敗', 'error'); }
   });
@@ -3504,7 +3825,7 @@ async function openAppRegOverview() {
       if (pRes.success && pRes.data) STATE.appPlatforms = pRes.data;
     } catch(e){}
   }
-  // 2. 使用 V5.3.1 優化後的單次 Bundle API，避免重複掃描 Google Sheet
+  // 2. 使用 V5.3.2 優化後的單次 Bundle API，避免重複掃描 Google Sheet
   let bySimId = {};
   try {
     const res = await api('getAppOverviewBundle', {});
@@ -4090,7 +4411,7 @@ async function loadAppRegistrations() {
     if (el) el.innerHTML = '<p style="color:var(--text2);font-size:14px;text-align:center;padding:20px">請先選擇門號</p>';
     return;
   }
-  // V5.3.1：避免每次選門號又重複讀取 APP平台清單。
+  // V5.3.2：避免每次選門號又重複讀取 APP平台清單。
   // 平台資料由會員進入 APP 模組時載入；這裡只取得指定門號的註冊狀態。
   const r = await api('getAppRegistrations', { sim_card_id: simId });
   if (!r.success || !r.data) return;
@@ -4348,7 +4669,7 @@ async function quickToggleAppUI(platformId, simId, checked, days) {
 }
 
 // ============================================================
-// V5.3.1：動態自訂選填欄位 UI
+// V5.3.2：動態自訂選填欄位 UI
 // 名稱設定屬於此會員的此 APP；欄位內容屬於目前門號的此 APP。
 // ============================================================
 function makeAppCustomFieldId() {
@@ -4536,7 +4857,12 @@ function openAppDetail(platformId, simId) {
     sameChk.dataset.simId = simId;
   }
   
+  populatePhoneDeviceSelect('appPhoneDevice', '');
   openModal('appDetailModal');
+  loadPhoneManagementData(true).then(() => {
+    const current = (STATE.phoneManagementData?.apps || []).find(a => a.sim_card_id === String(simId) && a.platform_id === String(platformId));
+    populatePhoneDeviceSelect('appPhoneDevice', current?.phone_device_id || '');
+  });
 }
 
 // 「與門號相同」核選框點擊
@@ -4637,13 +4963,15 @@ async function saveAppRegistration() {
       notify_time:        document.getElementById('appNotifyTime')?.value || '',
       custom_fields:      customData.fields,
       custom_values:      customData.values,
+      phone_device_id:    document.getElementById('appPhoneDevice')?.value || '',
       show_overview_account: document.getElementById('appOverviewShowAccount')?.checked !== false,
       show_overview_note: document.getElementById('appOverviewShowNote')?.checked !== false
     });
     
     if (r.success) { 
       showToast('✅ 已更新', 'success'); 
-      closeModal('appDetailModal'); 
+      closeModal('appDetailModal');
+      await loadPhoneManagementData(true);
       
       STATE.appPlatforms = []; // 清除快取
       
@@ -4767,7 +5095,7 @@ async function checkTopUpPrompt() {
   if (sessionStorage.getItem(promptKey)) return;
   sessionStorage.setItem(promptKey, '1');
 
-  // v5.3.1：bootstrap 已帶回最新會員資格，不再額外呼叫 getProfile
+  // v5.3.2：bootstrap 已帶回最新會員資格，不再額外呼叫 getProfile
   const mtype = STATE.session?.member_type || 'trial';
 
   // 先檢查：有沒有「今日到期」或「已到期」的門號（可能是收到通知後進系統）
@@ -7652,7 +7980,7 @@ async function openNotifyTimePanel() {
 
 // ── 管理員：會員訂閱管理 ────────────────────────────────────
 async function openMembershipPanel() {
-  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.3.1';
+  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.3.2';
   document.getElementById('broadcastModalBody').innerHTML='<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
   openModal('broadcastModal');
   const [mr,pr] = await Promise.all([api('adminGetMemberships'),api('adminGetMembershipPlans')]);
