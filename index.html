@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
-<title>預付卡管理系統 v5.3.7</title>
-<script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
+<title>預付卡管理系統 v5.3.9</title>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
 /* ── 美化版迷你日曆 ── */
 .calendar-wrapper {
@@ -417,7 +417,7 @@ body { background:var(--bg); color:var(--text); }
 
 
 
-/* V5.3.7：手機卡片快速編輯與排序、20 種主題、APP 平台圖片圖標。 */
+/* V5.3.9：手機卡片快速編輯與排序、20 種主題、APP 平台圖片圖標。 */
 .bottom-nav .nav-item[aria-label="門號管理"] .ni { filter: drop-shadow(0 2px 2px rgba(70,55,45,.18)); }
 .bottom-nav .nav-item[aria-label="實體手機管理"] .ni { filter: drop-shadow(0 2px 2px rgba(35,90,150,.16)); }
 
@@ -554,6 +554,9 @@ body { background:var(--bg); color:var(--text); }
   .cal-month-title { min-width:126px; padding:6px 12px; }
 }
 
+
+/* V5.3.9 手機流水編號標籤 */
+.phone-device-seq { display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:22px;padding:0 6px;margin-right:4px;border-radius:7px;background:var(--primary-soft);color:var(--primary);font-size:11px;font-weight:800;vertical-align:middle; }
 </style>
 </head>
 <body>
@@ -563,7 +566,7 @@ body { background:var(--bg); color:var(--text); }
 <div id="loading">
   <div class="logo">📱</div>
   <p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:4px">預付卡儲值管理</p>
-  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.3.7</p>
+  <p style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:10px">v5.3.9</p>
   <p id="loadingMsg" style="color:rgba(255,255,255,.85);font-size:14px">載入中...</p>
   <div style="width:200px;height:4px;background:rgba(255,255,255,.25);border-radius:4px;margin-top:20px;overflow:hidden">
     <div id="loadingBar" style="height:100%;background:#fff;border-radius:4px;width:0%;transition:width .35s ease"></div>
@@ -575,7 +578,7 @@ body { background:var(--bg); color:var(--text); }
   <div class="auth-card">
     <div class="auth-logo">
       <span class="icon">📱</span>
-      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.3.7</div>
+      <h1>預付卡管理系統</h1><div style="display:inline-block;background:#06C755;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px">v5.3.9</div>
       <p>管理您的所有預付卡門號</p>
     </div>
 
@@ -1408,7 +1411,10 @@ body { background:var(--bg); color:var(--text); }
       </div>
       <div class="form-group"><label>外觀顏色</label><input type="text" id="phoneDeviceColor" class="form-control" placeholder="例如：星光色、黑色、淡紫色"></div>
     </div>
-    <div class="form-group"><label>手機名稱（列表顯示名稱）</label><input type="text" id="phoneDeviceName" class="form-control" placeholder="例如：工作機、蝦皮專用機、iPhone 15 Pro"></div>
+    <div class="form-row">
+      <div class="form-group"><label>手機流水編號（可調整排序）</label><input type="number" id="phoneDeviceSort" class="form-control" min="1" step="1" placeholder="例如：1"></div>
+      <div class="form-group"><label>手機名稱（列表顯示名稱）</label><input type="text" id="phoneDeviceName" class="form-control" placeholder="例如：工作機、蝦皮專用機"></div>
+    </div>
     <div class="form-group"><label>型號</label><input type="text" id="phoneDeviceModel" class="form-control" placeholder="例如：iPhone 15 Pro、Xiaomi 14 Ultra、Galaxy S24"></div>
     <div class="form-group">
       <label>手機圖片／圖標（可自行上傳）</label>
@@ -1676,7 +1682,7 @@ function renderPhoneDevices() {
     const appSummary = apps.length ? apps.map(a => `<div class="phone-device-app-line">🧩 ${platformIconHtml(a.icon || '📱',15)} ${esc(a.name)}${a.app_account ? ' · '+esc(a.app_account) : ''}</div>`).join('') : '<div class="phone-device-app-line">尚未指定安裝 APP</div>';
     return `<div class="phone-device-card" onclick="openPhoneDeviceDetail('${esc(d.id)}')">
       ${image}
-      <div class="phone-device-name">${esc(d.name || d.model || '未命名手機')}</div>
+      <div class="phone-device-name"><span class="phone-device-seq">#${esc(d.sort || index + 1)}</span> ${esc(d.name || d.model || '未命名手機')}</div>
       <div class="phone-device-meta">${esc([d.brand,d.model,d.color].filter(Boolean).join(' · '))}</div>
       <div class="phone-device-counts"><span class="phone-device-count">📞 ${sims.length} 門號</span><span class="phone-device-count">🧩 ${apps.length} APP</span></div>
       <div class="phone-device-sim-summary">${simSummary}</div>
@@ -1732,6 +1738,9 @@ function openPhoneDeviceEditor(deviceId) {
   const d = (STATE.phoneManagementData?.devices || []).find(x => String(x.id) === String(deviceId)) || null;
   document.getElementById('phoneDeviceId').value = d?.id || '';
   document.getElementById('phoneDeviceName').value = d?.name || '';
+  const existingDevices = STATE.phoneManagementData?.devices || [];
+  const nextPhoneSort = existingDevices.length ? Math.max(...existingDevices.map(x => Number(x.sort) || 0)) + 1 : 1;
+  document.getElementById('phoneDeviceSort').value = String(d?.sort || nextPhoneSort);
   document.getElementById('phoneDeviceBrand').value = d?.brand || 'Apple';
   document.getElementById('phoneDeviceModel').value = d?.model || '';
   document.getElementById('phoneDeviceColor').value = d?.color || '';
@@ -1837,6 +1846,7 @@ async function savePhoneDeviceEditor() {
   const payload = {
     id,
     name:document.getElementById('phoneDeviceName').value.trim(),
+    sort_order:Math.max(1, Number(document.getElementById('phoneDeviceSort').value) || 1),
     brand:document.getElementById('phoneDeviceBrand').value,
     model:document.getElementById('phoneDeviceModel').value.trim(),
     color:document.getElementById('phoneDeviceColor').value.trim(),
@@ -2000,6 +2010,10 @@ let STATE = {
   simCards: [],
   appPlatforms: [],
   phoneManagementData: null,
+  appOverviewBundle: null,
+  appOverviewMemberId: '',
+  appRegistrationsCacheBySim: {},
+  appPrefetchPromise: null,
   currentPhoneDeviceEditingId: '',
   announcements: [],
   calendarData: null,
@@ -2007,7 +2021,7 @@ let STATE = {
 const LOGIN_PREF = JSON.parse(localStorage.getItem('login_pref') || '{"saveAccount":false,"savedAccount":"","savePassword":false,"savedPassword":"","autoLogin":false}');
 
 // ============================================================
-// V5.3.5 會員版面偏好：10 種主題 + 門號卡片字級，依會員在本裝置保存。
+// V5.3.5 會員版面偏好：10 種主題 + 門號卡片字級，舊版本保存在本機；V5.3.9 同步保存至會員帳號，可跨裝置讀取。
 // ============================================================
 const UI_THEME_PRESETS = {
   line:      {name:'經典綠', desc:'清新 LINE 綠', primary:'#06C755', dark:'#05A847', bg:'#F0F2F5', card:'#FFFFFF', text:'#1A1A1A', text2:'#666666', border:'#E5E7EB', soft:'#EAF8F0'},
@@ -2035,7 +2049,7 @@ let UI_PREFS = { theme:'line', simCardScale:1, simColumns:3, phoneColumns:2, pho
 let UI_PREFS_DRAFT = null;
 function uiPrefsStorageKey() {
   const member = STATE.session?.id || STATE.session?.account || 'guest';
-  return 'ui_preferences_v531_' + String(member);
+  return 'ui_preferences_v539_' + String(member);
 }
 function normalizeUiPrefs(raw) {
   const p = raw && typeof raw === 'object' ? raw : {};
@@ -2055,8 +2069,17 @@ function normalizeUiPrefs(raw) {
   return {theme, simCardScale:scale, simColumns, phoneColumns, phoneCardScale:phoneScale};
 }
 function loadUiPreferences() {
-  try { UI_PREFS = normalizeUiPrefs(JSON.parse(localStorage.getItem(uiPrefsStorageKey()) || '{}')); }
-  catch(e) { UI_PREFS = normalizeUiPrefs({}); }
+  try {
+    const current = localStorage.getItem(uiPrefsStorageKey());
+    const legacy = localStorage.getItem('ui_preferences_v531_' + String(STATE.session?.id || STATE.session?.account || 'guest'));
+    UI_PREFS = normalizeUiPrefs(JSON.parse(current || legacy || '{}'));
+  } catch(e) { UI_PREFS = normalizeUiPrefs({}); }
+  applyUiPreferences(UI_PREFS);
+}
+function applyAccountUiPreferences(raw) {
+  if (!raw || typeof raw !== 'object') return;
+  UI_PREFS = normalizeUiPrefs(raw);
+  try { localStorage.setItem(uiPrefsStorageKey(), JSON.stringify(UI_PREFS)); } catch(e) {}
   applyUiPreferences(UI_PREFS);
 }
 function applyUiPreferences(prefs) {
@@ -2153,14 +2176,27 @@ function cancelUiSettings() {
   UI_PREFS_DRAFT = null;
   closeModal('uiSettingsModal');
 }
-function saveUiSettings() {
+async function saveUiSettings() {
   UI_PREFS = normalizeUiPrefs(UI_PREFS_DRAFT || UI_PREFS);
   try { localStorage.setItem(uiPrefsStorageKey(), JSON.stringify(UI_PREFS)); }
   catch(e) { showToast('裝置儲存空間不足，設定未能保存', 'error'); return; }
   applyUiPreferences(UI_PREFS);
-  UI_PREFS_DRAFT = null;
-  closeModal('uiSettingsModal');
-  showToast('✅ 版面、門號／手機排列及文字縮放已保存', 'success');
+  const saveBtn = document.querySelector('#uiSettingsModal .btn-primary');
+  const oldText = saveBtn?.textContent || '';
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ 保存至會員帳號...'; }
+  try {
+    if (STATE.token && STATE.session?.id) {
+      const res = await api('saveUiPreferences', {preferences:UI_PREFS});
+      if (!res || !res.success) throw new Error(res?.error || '會員帳號保存失敗');
+    }
+    UI_PREFS_DRAFT = null;
+    closeModal('uiSettingsModal');
+    showToast('✅ 版面設定已保存至會員帳號，下次登入可同步讀取', 'success');
+  } catch (e) {
+    showToast('本機已保存，但同步會員帳號失敗：' + (e.message || ''), 'warn');
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = oldText || '保存設定'; }
+  }
 }
 
 // === 請在這裡加入以下這四行 ===
@@ -2248,6 +2284,7 @@ async function initApp() {
       const r = await api('getMemberBootstrap', {});
       if (r.success && r.data) {
         const d = r.data;
+        if (d.uiPreferences) applyAccountUiPreferences(d.uiPreferences);
         STATE.simCards = d.simCards || [];
         // V5.3.5：Bootstrap 已帶回門號與 days_left，直接渲染近期到期門號，不再等第二次 API。
         loadUpcoming();
@@ -2291,7 +2328,7 @@ async function initApp() {
       updateAppSimSelect(STATE.simCards);
     }
     // V5.3.5：首頁先顯示，再背景更新通知與行事曆，不阻塞會員進站。
-    Promise.allSettled([loadDashboard(), loadCalendarData()]).catch(()=>{});
+    Promise.allSettled([loadDashboard(), loadCalendarData(), prefetchAppRegistrationData()]).catch(()=>{});
     setTimeout(checkTopUpPrompt, 800);
     setTimeout(checkUrgentSimAlert, 1200);
     return;
@@ -2727,6 +2764,9 @@ function showShareLineFriend() {
 function doLogout() {
   showConfirm('確定要登出嗎？', '登出後需重新輸入帳號密碼', '確定登出', 'btn-danger', () => {
     STATE.token = ''; STATE.session = null;
+    STATE.appOverviewBundle = null; STATE.appOverviewMemberId = '';
+    STATE.appRegsBySimId = {}; STATE.appRegistrationsCacheBySim = {}; STATE.appPrefetchPromise = null;
+    STATE.appPlatforms = []; STATE.phoneManagementData = null; STATE.simCards = [];
     localStorage.removeItem('token');
     localStorage.removeItem('session');
     const pref = JSON.parse(localStorage.getItem('login_pref') || '{}');
@@ -2759,6 +2799,7 @@ async function showApp() {
     const r = await api('getMemberBootstrap', {});
     if (r.success && r.data) {
       const d=r.data;
+      if (d.uiPreferences) applyAccountUiPreferences(d.uiPreferences);
       STATE.simCards=d.simCards||[]; loadUpcoming(); STATE.calendarData=d.calendarData||[]; STATE.announcements=d.announcements||[];
       if(d.profile){ STATE.session=Object.assign({},STATE.session,d.profile); localStorage.setItem('session',JSON.stringify(STATE.session)); renderProfileFromData(d.profile); }
       const st=d.dashboard||{};
@@ -2773,7 +2814,7 @@ async function showApp() {
   setSplashMsg('完成！',100);
   showAppReady(); hideSplash();
   // v5.3.5：通知統計/完整行事曆全部背景載入，不阻塞會員進站。
-  Promise.allSettled([loadDashboard(), loadCalendarData()]).catch(()=>{});
+  Promise.allSettled([loadDashboard(), loadCalendarData(), prefetchAppRegistrationData()]).catch(()=>{});
   setTimeout(checkTopUpPrompt,800); setTimeout(checkUrgentSimAlert,1200);
 }
 
@@ -4509,24 +4550,18 @@ async function openAppRegOverview() {
   document.getElementById('broadcastModalBody').innerHTML = '<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
   openModal('broadcastModal');
 
-  // 1. 確保拿到最新的 APP 平台清單
-  if (!STATE.appPlatforms || STATE.appPlatforms.length === 0) {
-    try {
-      const pRes = await api('getAppPlatforms', {});
-      if (pRes.success && pRes.data) STATE.appPlatforms = pRes.data;
-    } catch(e){}
-  }
-  // 2. 使用 V5.3.5 優化後的單次 Bundle API，避免重複掃描 Google Sheet
+  // 會員進站時已背景預載 Bundle；有快取就直接使用，否則才即時請求。
   let bySimId = {};
-  try {
+  if (STATE.appOverviewBundle && STATE.appOverviewMemberId === String(STATE.session?.id || '')) {
+    bySimId = STATE.appOverviewBundle.bySimId || {};
+    if (Array.isArray(STATE.appOverviewBundle.platforms) && STATE.appOverviewBundle.platforms.length) STATE.appPlatforms = STATE.appOverviewBundle.platforms;
+  } else {
     const res = await api('getAppOverviewBundle', {});
     if (!res || !res.success) throw new Error(res?.error || 'APP 資料載入失敗');
-    bySimId = res.data?.bySimId || {};
-    if (Array.isArray(res.data?.platforms) && res.data.platforms.length) {
-      STATE.appPlatforms = res.data.platforms;
-    }
-  } catch(e) {
-    throw e;
+    STATE.appOverviewBundle = res.data || {platforms:[],bySimId:{}};
+    STATE.appOverviewMemberId = String(STATE.session?.id || '');
+    bySimId = STATE.appOverviewBundle.bySimId || {};
+    if (Array.isArray(res.data?.platforms) && res.data.platforms.length) STATE.appPlatforms = res.data.platforms;
   }
 
   // 排除已刪除的平台（Bundle 回傳後再計算，避免平台清單還是空的）
@@ -5114,20 +5149,141 @@ async function openAppDetailFromMatrix(platformId, simId) {
   openAppDetail(String(platformId), String(simId));
 }
   
+// V5.3.9：登入後背景預載 APP 詳細列表所需 Bundle，使用者開啟時先呈現快取，再背景同步最新資料。
+async function prefetchAppRegistrationData() {
+  const memberId = String(STATE.session?.id || '');
+  if (!memberId) return null;
+  if (STATE.appOverviewBundle && STATE.appOverviewMemberId === memberId) return STATE.appOverviewBundle;
+  if (STATE.appOverviewMemberId && STATE.appOverviewMemberId !== memberId) {
+    STATE.appOverviewBundle = null;
+    STATE.appRegsBySimId = {};
+    STATE.appRegistrationsCacheBySim = {};
+    STATE.appPlatforms = [];
+    STATE.appPrefetchPromise = null;
+  }
+  if (STATE.appPrefetchPromise) return STATE.appPrefetchPromise;
+  STATE.appPrefetchPromise = (async () => {
+    const res = await api('getAppOverviewBundle', {});
+    if (!res || !res.success || !res.data) throw new Error(res?.error || 'APP 預載失敗');
+    // 避免使用者在背景請求期間切換帳號，舊會員資料被寫回新會員的前端狀態。
+    if (String(STATE.session?.id || '') !== memberId) return null;
+    STATE.appOverviewBundle = res.data;
+    STATE.appOverviewMemberId = memberId;
+    STATE.appRegsBySimId = res.data.bySimId || {};
+    STATE.appRegistrationsCacheBySim = {};
+    if (Array.isArray(res.data.platforms) && res.data.platforms.length) STATE.appPlatforms = res.data.platforms;
+    return res.data;
+  })();
+  const pendingPromise = STATE.appPrefetchPromise;
+  try { return await pendingPromise; }
+  catch (e) { console.warn('APP prefetch:', e.message); return null; }
+  finally { if (STATE.appPrefetchPromise === pendingPromise) STATE.appPrefetchPromise = null; }
+}
+
+function buildAppRegistrationsFromPrefetch_(simId) {
+  const sid = String(simId || '');
+  if (Array.isArray(STATE.appRegistrationsCacheBySim?.[sid])) return STATE.appRegistrationsCacheBySim[sid];
+  const bundle = STATE.appOverviewBundle;
+  if (!bundle || STATE.appOverviewMemberId !== String(STATE.session?.id || '')) return null;
+  const records = bundle.bySimId?.[sid] || [];
+  const basePlatforms = (bundle.platforms && bundle.platforms.length ? bundle.platforms : STATE.appPlatforms) || [];
+  const platformMap = new Map(basePlatforms.map(p => [String(p.id || p['編號'] || ''), p]));
+  // 舊有註冊資料所屬平台即使停用，也要保留在詳細列表內。
+  records.forEach(record => {
+    const pid = String(record.platform_id || record['平台編號'] || '');
+    if (pid && !platformMap.has(pid)) platformMap.set(pid, {
+      id:pid, '編號':pid, platform_id:pid,
+      name:record.name || ('已儲存平台 ' + pid), '名稱':record.name || ('已儲存平台 ' + pid),
+      icon:record.icon || '📱', '圖標':record.icon || '📱', can_repeat:!!record.can_repeat,
+      custom_fields:record.custom_fields || [], show_overview_account:record.show_overview_account !== false,
+      show_overview_note:record.show_overview_note !== false, _archived:true
+    });
+  });
+  const platforms = [...platformMap.values()];
+  const mapped = platforms.map(platform => {
+    const pid = String(platform.id || platform['編號'] || '');
+    const found = records.find(r => String(r.platform_id || r['平台編號'] || '') === pid);
+    const item = Object.assign({}, platform, found || {});
+    const registered = !!(found && (found.is_registered === true || found.is_registered === 'true'));
+    item['編號'] = pid;
+    item.id = pid;
+    item.platform_id = pid;
+    item['平台編號'] = pid;
+    item.reg_id = found?.id || null;
+    item.name = platform.name || platform['名稱'] || found?.name || '';
+    item['名稱'] = item.name;
+    item.icon = platform.icon || platform['圖標'] || found?.icon || '📱';
+    item['圖標'] = item.icon;
+    item.can_repeat = platform.can_repeat === true || platform.can_repeat === 'true' || platform['可重複使用'] === true || (found?.can_repeat === true);
+    item.is_registered = registered;
+    item['是否已註冊'] = registered;
+    item.last_register_date = found?.last_register_date || '';
+    item.register_days = Number(found?.register_days) || 30;
+    item.next_register_date = found?.next_register_date || '';
+    item.app_account = found?.app_account || '';
+    item.app_mail = found?.app_mail || '';
+    item.app_password = found?.app_password || '';
+    item.app_note = found?.app_note || '';
+    item.notify_line = found?.notify_line !== false;
+    item.notify_tg = found?.notify_tg === true;
+    item.notify_date = found?.notify_date || '';
+    item.notify_time = found?.notify_time ?? '';
+    item.custom_fields = found?.custom_fields || platform.custom_fields || [];
+    item.custom_values = found?.custom_values || {};
+    item.show_overview_account = found?.show_overview_account !== false && platform.show_overview_account !== false;
+    item.show_overview_note = found?.show_overview_note !== false && platform.show_overview_note !== false;
+    return item;
+  });
+  STATE.appRegistrationsCacheBySim[sid] = mapped;
+  return mapped;
+}
+
+async function refreshAppRegistrationsForSim_(simId) {
+  const sid = String(simId || '');
+  const memberId = String(STATE.session?.id || '');
+  const res = await api('getAppRegistrations', {sim_card_id:sid});
+  if (String(STATE.session?.id || '') !== memberId) return null;
+  if (!res || !res.success || !Array.isArray(res.data)) return null;
+  STATE.appRegistrationsCacheBySim[sid] = res.data;
+  if (STATE.appOverviewBundle) {
+    STATE.appOverviewBundle.bySimId = STATE.appOverviewBundle.bySimId || {};
+    STATE.appOverviewBundle.bySimId[sid] = res.data.filter(x => x.reg_id).map(x => ({
+      id:String(x.reg_id), sim_card_id:sid, platform_id:String(x.platform_id || x.id), '平台編號':String(x.platform_id || x.id),
+      is_registered:!!x.is_registered, '是否已註冊':!!x.is_registered, last_register_date:x.last_register_date || '',
+      register_days:Number(x.register_days) || 30, next_register_date:x.next_register_date || '',
+      app_account:x.app_account || '', app_mail:x.app_mail || '', app_password:x.app_password || '', app_note:x.app_note || '',
+      notify_line:x.notify_line !== false, notify_tg:!!x.notify_tg, notify_date:x.notify_date || '', notify_time:x.notify_time || '',
+      custom_fields:x.custom_fields || [], custom_values:x.custom_values || {},
+      show_overview_account:x.show_overview_account !== false, show_overview_note:x.show_overview_note !== false
+    }));
+  }
+  if (String(document.getElementById('appSimSelect')?.value || '') === sid) {
+    STATE.currentAppRegs = res.data;
+    renderAppGrid(res.data, sid);
+  }
+  return res.data;
+}
+
 // 2. 儲存 API 抓回來的 APP 狀態供 Modal 讀取
-async function loadAppRegistrations() {
-  const simId = document.getElementById('appSimSelect').value;
+async function loadAppRegistrations(forceRefresh = false) {
+  const simId = document.getElementById('appSimSelect')?.value || '';
   const el = document.getElementById('appGrid');
   if (!simId || simId === 'ALL_SIMS') {
     if (el) el.innerHTML = '<p style="color:var(--text2);font-size:14px;text-align:center;padding:20px">請先選擇門號</p>';
     return;
   }
-  // V5.3.5：避免每次選門號又重複讀取 APP平台清單。
-  // 平台資料由會員進入 APP 模組時載入；這裡只取得指定門號的註冊狀態。
-  const r = await api('getAppRegistrations', { sim_card_id: simId });
-  if (!r.success || !r.data) return;
-  STATE.currentAppRegs = r.data; // 儲存起來給 openAppDetail 使用
-  renderAppGrid(r.data, simId);
+  // 預載資料存在時先同步呈現，避免點開詳細列表才開始等待 GAS；再於背景更新確保資料最新。
+  if (!forceRefresh && STATE.appOverviewBundle && STATE.appOverviewMemberId === String(STATE.session?.id || '')) {
+    const cached = buildAppRegistrationsFromPrefetch_(simId);
+    if (cached) {
+      STATE.currentAppRegs = cached;
+      renderAppGrid(cached, simId);
+      refreshAppRegistrationsForSim_(simId).catch(e => console.warn('APP background refresh:', e.message));
+      return;
+    }
+  }
+  const fresh = await refreshAppRegistrationsForSim_(simId);
+  if (!fresh && el) el.innerHTML = '<p style="color:var(--danger);font-size:13px;text-align:center;padding:20px">APP 資料讀取失敗，請稍後重試</p>';
 }
 
 // ── 所有門號 APP 概覽 ───────────────────────────────────────
@@ -8690,7 +8846,7 @@ async function openNotifyTimePanel() {
 
 // ── 管理員：會員訂閱管理 ────────────────────────────────────
 async function openMembershipPanel() {
-  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.3.7';
+  document.getElementById('broadcastModalTitle').textContent='💰 會員訂閱管理 v5.3.9';
   document.getElementById('broadcastModalBody').innerHTML='<p style="text-align:center;color:var(--text2);padding:16px">載入中...</p>';
   openModal('broadcastModal');
   const [mr,pr] = await Promise.all([api('adminGetMemberships'),api('adminGetMembershipPlans')]);
